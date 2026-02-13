@@ -19289,7 +19289,8 @@ app.post("/admin/chat/send-file", chatUpload.single("file"), async (req, res) =>
       bufferStream.pipe(uploadStream).on("error", reject).on("finish", resolve);
     });
 
-    const fileUrl = `${PUBLIC_BASE_URL || ""}/admin/chat/assets/${filename}`;
+    const baseUrl = PUBLIC_BASE_URL ? PUBLIC_BASE_URL.replace(/\/$/, "") : `https://${req.get("host")}`;
+    const fileUrl = `${baseUrl}/admin/chat/assets/${filename}`;
     const isImage = /^image\/(jpeg|png|gif|webp)$/i.test(file.mimetype);
 
     // Build message doc

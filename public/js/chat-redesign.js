@@ -1263,6 +1263,38 @@ class ChatManager {
             `;
         }
 
+        // File attachment rendering
+        let attachmentHtml = '';
+        const att = message.attachment;
+        if (att) {
+            const attUrl = att.url || att.localPreview || '';
+            if (att.type === 'image') {
+                const imgSrc = att.localPreview || att.url || '';
+                attachmentHtml = `
+                    <div class="msg-attachment msg-attachment-image${isSending ? ' msg-file-sending' : ''}">
+                        <div class="message-image" role="button" tabindex="0" aria-label="ดูรูปภาพ" data-image-src="${this.escapeHtml(imgSrc)}">
+                            <img src="${this.escapeHtml(imgSrc)}" alt="${this.escapeHtml(att.filename || 'รูปภาพ')}" loading="lazy">
+                        </div>
+                    </div>
+                `;
+            } else {
+                const fileIcon = this.getFileIcon ? this.getFileIcon(att.mimetype) : 'fa-file';
+                const fileSize = this.formatFileSize ? this.formatFileSize(att.size || 0) : '';
+                attachmentHtml = `
+                    <div class="msg-attachment${isSending ? ' msg-file-sending' : ''}">
+                        <a href="${this.escapeHtml(attUrl)}" target="_blank" rel="noopener" class="msg-attachment-file" download="${this.escapeHtml(att.filename || '')}">
+                            <i class="fas ${fileIcon} att-icon"></i>
+                            <div class="att-info">
+                                <div class="att-name">${this.escapeHtml(att.filename || 'ไฟล์')}</div>
+                                <div class="att-size">${fileSize}</div>
+                            </div>
+                            <i class="fas fa-download att-download"></i>
+                        </a>
+                    </div>
+                `;
+            }
+        }
+
 
         return `
             <div class="message ${visualRole} ${sourceClass}">
@@ -1273,6 +1305,7 @@ class ChatManager {
                     </div>
                     <div class="message-content">${content}</div>
                     ${imagesHtml}
+                    ${attachmentHtml}
                     <div class="message-time">
                         ${isSending ? '<i class="fas fa-spinner fa-spin me-1"></i>' : ''}
                         ${time}
@@ -1518,6 +1551,199 @@ class ChatManager {
                 this.renderMessages();
             }
         }
+    }
+
+    // ========================================
+    // File Upload Methods
+    // ========================================
+
+    handleFileSelection(fileList) {
+        if (!fileList || fileList.length === 0) return;
+
+        const maxSize = 25 * 1024 * 1024; // 25MB
+        const maxFiles = 5;
+
+        for (const file of fileList) {
+            if (this.pendingFiles.length >= maxFiles) {
+                this.showToast(`สูงสุด ${maxFiles} ไฟล์ต่อครั้ง`, 'error');
+                break;
+            }
+            if (file.size > maxSize) {
+                this.showToast(`ไฟล์ "${file.name}" ใหญ่เกิน 25MB`, 'error');
+                continue;
+            }
+            this.pendingFiles.push(file);
+        }
+
+        this.renderFilePreview();
+    }
+
+    renderFilePreview() {
+        const strip = document.getElementById('filePreviewStrip');
+        const container = document.getElementById('filePreviewItems');
+        if (!strip || !container) return;
+
+        if (this.pendingFiles.length === 0) {
+            strip.style.display = 'none';
+            container.innerHTML = '';
+            return;
+        }
+
+        strip.style.display = 'flex';
+        container.innerHTML = '';
+
+        this.pendingFiles.forEach((file, index) => {
+            const isImage = file.type.startsWith('image/');
+            const item = document.createElement('div');
+            item.className = `file-preview-item${isImage ? ' is-image' : ''}`;
+
+            if (isImage) {
+                const img = document.createElement('img');
+                img.alt = file.name;
+                const reader = new FileReader();
+                reader.onload = (e) => { img.src = e.target.result; };
+                reader.readAsDataURL(file);
+                item.appendChild(img);
+            } else {
+                item.innerHTML = `
+                    <i class="fas ${this.getFileIcon(file.type)} file-icon"></i>
+                    <div class="file-details">
+                        <div class="file-name" title="${file.name}">${file.name}</div>
+                        <div class="file-size">${this.formatFileSize(file.size)}</div>
+                    </div>
+                `;
+            }
+
+            const btnRemove = document.createElement('button');
+            btnRemove.className = 'btn-remove-file';
+            btnRemove.innerHTML = '<i class="fas fa-times"></i>';
+            btnRemove.title = 'ลบ';
+            btnRemove.addEventListener('click', () => this.removeFile(index));
+            item.appendChild(btnRemove);
+
+            container.appendChild(item);
+        });
+    }
+
+    removeFile(index) {
+        this.pendingFiles.splice(index, 1);
+        this.renderFilePreview();
+    }
+
+    async sendPendingFiles() {
+        if (!this.currentUserId || this.pendingFiles.length === 0) return;
+
+        const files = [...this.pendingFiles];
+        this.pendingFiles = [];
+        this.renderFilePreview();
+
+        // Also send text message if present
+        const messageInput = document.getElementById('messageInput');
+        const textMessage = messageInput ? messageInput.value.trim() : '';
+        if (textMessage && messageInput) {
+            messageInput.value = '';
+            if (typeof this.resizeMessageInput === 'function') {
+                this.resizeMessageInput();
+            }
+            const charCountEl = document.getElementById('charCount');
+            if (charCountEl) charCountEl.textContent = '0';
+
+            // Send text message first
+            try {
+                await fetch('/admin/chat/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: this.currentUserId, message: textMessage })
+                });
+            } catch (e) {
+                console.error('Error sending text with files:', e);
+            }
+        }
+
+        // Send files one by one
+        for (const file of files) {
+            const isImage = file.type.startsWith('image/');
+            const tempMessage = {
+                role: 'admin',
+                content: isImage ? `📷 ${file.name}` : `📎 ${file.name}`,
+                timestamp: new Date().toISOString(),
+                sending: true,
+                attachment: {
+                    type: isImage ? 'image' : 'file',
+                    filename: file.name,
+                    mimetype: file.type,
+                    size: file.size,
+                    localPreview: isImage ? URL.createObjectURL(file) : null,
+                },
+            };
+
+            if (!this.chatHistory[this.currentUserId]) {
+                this.chatHistory[this.currentUserId] = [];
+            }
+            this.chatHistory[this.currentUserId].push(tempMessage);
+            this.renderMessages();
+            this.scrollToBottom();
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('userId', this.currentUserId);
+
+                const response = await fetch('/admin/chat/send-file', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+                if (data.success && data.message) {
+                    const history = this.chatHistory[this.currentUserId] || [];
+                    const idx = history.indexOf(tempMessage);
+                    if (idx >= 0) {
+                        history[idx] = data.message;
+                    }
+                    // Revoke object URL
+                    if (tempMessage.attachment?.localPreview) {
+                        URL.revokeObjectURL(tempMessage.attachment.localPreview);
+                    }
+                } else {
+                    throw new Error(data.error || 'อัปโหลดไม่สำเร็จ');
+                }
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                this.showToast(`ส่งไฟล์ ${file.name} ไม่สำเร็จ`, 'error');
+                const history = this.chatHistory[this.currentUserId] || [];
+                const idx = history.indexOf(tempMessage);
+                if (idx >= 0) {
+                    history.splice(idx, 1);
+                }
+                if (tempMessage.attachment?.localPreview) {
+                    URL.revokeObjectURL(tempMessage.attachment.localPreview);
+                }
+            }
+
+            this.renderMessages();
+            this.scrollToBottom();
+        }
+
+        this.loadUsers();
+    }
+
+    formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    getFileIcon(mimetype) {
+        if (!mimetype) return 'fa-file';
+        if (mimetype.startsWith('image/')) return 'fa-file-image';
+        if (mimetype.includes('pdf')) return 'fa-file-pdf';
+        if (mimetype.includes('word') || mimetype.includes('document')) return 'fa-file-word';
+        if (mimetype.includes('sheet') || mimetype.includes('excel')) return 'fa-file-excel';
+        if (mimetype.includes('zip') || mimetype.includes('rar') || mimetype.includes('archive')) return 'fa-file-archive';
+        if (mimetype.includes('video')) return 'fa-file-video';
+        if (mimetype.includes('audio')) return 'fa-file-audio';
+        return 'fa-file';
     }
 
     // ========================================
