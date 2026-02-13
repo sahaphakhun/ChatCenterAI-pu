@@ -1666,6 +1666,216 @@
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* File Preview Strip */
+.file-preview-strip {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.file-preview-strip::-webkit-scrollbar {
+    height: 4px;
+}
+
+.file-preview-strip::-webkit-scrollbar-thumb {
+    background: var(--chat-border-color);
+    border-radius: 2px;
+}
+
+.file-preview-items {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+}
+
+.file-preview-item {
+    position: relative;
+    flex-shrink: 0;
+    border-radius: 10px;
+    border: 1px solid var(--chat-border-color);
+    background: var(--chat-bg-app);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    max-width: 200px;
+    transition: var(--chat-transition);
+}
+
+.file-preview-item:hover {
+    border-color: var(--chat-primary);
+}
+
+.file-preview-item.is-image {
+    padding: 0;
+    width: 64px;
+    height: 64px;
+}
+
+.file-preview-item.is-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 9px;
+}
+
+.file-preview-item .file-icon {
+    font-size: 1.25rem;
+    color: var(--chat-primary);
+    flex-shrink: 0;
+}
+
+.file-preview-item .file-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-preview-item .file-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--chat-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-preview-item .file-size {
+    font-size: 0.6875rem;
+    color: var(--chat-text-tertiary);
+}
+
+.file-preview-item .btn-remove-file {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--chat-danger);
+    color: white;
+    border: 2px solid var(--chat-bg-sidebar);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    transition: var(--chat-transition);
+    z-index: 2;
+    padding: 0;
+    line-height: 1;
+}
+
+.file-preview-item .btn-remove-file:hover {
+    transform: scale(1.15);
+}
+
+/* Upload Progress */
+.file-upload-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--chat-border-color);
+}
+
+.file-upload-progress .progress-bar {
+    height: 100%;
+    background: var(--chat-primary);
+    transition: width 0.3s ease;
+    border-radius: 0 0 10px 10px;
+}
+
+/* File Attachment Bubble in Messages */
+.msg-attachment {
+    margin-top: 0.5rem;
+}
+
+.msg-attachment-image img {
+    max-width: 260px;
+    max-height: 260px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--chat-transition);
+    display: block;
+}
+
+.msg-attachment-image img:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+.msg-attachment-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    transition: var(--chat-transition);
+    max-width: 260px;
+}
+
+.msg-attachment-file:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.msg-attachment-file .att-icon {
+    font-size: 1.5rem;
+    color: var(--chat-primary);
+    flex-shrink: 0;
+}
+
+.msg-attachment-file .att-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.msg-attachment-file .att-name {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.msg-attachment-file .att-size {
+    font-size: 0.6875rem;
+    opacity: 0.7;
+}
+
+.msg-attachment-file .att-download {
+    color: var(--chat-primary);
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+/* Sending overlay for file messages */
+.msg-file-sending {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.msg-file-sending::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--chat-border-color);
+    border-top-color: var(--chat-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
 .message-input-container {
     display: flex;
     align-items: flex-end;

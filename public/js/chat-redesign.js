@@ -275,7 +275,25 @@ class ChatManager {
 
         if (btnSend) {
             btnSend.addEventListener('click', () => {
-                this.sendMessage();
+                if (this.pendingFiles && this.pendingFiles.length > 0) {
+                    this.sendPendingFiles();
+                } else {
+                    this.sendMessage();
+                }
+            });
+        }
+
+        // File attachment
+        this.pendingFiles = [];
+        const btnAttachFile = document.getElementById('btnAttachFile');
+        const chatFileInput = document.getElementById('chatFileInput');
+        if (btnAttachFile && chatFileInput) {
+            btnAttachFile.addEventListener('click', () => {
+                chatFileInput.click();
+            });
+            chatFileInput.addEventListener('change', (e) => {
+                this.handleFileSelection(e.target.files);
+                chatFileInput.value = '';
             });
         }
 

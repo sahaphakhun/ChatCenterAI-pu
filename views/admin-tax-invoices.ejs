@@ -457,10 +457,10 @@
                 padding: 12px;
             }
 
+            .tax-table th:nth-child(3),
+            .tax-table td:nth-child(3),
             .tax-table th:nth-child(4),
-            .tax-table td:nth-child(4),
-            .tax-table th:nth-child(5),
-            .tax-table td:nth-child(5) {
+            .tax-table td:nth-child(4) {
                 display: none;
             }
         }
@@ -517,11 +517,12 @@
                             <th>เลขผู้เสียภาษี</th>
                             <th>ยอดเงิน</th>
                             <th>สถานะ</th>
+                            <th style="width:50px;"></th>
                         </tr>
                     </thead>
                     <tbody id="taxTableBody">
                         <tr class="empty-row">
-                            <td colspan="5">
+                            <td colspan="6">
                                 <div class="tax-loading"><i class="fas fa-spinner"></i><br>กำลังโหลด...</div>
                             </td>
                         </tr>
@@ -585,7 +586,7 @@
 
                 // Load data
                 async function loadData() {
-                    tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><div class="tax-loading"><i class="fas fa-spinner"></i><br>กำลังโหลด...</div></td></tr>';
+                    tbody.innerHTML = '<tr class="empty-row"><td colspan="6"><div class="tax-loading"><i class="fas fa-spinner"></i><br>กำลังโหลด...</div></td></tr>';
 
                     const params = new URLSearchParams({ page: currentPage, limit: LIMIT });
                     if (currentStatus) params.set('status', currentStatus);
@@ -605,7 +606,7 @@
                         loadStats();
                     } catch (err) {
                         console.error(err);
-                        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
                     }
                 }
 
@@ -637,7 +638,7 @@
                 // Render table
                 function renderTable() {
                     if (items.length === 0) {
-                        tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-inbox" style="font-size:32px; margin-bottom:8px;"></i><br>ยังไม่มีคำขอใบกำกับภาษี</td></tr>';
+                        tbody.innerHTML = '<tr class="empty-row"><td colspan="6"><i class="fas fa-inbox" style="font-size:32px; margin-bottom:8px;"></i><br>ยังไม่มีคำขอใบกำกับภาษี</td></tr>';
                         return;
                     }
                     tbody.innerHTML = items.map(item => {
@@ -652,6 +653,7 @@
           <td style="font-family: monospace; font-size: 13px;">${escapeHtml(taxId)}</td>
           <td>${amount}</td>
           <td><span class="tax-badge ${status}">${statusLabels[status] || status}</span></td>
+          <td>${item.userId ? `<button class="tax-page-btn" style="padding:4px 8px;font-size:12px;" onclick="event.stopPropagation(); TaxAdmin.goToChat('${item.userId}')" title="ไปยังแชท"><i class="fas fa-comment" style="color:#4f46e5;"></i></button>` : ''}</td>
         </tr>`;
                     }).join('');
                 }
@@ -737,6 +739,7 @@
           ${item.completedAt ? `<div class="tax-panel-row"><span class="tax-panel-label">เสร็จสิ้นเมื่อ</span><span class="tax-panel-value">${new Date(item.completedAt).toLocaleString('th-TH')}</span></div>` : ''}
           <div class="tax-panel-row"><span class="tax-panel-label">Platform</span><span class="tax-panel-value">${escapeHtml(item.platform || '-')}</span></div>
           <div class="tax-panel-row"><span class="tax-panel-label">User ID</span><span class="tax-panel-value" style="font-family:monospace; font-size:12px;">${escapeHtml(item.userId || '-')}</span></div>
+          ${item.userId ? `<div style="margin-top:8px;"><button class="tax-panel-btn btn-primary" style="font-size:13px; padding:6px 14px;" onclick="TaxAdmin.goToChat('${item.userId}')"><i class="fas fa-comment"></i> ไปยังแชทลูกค้า</button></div>` : ''}
         </div>`;
 
                         // Admin notes
@@ -847,7 +850,13 @@
                 });
 
                 // Expose to inline handlers
-                window.TaxAdmin = { openDetail, closeDetail, updateStatus, saveNotes, goPage };
+                function goToChat(userId) {
+                    if (userId) {
+                        window.location.href = '/admin/chat?user=' + encodeURIComponent(userId);
+                    }
+                }
+
+                window.TaxAdmin = { openDetail, closeDetail, updateStatus, saveNotes, goPage, goToChat };
 
                 // Init
                 loadData();

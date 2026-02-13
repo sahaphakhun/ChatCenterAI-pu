@@ -37,7 +37,8 @@
                                     </h5>
                                     <div class="user-count-badge" id="userCountBadge">0</div>
                                 </div>
-                                <button class="btn-close-sidebar d-md-none" id="closeSidebar" title="ปิด" aria-label="ปิดรายชื่อผู้ใช้">
+                                <button class="btn-close-sidebar d-md-none" id="closeSidebar" title="ปิด"
+                                    aria-label="ปิดรายชื่อผู้ใช้">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -114,7 +115,8 @@
                             <!-- Chat Header -->
                             <header class="chat-header" id="chatHeader">
                                 <div class="chat-header-left">
-                                    <button class="btn-toggle-sidebar d-md-none" id="toggleSidebar" aria-label="เปิดรายชื่อผู้ใช้">
+                                    <button class="btn-toggle-sidebar d-md-none" id="toggleSidebar"
+                                        aria-label="เปิดรายชื่อผู้ใช้">
                                         <i class="fas fa-bars"></i>
                                     </button>
                                     <div class="chat-user-info">
@@ -151,8 +153,8 @@
                                             aria-label="เปิดหรือปิด AI">
                                             <i class="fas fa-robot"></i>
                                         </button>
-                                        <button class="btn-header-action" id="btnRefreshProfile" title="อัปเดตข้อมูลผู้ใช้"
-                                            aria-label="อัปเดตข้อมูลผู้ใช้">
+                                        <button class="btn-header-action" id="btnRefreshProfile"
+                                            title="อัปเดตข้อมูลผู้ใช้" aria-label="อัปเดตข้อมูลผู้ใช้">
                                             <i class="fas fa-sync"></i>
                                         </button>
                                         <button class="btn-header-action" id="btnToggleDebug" title="Debug"
@@ -259,8 +261,8 @@
                                             title="คัดลอก" aria-label="คัดลอกข้อมูล Debug">
                                             <i class="fas fa-copy"></i>
                                         </button>
-                                        <button type="button" class="chat-debug-btn" id="chatDebugCloseBtn"
-                                            title="ซ่อน" aria-label="ซ่อน Debug">
+                                        <button type="button" class="chat-debug-btn" id="chatDebugCloseBtn" title="ซ่อน"
+                                            aria-label="ซ่อน Debug">
                                             <i class="fas fa-times"></i>
                                         </button>
                                     </div>
@@ -270,10 +272,19 @@
 
                             <!-- Message Input Area (Fixed at bottom) -->
                             <div class="message-input-area" id="messageInputArea" style="display: none;">
+                                <!-- File Preview Strip -->
+                                <div class="file-preview-strip" id="filePreviewStrip" style="display:none;">
+                                    <div class="file-preview-items" id="filePreviewItems"></div>
+                                </div>
                                 <div class="message-input-container">
                                     <button class="btn-input-action" id="btnTemplate" title="Templates">
                                         <i class="fas fa-magic"></i>
                                     </button>
+                                    <button class="btn-input-action" id="btnAttachFile" title="แนบไฟล์/รูปภาพ">
+                                        <i class="fas fa-paperclip"></i>
+                                    </button>
+                                    <input type="file" id="chatFileInput" style="display:none;"
+                                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar" multiple>
                                     <div class="message-input-wrapper">
                                         <textarea class="message-input" id="messageInput" placeholder="พิมพ์ข้อความ..."
                                             rows="1" maxlength="1000"></textarea>
@@ -599,9 +610,9 @@
 
         // Pass follow-up config from server
         <% if (typeof followUpConfig !== 'undefined') { %>
-                    chatManager.followUpConfig = <%- JSON.stringify(followUpConfig).replace(/</g, '\\u003c') %>;
+                chatManager.followUpConfig = <% - JSON.stringify(followUpConfig).replace(/</g, '\\u003c') %>;
             <% } else { %>
-                    chatManager.followUpConfig = { };
+                chatManager.followUpConfig = { };
             <% } %>
         </script>
 </body>

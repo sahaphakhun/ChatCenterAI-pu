@@ -576,6 +576,14 @@ const imageUpload = multer({
   },
 });
 
+// Multer for chat file uploads (images + documents)
+const chatUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 25 * 1024 * 1024, // 25MB
+  },
+});
+
 // ฟังก์ชันสำหรับอ่านไฟล์ Excel และแปลงเป็น instructions
 function processExcelToInstructions(buffer, originalName) {
   try {
@@ -19234,6 +19242,172 @@ app.post("/admin/chat/send", async (req, res) => {
   } catch (err) {
     console.error("Error sending admin message:", err);
     res.json({ success: false, error: err.message });
+  }
+});
+
+// Send file/image as admin
+app.post("/admin/chat/send-file", chatUpload.single("file"), async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const file = req.file;
+
+    if (!userId || !file) {
+      return res.json({ success: false, error: "ข้อมูลไม่ครบถ้วน" });
+    }
+
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const coll = db.collection("chat_history");
+    const { Readable } = require("stream");
+
+    // Determine platform and bot from latest chat
+    const lastChat = await coll.findOne(
+      buildChatHistoryUserMatch(userId),
+      { sort: { timestamp: -1 } },
+    );
+    const platform = lastChat?.platform || "line";
+    const botId = lastChat?.botId || null;
+
+    // Upload to GridFS
+    const bucket = new GridFSBucket(db, { bucketName: "chatAssets" });
+    const filename = `chat-${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+
+    await new Promise((resolve, reject) => {
+      const uploadStream = bucket.openUploadStream(filename, {
+        contentType: file.mimetype,
+        metadata: {
+          userId,
+          originalName: file.originalname,
+          uploadedBy: "admin",
+          platform,
+          botId,
+        },
+      });
+      const bufferStream = new Readable();
+      bufferStream.push(file.buffer);
+      bufferStream.push(null);
+      bufferStream.pipe(uploadStream).on("error", reject).on("finish", resolve);
+    });
+
+    const fileUrl = `${PUBLIC_BASE_URL || ""}/admin/chat/assets/${filename}`;
+    const isImage = /^image\/(jpeg|png|gif|webp)$/i.test(file.mimetype);
+
+    // Build message doc
+    const messageDoc = {
+      senderId: userId,
+      role: "assistant",
+      content: isImage ? `[รูปภาพ] ${file.originalname}` : `[ไฟล์] ${file.originalname}`,
+      timestamp: new Date(),
+      source: "admin_chat",
+      platform,
+      botId,
+      attachment: {
+        type: isImage ? "image" : "file",
+        url: fileUrl,
+        filename: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      },
+    };
+
+    // Send to platform
+    if (platform === "facebook") {
+      try {
+        if (botId) {
+          const fbBot = await db.collection("facebook_bots").findOne({ _id: new ObjectId(botId) });
+          if (fbBot?.accessToken) {
+            if (isImage) {
+              // Send image via Facebook
+              await sendFacebookMessage(userId, "", fbBot.accessToken, {
+                metadata: "admin_file",
+                attachments: [{ type: "image", url: fileUrl }],
+              });
+            } else {
+              // Send file URL as text
+              await sendFacebookMessage(userId, `📎 ${file.originalname}\n${fileUrl}`, fbBot.accessToken, {
+                metadata: "admin_file",
+              });
+            }
+          }
+        }
+        // For Facebook, save to DB and emit (no echo for file messages)
+        const insertResult = await coll.insertOne(messageDoc);
+        if (insertResult?.insertedId) messageDoc._id = insertResult.insertedId;
+        await resetUserUnreadCount(userId);
+
+        io.emit("newMessage", {
+          userId,
+          message: messageDoc,
+          sender: "assistant",
+          timestamp: messageDoc.timestamp,
+        });
+
+        return res.json({ success: true, message: messageDoc });
+      } catch (fbErr) {
+        console.error("[Chat] ส่งไฟล์ไป Facebook ไม่สำเร็จ:", fbErr.message);
+        // Still save to DB
+      }
+    }
+
+    // LINE or other
+    const insertResult = await coll.insertOne(messageDoc);
+    if (insertResult?.insertedId) messageDoc._id = insertResult.insertedId;
+    await resetUserUnreadCount(userId);
+
+    try {
+      const lineClientForSend = await getLineClientForContext(botId);
+      if (lineClientForSend) {
+        if (isImage) {
+          await lineClientForSend.pushMessage(userId, {
+            type: "image",
+            originalContentUrl: fileUrl,
+            previewImageUrl: fileUrl,
+          });
+        } else {
+          // Non-image files: send as text with link
+          const normalizedText = normalizeOutgoingText(`📎 ไฟล์แนบ: ${file.originalname}\n${fileUrl}`);
+          await lineClientForSend.pushMessage(userId, {
+            type: "text",
+            text: normalizedText,
+          });
+        }
+        console.log(`[Admin Chat] ส่งไฟล์ไปยัง LINE user ${userId}: ${file.originalname}`);
+      }
+    } catch (lineErr) {
+      console.log(`[Admin Chat] ส่งไฟล์ไป LINE ไม่สำเร็จ: ${lineErr.message}`);
+    }
+
+    io.emit("newMessage", {
+      userId,
+      message: messageDoc,
+      sender: "assistant",
+      timestamp: messageDoc.timestamp,
+    });
+
+    res.json({ success: true, message: messageDoc });
+  } catch (err) {
+    console.error("[Chat] send-file error:", err);
+    res.json({ success: false, error: err.message || "อัปโหลดไม่สำเร็จ" });
+  }
+});
+
+// Serve chat assets from GridFS
+app.get("/admin/chat/assets/:filename", async (req, res) => {
+  try {
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const bucket = new GridFSBucket(db, { bucketName: "chatAssets" });
+
+    const files = await bucket.find({ filename: req.params.filename }).toArray();
+    if (!files || files.length === 0) return res.status(404).send("File not found");
+
+    res.set("Content-Type", files[0].contentType || "application/octet-stream");
+    res.set("Cache-Control", "public, max-age=31536000");
+    const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
+    downloadStream.pipe(res);
+  } catch (e) {
+    console.error("[Chat] asset error:", e.message);
+    res.status(500).send("Error");
   }
 });
 
