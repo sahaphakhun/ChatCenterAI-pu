@@ -811,6 +811,22 @@ async function ensureShortLinkIndexes(db) {
   }
 }
 
+async function ensureTaxInvoiceIndexes(db) {
+  try {
+    const coll = db.collection("tax_invoices");
+    await coll.createIndex({ token: 1 }, { unique: true });
+    await coll.createIndex({ orderId: 1 });
+    await coll.createIndex({ userId: 1 });
+    await coll.createIndex({ status: 1, createdAt: -1 });
+    console.log("[DB] Tax invoice indexes ensured");
+  } catch (err) {
+    console.warn(
+      "[DB] ไม่สามารถตั้งค่า index สำหรับ Tax Invoices ได้:",
+      err?.message || err,
+    );
+  }
+}
+
 let mongoClient = null;
 async function connectDB() {
   if (!mongoClient) {
@@ -823,6 +839,7 @@ async function connectDB() {
       await ensureCategoryIndexes(db);
       await ensureNotificationIndexes(db);
       await ensureShortLinkIndexes(db);
+      await ensureTaxInvoiceIndexes(db);
     } catch (err) {
       console.warn(
         "[DB] ไม่สามารถตั้งค่า index ได้:",
@@ -4754,6 +4771,107 @@ async function updateOrderFromTool(args = {}, context = {}) {
   };
 }
 
+// ============================ Tax Invoice Tool ============================
+
+const TAX_INVOICE_COLLECTION = "tax_invoices";
+const TAX_INVOICE_STATUSES = ["pending", "submitted", "processing", "completed", "cancelled"];
+
+function generateTaxInvoiceToken() {
+  return require("crypto").randomBytes(24).toString("hex");
+}
+
+async function requestTaxInvoiceFromTool(args = {}, context = {}) {
+  const userId = context.userId;
+  if (!userId) {
+    return { success: false, error: "ไม่พบผู้ใช้สำหรับสร้างคำขอใบกำกับภาษี" };
+  }
+
+  const orderIdRaw = typeof args.orderId === "string" ? args.orderId.trim() : "";
+  if (!orderIdRaw || !ObjectId.isValid(orderIdRaw)) {
+    return { success: false, error: "orderId ไม่ถูกต้อง" };
+  }
+
+  try {
+    const client = await connectDB();
+    const db = client.db("chatbot");
+
+    // 1. ตรวจสอบว่า order มีจริง + เป็นของ userId นี้
+    const order = await db.collection("orders").findOne({
+      _id: new ObjectId(orderIdRaw),
+      userId,
+    });
+    if (!order) {
+      return {
+        success: false,
+        error: `ไม่พบออเดอร์รหัส ${orderIdRaw} หรือไม่ใช่ออเดอร์ของลูกค้ารายนี้`,
+      };
+    }
+
+    // 2. ตรวจสอบซ้ำ
+    const existing = await db.collection(TAX_INVOICE_COLLECTION).findOne({
+      orderId: new ObjectId(orderIdRaw),
+    });
+    if (existing) {
+      if (existing.status === "pending") {
+        // ยังไม่กรอก — ส่งลิงก์เดิม
+        const baseUrl = PUBLIC_BASE_URL || "";
+        const formUrl = `${baseUrl.replace(/\/$/, "")}/tax-invoice/fill/${existing.token}`;
+        return {
+          success: true,
+          formUrl,
+          message: "มีคำขอใบกำกับภาษีสำหรับออเดอร์นี้อยู่แล้ว (รอลูกค้ากรอกข้อมูล) — ส่งลิงก์เดิมให้ลูกค้า",
+        };
+      }
+      return {
+        success: false,
+        error: `ออเดอร์นี้มีคำขอใบกำกับภาษีแล้ว (สถานะ: ${existing.status}) ไม่ต้องสร้างใหม่`,
+      };
+    }
+
+    // 3. สร้าง token + orderSnapshot
+    const token = generateTaxInvoiceToken();
+    const orderData = order.orderData || {};
+    const orderSnapshot = {
+      items: Array.isArray(orderData.items) ? orderData.items : [],
+      totalAmount: orderData.totalAmount || 0,
+      shippingCost: orderData.shippingCost || 0,
+      customerName: orderData.customerName || null,
+    };
+
+    // 4. บันทึก
+    const doc = {
+      orderId: new ObjectId(orderIdRaw),
+      userId,
+      platform: context.platform || "line",
+      botId: context.botId ? (ObjectId.isValid(context.botId) ? new ObjectId(context.botId) : context.botId) : null,
+      token,
+      orderSnapshot,
+      taxInfo: null,
+      status: "pending",
+      createdAt: new Date(),
+      submittedAt: null,
+      completedAt: null,
+      updatedAt: new Date(),
+      adminNotes: "",
+    };
+
+    await db.collection(TAX_INVOICE_COLLECTION).insertOne(doc);
+    console.log(`[TaxInvoice] สร้างคำขอใบกำกับภาษีสำเร็จ orderId=${orderIdRaw} token=${token}`);
+
+    // 5. สร้าง URL
+    const baseUrl = PUBLIC_BASE_URL || "";
+    const formUrl = `${baseUrl.replace(/\/$/, "")}/tax-invoice/fill/${token}`;
+
+    return {
+      success: true,
+      formUrl,
+      message: "สร้างลิงก์กรอกข้อมูลใบกำกับภาษีแล้ว ส่งลิงก์นี้ให้ลูกค้าเพื่อกรอกข้อมูล",
+    };
+  } catch (error) {
+    console.error("[TaxInvoice] สร้างคำขอไม่สำเร็จ:", error.message);
+    return { success: false, error: "เกิดข้อผิดพลาดในการสร้างคำขอใบกำกับภาษี" };
+  }
+}
 
 async function triggerOrderNotification(orderId) {
   if (!orderId) return;
@@ -8856,6 +8974,7 @@ const ORDER_TOOL_INSTRUCTIONS = `🚨 สำคัญ! คุณต้องใ�
 1. get_orders - ดู orders ที่มีอยู่แล้วของลูกค้า (ใช้เมื่อลูกค้าถามเกี่ยวกับออเดอร์เดิม)
 2. create_order - สร้างออเดอร์ใหม่ (ต้องมี items และ totalAmount)
 3. update_order - แก้ไขออเดอร์ที่มีอยู่ (ใช้เมื่อลูกค้าต้องการเปลี่ยนข้อมูลออเดอร์เดิม)
+4. request_tax_invoice - สร้างลิงก์ให้ลูกค้ากรอกข้อมูลใบกำกับภาษี (ต้องมี orderId)
 
 💰 วิธีใส่ข้อมูลสินค้าที่ถูกต้อง:
 
@@ -8886,6 +9005,12 @@ const ORDER_TOOL_INSTRUCTIONS = `🚨 สำคัญ! คุณต้องใ�
 - ลูกค้าบอกว่า "แก้ไข" หรือ "เปลี่ยน" ข้อมูลออเดอร์ที่สั่งไปแล้ว
 - ลูกค้าพูดถึงออเดอร์เดิมโดยเฉพาะ เช่น "ออเดอร์ที่แล้ว" "ที่สั่งไปเมื่อกี้"
 
+🧾 เมื่อไหร่ต้องใช้ request_tax_invoice:
+- ลูกค้าพูดถึง "ใบกำกับภาษี" "tax invoice" "ออกใบกำกับ" "ใบเสร็จรับเงิน/ใบกำกับ"
+- ต้องเรียก get_orders ก่อนเพื่อได้ orderId
+- ส่งลิงก์ที่ได้ให้ลูกค้า พร้อมบอกให้กรอกข้อมูลบริษัท/ผู้เสียภาษี
+- ถ้าลูกค้ายังไม่มี order → แจ้งให้สั่งซื้อก่อน
+
 🚫 ข้อห้าม:
 1. ห้ามพูดว่า "บันทึกแล้ว" หรือ "สั่งซื้อสำเร็จ" โดยไม่ได้เรียก tool จริง
 2. ห้ามคาดเดาข้อมูลออเดอร์ - ถามให้ครบก่อน
@@ -8895,7 +9020,8 @@ const ORDER_TOOL_INSTRUCTIONS = `🚨 สำคัญ! คุณต้องใ�
 💡 ตัวอย่าง:
 - "สั่งสินค้า A 2 ชิ้น ชิ้นละ 500" → items: [{product: "สินค้า A", quantity: 2, price: 500}], totalAmount: 1000
 - "สั่งโปร 3 ลัง 7,050" → items: [{product: "โปร 3 ลัง", quantity: 1, price: 0}], totalAmount: 7050
-- "สั่งใหม่ครับ" → เรียก create_order (ไม่ต้องถามเรื่องออเดอร์เก่า!)`;
+- "สั่งใหม่ครับ" → เรียก create_order (ไม่ต้องถามเรื่องออเดอร์เก่า!)
+- "ขอใบกำกับภาษีครับ" → เรียก get_orders ก่อน แล้ว request_tax_invoice`;
 
 async function appendOrderToolInstructions(systemInstructions) {
   const requiredFields = await getOrderRequiredFieldsSetting();
@@ -9144,6 +9270,26 @@ async function getAssistantResponseTextOnly(
             }
           }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "request_tax_invoice",
+          description: `สร้างลิงก์ให้ลูกค้ากรอกข้อมูลสำหรับออกใบกำกับภาษี (Tax Invoice)
+ใช้เมื่อ: ลูกค้าขอใบกำกับภาษี, tax invoice, ใบกำกับ, ใบเสร็จรับเงิน
+ขั้นตอน: 1) เรียก get_orders ก่อน 2) เรียก request_tax_invoice พร้อม orderId 3) ส่งลิงก์ให้ลูกค้า
+⚠️ ต้องมี orderId เสมอ — ถ้าลูกค้ายังไม่มีออเดอร์ ให้แจ้งว่าต้องสั่งซื้อก่อน`,
+          parameters: {
+            type: "object",
+            properties: {
+              orderId: {
+                type: "string",
+                description: "รหัสออเดอร์ที่ต้องการออกใบกำกับภาษี (ได้จาก get_orders)"
+              }
+            },
+            required: ["orderId"]
+          }
+        }
       }
     ];
 
@@ -9230,6 +9376,8 @@ async function getAssistantResponseTextOnly(
             toolResult = await createOrderFromTool(functionArgs, toolContext);
           } else if (functionName === "update_order") {
             toolResult = await updateOrderFromTool(functionArgs, toolContext);
+          } else if (functionName === "request_tax_invoice") {
+            toolResult = await requestTaxInvoiceFromTool(functionArgs, toolContext);
           }
 
           const toolResultMsg = {
@@ -9621,6 +9769,26 @@ async function getAssistantResponseMultimodal(
             }
           }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "request_tax_invoice",
+          description: `สร้างลิงก์ให้ลูกค้ากรอกข้อมูลสำหรับออกใบกำกับภาษี (Tax Invoice)
+ใช้เมื่อ: ลูกค้าขอใบกำกับภาษี, tax invoice, ใบกำกับ, ใบเสร็จรับเงิน
+ขั้นตอน: 1) เรียก get_orders ก่อน 2) เรียก request_tax_invoice พร้อม orderId 3) ส่งลิงก์ให้ลูกค้า
+⚠️ ต้องมี orderId เสมอ — ถ้าลูกค้ายังไม่มีออเดอร์ ให้แจ้งว่าต้องสั่งซื้อก่อน`,
+          parameters: {
+            type: "object",
+            properties: {
+              orderId: {
+                type: "string",
+                description: "รหัสออเดอร์ที่ต้องการออกใบกำกับภาษี (ได้จาก get_orders)"
+              }
+            },
+            required: ["orderId"]
+          }
+        }
       }
     ];
 
@@ -9682,6 +9850,8 @@ async function getAssistantResponseMultimodal(
             toolResult = await createOrderFromTool(functionArgs, toolContext);
           } else if (functionName === "update_order") {
             toolResult = await updateOrderFromTool(functionArgs, toolContext);
+          } else if (functionName === "request_tax_invoice") {
+            toolResult = await requestTaxInvoiceFromTool(functionArgs, toolContext);
           }
 
           const toolResultMsg = {
@@ -12980,9 +13150,8 @@ app.patch("/api/line-bots/:id/toggle-notifications", async (req, res) => {
     );
 
     res.json({
-      message: `เปลี่ยนสถานะการแจ้งเตือน Line Bot เป็น ${
-        nextValue ? "เปิดใช้งาน" : "ปิดใช้งาน"
-      } เรียบร้อยแล้ว`,
+      message: `เปลี่ยนสถานะการแจ้งเตือน Line Bot เป็น ${nextValue ? "เปิดใช้งาน" : "ปิดใช้งาน"
+        } เรียบร้อยแล้ว`,
       notificationEnabled: nextValue,
     });
   } catch (err) {
@@ -17971,7 +18140,251 @@ app.get("/admin/orders", async (req, res) => {
   }
 });
 
-// ============================ Customer Statistics Routes ============================
+// ============================ Tax Invoice Routes ============================
+
+// --- Customer Form (Public) ---
+app.get("/tax-invoice/fill/:token", async (req, res) => {
+  try {
+    const token = typeof req.params.token === "string" ? req.params.token.trim() : "";
+    if (!token || token.length < 10) {
+      return res.status(404).send("ลิงก์ไม่ถูกต้อง");
+    }
+
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const doc = await db.collection(TAX_INVOICE_COLLECTION).findOne({ token });
+
+    if (!doc) {
+      return res.status(404).send("ไม่พบคำขอใบกำกับภาษี หรือลิงก์หมดอายุ");
+    }
+
+    res.render("tax-invoice-form", {
+      taxInvoice: doc,
+      token,
+      alreadySubmitted: doc.status !== "pending",
+    });
+  } catch (err) {
+    console.error("[TaxInvoice] Error rendering form:", err);
+    res.status(500).send("เกิดข้อผิดพลาด");
+  }
+});
+
+app.post("/api/tax-invoice/fill/:token", async (req, res) => {
+  try {
+    const token = typeof req.params.token === "string" ? req.params.token.trim() : "";
+    if (!token || token.length < 10) {
+      return res.status(400).json({ error: "token ไม่ถูกต้อง" });
+    }
+
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const doc = await db.collection(TAX_INVOICE_COLLECTION).findOne({ token });
+
+    if (!doc) {
+      return res.status(404).json({ error: "ไม่พบคำขอใบกำกับภาษี" });
+    }
+    if (doc.status !== "pending") {
+      return res.status(400).json({ error: "คำขอนี้ถูกส่งข้อมูลแล้ว" });
+    }
+
+    // Validate & sanitize input
+    const body = req.body || {};
+    const type = body.type === "company" ? "company" : "personal";
+    const name = (body.name || "").trim();
+    const taxId = (body.taxId || "").replace(/[^0-9]/g, "");
+    const branchCode = type === "company" ? (body.branchCode || "00000").replace(/[^0-9]/g, "").substring(0, 5) : "00000";
+    const address = (body.address || "").trim();
+    const subDistrict = (body.subDistrict || "").trim();
+    const district = (body.district || "").trim();
+    const province = (body.province || "").trim();
+    const postalCode = (body.postalCode || "").replace(/[^0-9]/g, "").substring(0, 5);
+    const phone = (body.phone || "").replace(/[^0-9]/g, "");
+    const email = (body.email || "").trim();
+    const notes = (body.notes || "").trim().substring(0, 500);
+
+    // Required field validation
+    const errors = [];
+    if (!name || name.length < 2) errors.push("กรุณากรอกชื่อ (อย่างน้อย 2 ตัวอักษร)");
+    if (taxId.length !== 13) errors.push("เลขผู้เสียภาษี ต้องมี 13 หลัก");
+    if (type === "company" && branchCode.length !== 5) errors.push("รหัสสาขา ต้องมี 5 หลัก");
+    if (!address || address.length < 5) errors.push("กรุณากรอกที่อยู่");
+    if (!subDistrict) errors.push("กรุณากรอกแขวง/ตำบล");
+    if (!district) errors.push("กรุณากรอกเขต/อำเภอ");
+    if (!province) errors.push("กรุณากรอกจังหวัด");
+    if (postalCode.length !== 5) errors.push("รหัสไปรษณีย์ต้องมี 5 หลัก");
+    if (phone.length < 9 || phone.length > 10) errors.push("เบอร์โทรต้องมี 9-10 หลัก");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("รูปแบบอีเมลไม่ถูกต้อง");
+
+    if (errors.length > 0) {
+      return res.status(400).json({ error: errors.join(", ") });
+    }
+
+    const taxInfo = {
+      type,
+      name,
+      taxId,
+      branchCode,
+      address,
+      subDistrict,
+      district,
+      province,
+      postalCode,
+      phone,
+      email: email || null,
+      notes: notes || null,
+    };
+
+    await db.collection(TAX_INVOICE_COLLECTION).updateOne(
+      { _id: doc._id, status: "pending" },
+      {
+        $set: {
+          taxInfo,
+          status: "submitted",
+          submittedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+    );
+
+    console.log(`[TaxInvoice] ลูกค้ากรอกข้อมูลเรียบร้อย token=${token}`);
+
+    // Emit socket event
+    try {
+      if (io) {
+        io.emit("taxInvoiceSubmitted", {
+          taxInvoiceId: doc._id.toString(),
+          orderId: doc.orderId?.toString(),
+          userId: doc.userId,
+          taxInfo,
+        });
+      }
+    } catch (_) { }
+
+    return res.json({ success: true, message: "บันทึกข้อมูลใบกำกับภาษีเรียบร้อยแล้ว" });
+  } catch (err) {
+    console.error("[TaxInvoice] Error submitting form:", err);
+    return res.status(500).json({ error: "เกิดข้อผิดพลาดในการบันทึก" });
+  }
+});
+
+// --- Admin Pages ---
+app.get("/admin/tax-invoices", requireAdmin, async (req, res) => {
+  try {
+    res.render("admin-tax-invoices");
+  } catch (error) {
+    console.error("[TaxInvoice] ไม่สามารถโหลดหน้าจัดการใบกำกับภาษี:", error);
+    res.render("admin-tax-invoices");
+  }
+});
+
+// --- Admin APIs ---
+app.get("/api/tax-invoices", requireAdmin, async (req, res) => {
+  try {
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const coll = db.collection(TAX_INVOICE_COLLECTION);
+
+    const status = typeof req.query.status === "string" ? req.query.status.trim() : "";
+    const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (status && TAX_INVOICE_STATUSES.includes(status)) {
+      filter.status = status;
+    }
+    if (search) {
+      filter.$or = [
+        { "taxInfo.name": { $regex: search, $options: "i" } },
+        { "taxInfo.taxId": { $regex: search, $options: "i" } },
+        { "orderSnapshot.customerName": { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      coll.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+      coll.countDocuments(filter),
+    ]);
+
+    return res.json({
+      success: true,
+      items,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (err) {
+    console.error("[TaxInvoice] API list error:", err);
+    return res.status(500).json({ error: "เกิดข้อผิดพลาด" });
+  }
+});
+
+app.get("/api/tax-invoices/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID ไม่ถูกต้อง" });
+
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const doc = await db.collection(TAX_INVOICE_COLLECTION).findOne({ _id: new ObjectId(id) });
+    if (!doc) return res.status(404).json({ error: "ไม่พบข้อมูล" });
+
+    return res.json({ success: true, item: doc });
+  } catch (err) {
+    console.error("[TaxInvoice] API get error:", err);
+    return res.status(500).json({ error: "เกิดข้อผิดพลาด" });
+  }
+});
+
+app.patch("/api/tax-invoices/:id/status", requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID ไม่ถูกต้อง" });
+
+    const newStatus = (req.body.status || "").trim();
+    if (!TAX_INVOICE_STATUSES.includes(newStatus)) {
+      return res.status(400).json({ error: "สถานะไม่ถูกต้อง" });
+    }
+
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const updateDoc = { status: newStatus, updatedAt: new Date() };
+    if (newStatus === "completed") updateDoc.completedAt = new Date();
+
+    await db.collection(TAX_INVOICE_COLLECTION).updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateDoc },
+    );
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("[TaxInvoice] API status update error:", err);
+    return res.status(500).json({ error: "เกิดข้อผิดพลาด" });
+  }
+});
+
+app.patch("/api/tax-invoices/:id/notes", requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "ID ไม่ถูกต้อง" });
+
+    const adminNotes = (req.body.adminNotes || "").trim().substring(0, 1000);
+
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    await db.collection(TAX_INVOICE_COLLECTION).updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { adminNotes, updatedAt: new Date() } },
+    );
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("[TaxInvoice] API notes update error:", err);
+    return res.status(500).json({ error: "เกิดข้อผิดพลาด" });
+  }
+});
+
 
 function parseCustomerStatsDateRange(startDateStr, endDateStr) {
   const today = getBangkokMoment();

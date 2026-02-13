@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>กรอกข้อมูลใบกำกับภาษี</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-dark: #3730a3;
+            --primary-bg: #eef2ff;
+            --success: #059669;
+            --success-bg: #d1fae5;
+            --danger: #dc2626;
+            --danger-bg: #fee2e2;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --radius: 12px;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 50%, #fef2f2 100%);
+            color: var(--gray-800);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 20px 16px 40px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+        }
+
+        .header-icon i {
+            font-size: 28px;
+            color: #fff;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .header p {
+            font-size: 14px;
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+
+        /* Card */
+        .card {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            color: var(--primary);
+        }
+
+        /* Order summary */
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--gray-100);
+            font-size: 14px;
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .order-item-name {
+            color: var(--gray-700);
+            flex: 1;
+        }
+
+        .order-item-qty {
+            color: var(--gray-500);
+            margin: 0 12px;
+            white-space: nowrap;
+        }
+
+        .order-item-price {
+            color: var(--gray-800);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .order-total {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 12px;
+            margin-top: 8px;
+            border-top: 2px solid var(--gray-200);
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .order-total .amount {
+            color: var(--primary);
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 6px;
+        }
+
+        .form-label .required {
+            color: var(--danger);
+            margin-left: 2px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            color: var(--gray-800);
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-input.error,
+        .form-select.error,
+        .form-textarea.error {
+            border-color: var(--danger);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--gray-400);
+            margin-top: 4px;
+        }
+
+        .form-error {
+            font-size: 12px;
+            color: var(--danger);
+            margin-top: 4px;
+            display: none;
+        }
+
+        /* Radio group */
+        .radio-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .radio-option {
+            flex: 1;
+            cursor: pointer;
+            border: 1.5px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 12px 16px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .radio-option:hover {
+            border-color: var(--primary-light);
+        }
+
+        .radio-option.selected {
+            border-color: var(--primary);
+            background: var(--primary-bg);
+            color: var(--primary-dark);
+        }
+
+        .radio-option input {
+            display: none;
+        }
+
+        .radio-option i {
+            margin-right: 6px;
+        }
+
+        /* Row */
+        .row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .row .col {
+            flex: 1;
+        }
+
+        /* Branch code field */
+        .branch-field {
+            display: none;
+        }
+
+        .branch-field.visible {
+            display: block;
+        }
+
+        /* Submit button */
+        .btn-submit {
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-submit .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2.5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-right: 8px;
+        }
+
+        .btn-submit.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn-submit.loading .btn-text {
+            opacity: 0.8;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Alert */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .alert.alert-error {
+            background: var(--danger-bg);
+            color: var(--danger);
+            display: block;
+        }
+
+        .alert.alert-success {
+            background: var(--success-bg);
+            color: var(--success);
+            display: block;
+        }
+
+        /* Thank you */
+        .thank-you {
+            text-align: center;
+        }
+
+        .thank-you-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--success-bg);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .thank-you-icon i {
+            font-size: 36px;
+            color: var(--success);
+        }
+
+        .thank-you h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .thank-you p {
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+
+        /* Summary table */
+        .summary-table {
+            width: 100%;
+            font-size: 14px;
+            margin-top: 16px;
+        }
+
+        .summary-table td {
+            padding: 8px 0;
+            vertical-align: top;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .summary-table td:first-child {
+            color: var(--gray-500);
+            width: 120px;
+        }
+
+        .summary-table td:last-child {
+            color: var(--gray-800);
+            font-weight: 500;
+        }
+
+        /* Already submitted */
+        .already-submitted {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .already-submitted i {
+            font-size: 48px;
+            color: var(--primary-light);
+            margin-bottom: 16px;
+        }
+
+        .already-submitted h2 {
+            font-size: 18px;
+            color: var(--gray-800);
+            margin-bottom: 8px;
+        }
+
+        .already-submitted p {
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-icon"><i class="fas fa-file-invoice"></i></div>
+            <h1>ข้อมูลใบกำกับภาษี</h1>
+            <p>กรุณากรอกข้อมูลเพื่อออกใบกำกับภาษี</p>
+        </div>
+
+        <% if (alreadySubmitted) { %>
+            <!-- Already submitted -->
+            <div class="card">
+                <div class="already-submitted">
+                    <i class="fas fa-check-circle"></i>
+                    <h2>ข้อมูลถูกส่งแล้ว</h2>
+                    <p>ข้อมูลใบกำกับภาษีของคุณได้ถูกส่งเรียบร้อยแล้ว<br>ทีมงานจะดำเนินการให้เร็วที่สุด</p>
+                    <% if (taxInvoice.taxInfo) { %>
+                        <table class="summary-table" style="text-align: left; margin-top: 24px;">
+                            <tr>
+                                <td>ประเภท</td>
+                                <td>
+                                    <%= taxInvoice.taxInfo.type==='company' ? 'นิติบุคคล' : 'บุคคลธรรมดา' %>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>ชื่อ</td>
+                                <td>
+                                    <%= taxInvoice.taxInfo.name %>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>เลขผู้เสียภาษี</td>
+                                <td>
+                                    <%= taxInvoice.taxInfo.taxId %>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>ที่อยู่</td>
+                                <td>
+                                    <%= taxInvoice.taxInfo.address %>
+                                        <%= taxInvoice.taxInfo.subDistrict %>
+                                            <%= taxInvoice.taxInfo.district %>
+                                                <%= taxInvoice.taxInfo.province %>
+                                                    <%= taxInvoice.taxInfo.postalCode %>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>โทร</td>
+                                <td>
+                                    <%= taxInvoice.taxInfo.phone %>
+                                </td>
+                            </tr>
+                        </table>
+                        <% } %>
+                </div>
+            </div>
+            <% } else { %>
+                <!-- Order summary -->
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-shopping-bag"></i> ข้อมูลออเดอร์</div>
+                    <% if (taxInvoice.orderSnapshot && taxInvoice.orderSnapshot.items) { %>
+                        <% taxInvoice.orderSnapshot.items.forEach(function(item) { %>
+                            <div class="order-item">
+                                <span class="order-item-name">
+                                    <%= item.product || 'สินค้า' %>
+                                </span>
+                                <span class="order-item-qty">x<%= item.quantity || 1 %></span>
+                                <span class="order-item-price">฿<%= (item.price || 0).toLocaleString() %></span>
+                            </div>
+                            <% }); %>
+                                <div class="order-total">
+                                    <span>ยอดรวม</span>
+                                    <span class="amount">฿<%= (taxInvoice.orderSnapshot.totalAmount ||
+                                            0).toLocaleString() %></span>
+                                </div>
+                                <% } else { %>
+                                    <p style="color: var(--gray-400); font-size: 14px;">ไม่มีข้อมูลสินค้า</p>
+                                    <% } %>
+                </div>
+
+                <!-- Tax Invoice Form -->
+                <form id="taxForm" novalidate>
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-building"></i> ข้อมูลผู้เสียภาษี</div>
+
+                        <div id="formAlert" class="alert"></div>
+
+                        <!-- Type -->
+                        <div class="form-group">
+                            <label class="form-label">ประเภท <span class="required">*</span></label>
+                            <div class="radio-group">
+                                <label class="radio-option selected" id="opt-personal">
+                                    <input type="radio" name="type" value="personal" checked>
+                                    <i class="fas fa-user"></i> บุคคลธรรมดา
+                                </label>
+                                <label class="radio-option" id="opt-company">
+                                    <input type="radio" name="type" value="company">
+                                    <i class="fas fa-building"></i> นิติบุคคล
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Name -->
+                        <div class="form-group">
+                            <label class="form-label" for="f-name" id="label-name">ชื่อ-นามสกุล <span
+                                    class="required">*</span></label>
+                            <input type="text" class="form-input" id="f-name" name="name" placeholder="กรอกชื่อ-นามสกุล"
+                                required>
+                        </div>
+
+                        <!-- Tax ID -->
+                        <div class="form-group">
+                            <label class="form-label" for="f-taxId">เลขประจำตัวผู้เสียภาษี <span
+                                    class="required">*</span></label>
+                            <input type="text" class="form-input" id="f-taxId" name="taxId" placeholder="0000000000000"
+                                maxlength="13" inputmode="numeric" required>
+                            <div class="form-hint">13 หลัก (ตัวเลขเท่านั้น)</div>
+                        </div>
+
+                        <!-- Branch Code (company only) -->
+                        <div class="form-group branch-field" id="branchField">
+                            <label class="form-label" for="f-branchCode">รหัสสาขา <span
+                                    class="required">*</span></label>
+                            <input type="text" class="form-input" id="f-branchCode" name="branchCode"
+                                placeholder="00000" maxlength="5" value="00000" inputmode="numeric">
+                            <div class="form-hint">00000 = สำนักงานใหญ่</div>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="form-group">
+                            <label class="form-label" for="f-address">ที่อยู่ <span class="required">*</span></label>
+                            <textarea class="form-textarea" id="f-address" name="address"
+                                placeholder="เลขที่ ซอย ถนน ..." rows="2" required></textarea>
+                        </div>
+
+                        <!-- Sub-district & District -->
+                        <div class="row">
+                            <div class="col form-group">
+                                <label class="form-label" for="f-subDistrict">แขวง/ตำบล <span
+                                        class="required">*</span></label>
+                                <input type="text" class="form-input" id="f-subDistrict" name="subDistrict" required>
+                            </div>
+                            <div class="col form-group">
+                                <label class="form-label" for="f-district">เขต/อำเภอ <span
+                                        class="required">*</span></label>
+                                <input type="text" class="form-input" id="f-district" name="district" required>
+                            </div>
+                        </div>
+
+                        <!-- Province & Postal -->
+                        <div class="row">
+                            <div class="col form-group">
+                                <label class="form-label" for="f-province">จังหวัด <span
+                                        class="required">*</span></label>
+                                <input type="text" class="form-input" id="f-province" name="province" required>
+                            </div>
+                            <div class="col form-group">
+                                <label class="form-label" for="f-postalCode">รหัสไปรษณีย์ <span
+                                        class="required">*</span></label>
+                                <input type="text" class="form-input" id="f-postalCode" name="postalCode" maxlength="5"
+                                    inputmode="numeric" required>
+                            </div>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="form-group">
+                            <label class="form-label" for="f-phone">เบอร์โทรศัพท์ <span
+                                    class="required">*</span></label>
+                            <input type="tel" class="form-input" id="f-phone" name="phone" placeholder="08XXXXXXXX"
+                                maxlength="10" inputmode="tel" required>
+                        </div>
+
+                        <!-- Email (optional) -->
+                        <div class="form-group">
+                            <label class="form-label" for="f-email">อีเมล <span
+                                    style="color:var(--gray-400)">(ไม่บังคับ)</span></label>
+                            <input type="email" class="form-input" id="f-email" name="email"
+                                placeholder="email@example.com">
+                        </div>
+
+                        <!-- Notes (optional) -->
+                        <div class="form-group">
+                            <label class="form-label" for="f-notes">หมายเหตุ <span
+                                    style="color:var(--gray-400)">(ไม่บังคับ)</span></label>
+                            <textarea class="form-textarea" id="f-notes" name="notes" placeholder="หมายเหตุเพิ่มเติม..."
+                                rows="2" maxlength="500"></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <span class="spinner"></span>
+                        <span class="btn-text"><i class="fas fa-paper-plane"></i> ส่งข้อมูล</span>
+                    </button>
+                </form>
+
+                <!-- Thank you (hidden by default) -->
+                <div id="thankYou" class="card" style="display: none;">
+                    <div class="thank-you">
+                        <div class="thank-you-icon"><i class="fas fa-check"></i></div>
+                        <h2>ขอบคุณค่ะ!</h2>
+                        <p>ข้อมูลใบกำกับภาษีของคุณถูกส่งเรียบร้อยแล้ว<br>ทีมงานจะดำเนินการให้เร็วที่สุด</p>
+                        <table class="summary-table" id="summaryTable" style="text-align:left; margin-top: 20px;">
+                        </table>
+                    </div>
+                </div>
+                <% } %>
+    </div>
+
+    <% if (!alreadySubmitted) { %>
+        <script>
+            (function () {
+                const form = document.getElementById('taxForm');
+                const submitBtn = document.getElementById('submitBtn');
+                const alertEl = document.getElementById('formAlert');
+                const thankYouEl = document.getElementById('thankYou');
+                const branchField = document.getElementById('branchField');
+                const labelName = document.getElementById('label-name');
+                const nameInput = document.getElementById('f-name');
+                const token = '<%= token %>';
+
+                // Radio toggle
+                document.querySelectorAll('.radio-option').forEach(opt => {
+                    opt.addEventListener('click', function () {
+                        document.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+                        this.classList.add('selected');
+                        this.querySelector('input').checked = true;
+                        const isCompany = this.querySelector('input').value === 'company';
+                        branchField.classList.toggle('visible', isCompany);
+                        labelName.innerHTML = isCompany
+                            ? 'ชื่อบริษัท <span class="required">*</span>'
+                            : 'ชื่อ-นามสกุล <span class="required">*</span>';
+                        nameInput.placeholder = isCompany ? 'บริษัท ... จำกัด' : 'กรอกชื่อ-นามสกุล';
+                    });
+                });
+
+                // Numeric only
+                ['f-taxId', 'f-branchCode', 'f-postalCode'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.addEventListener('input', () => { el.value = el.value.replace(/[^0-9]/g, ''); });
+                });
+                const phoneEl = document.getElementById('f-phone');
+                if (phoneEl) phoneEl.addEventListener('input', () => { phoneEl.value = phoneEl.value.replace(/[^0-9]/g, ''); });
+
+                function showAlert(msg, type) {
+                    alertEl.className = 'alert alert-' + type;
+                    alertEl.textContent = msg;
+                    alertEl.style.display = 'block';
+                    alertEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                function hideAlert() { alertEl.style.display = 'none'; alertEl.className = 'alert'; }
+
+                function validate() {
+                    const type = document.querySelector('input[name="type"]:checked')?.value || 'personal';
+                    const name = nameInput.value.trim();
+                    const taxId = document.getElementById('f-taxId').value.replace(/[^0-9]/g, '');
+                    const address = document.getElementById('f-address').value.trim();
+                    const subDistrict = document.getElementById('f-subDistrict').value.trim();
+                    const district = document.getElementById('f-district').value.trim();
+                    const province = document.getElementById('f-province').value.trim();
+                    const postalCode = document.getElementById('f-postalCode').value.replace(/[^0-9]/g, '');
+                    const phone = document.getElementById('f-phone').value.replace(/[^0-9]/g, '');
+
+                    const errs = [];
+                    if (!name || name.length < 2) errs.push('กรุณากรอกชื่อ');
+                    if (taxId.length !== 13) errs.push('เลขผู้เสียภาษีต้องมี 13 หลัก');
+                    if (type === 'company') {
+                        const bc = document.getElementById('f-branchCode').value.replace(/[^0-9]/g, '');
+                        if (bc.length !== 5) errs.push('รหัสสาขาต้องมี 5 หลัก');
+                    }
+                    if (!address || address.length < 5) errs.push('กรุณากรอกที่อยู่');
+                    if (!subDistrict) errs.push('กรุณากรอกแขวง/ตำบล');
+                    if (!district) errs.push('กรุณากรอกเขต/อำเภอ');
+                    if (!province) errs.push('กรุณากรอกจังหวัด');
+                    if (postalCode.length !== 5) errs.push('รหัสไปรษณีย์ต้องมี 5 หลัก');
+                    if (phone.length < 9 || phone.length > 10) errs.push('เบอร์โทรต้องมี 9-10 หลัก');
+
+                    const email = document.getElementById('f-email').value.trim();
+                    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.push('รูปแบบอีเมลไม่ถูกต้อง');
+
+                    return errs;
+                }
+
+                form.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    hideAlert();
+
+                    const errs = validate();
+                    if (errs.length > 0) {
+                        showAlert(errs.join('\n'), 'error');
+                        return;
+                    }
+
+                    if (!confirm('ยืนยันส่งข้อมูลใบกำกับภาษี?')) return;
+
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('loading');
+
+                    const type = document.querySelector('input[name="type"]:checked')?.value || 'personal';
+                    const payload = {
+                        type,
+                        name: nameInput.value.trim(),
+                        taxId: document.getElementById('f-taxId').value.replace(/[^0-9]/g, ''),
+                        branchCode: document.getElementById('f-branchCode').value.replace(/[^0-9]/g, '') || '00000',
+                        address: document.getElementById('f-address').value.trim(),
+                        subDistrict: document.getElementById('f-subDistrict').value.trim(),
+                        district: document.getElementById('f-district').value.trim(),
+                        province: document.getElementById('f-province').value.trim(),
+                        postalCode: document.getElementById('f-postalCode').value.replace(/[^0-9]/g, ''),
+                        phone: document.getElementById('f-phone').value.replace(/[^0-9]/g, ''),
+                        email: document.getElementById('f-email').value.trim(),
+                        notes: document.getElementById('f-notes').value.trim(),
+                    };
+
+                    try {
+                        const resp = await fetch('/api/tax-invoice/fill/' + token, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload),
+                        });
+                        const data = await resp.json();
+
+                        if (!resp.ok || !data.success) {
+                            showAlert(data.error || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+                            submitBtn.disabled = false;
+                            submitBtn.classList.remove('loading');
+                            return;
+                        }
+
+                        // Show thank you
+                        form.style.display = 'none';
+                        document.querySelector('.card:first-of-type')?.remove(); // remove order card
+                        thankYouEl.style.display = 'block';
+
+                        // Build summary
+                        const table = document.getElementById('summaryTable');
+                        const rows = [
+                            ['ประเภท', type === 'company' ? 'นิติบุคคล' : 'บุคคลธรรมดา'],
+                            ['ชื่อ', payload.name],
+                            ['เลขผู้เสียภาษี', payload.taxId],
+                            ['ที่อยู่', `${payload.address} ${payload.subDistrict} ${payload.district} ${payload.province} ${payload.postalCode}`],
+                            ['โทร', payload.phone],
+                        ];
+                        if (payload.email) rows.push(['อีเมล', payload.email]);
+                        if (payload.notes) rows.push(['หมายเหตุ', payload.notes]);
+                        table.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } catch (err) {
+                        showAlert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ กรุณาลองใหม่', 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('loading');
+                    }
+                });
+            })();
+        </script>
+        <% } %>
+</body>
+
+</html>

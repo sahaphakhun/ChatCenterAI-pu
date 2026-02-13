@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>ใบกำกับภาษี | จัดการ AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Mali:wght@200;300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        .tax-content {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Summary cards */
+        .tax-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .tax-stat-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .tax-stat-number {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .tax-stat-label {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .tax-stat-card.pending .tax-stat-number {
+            color: #d97706;
+        }
+
+        .tax-stat-card.submitted .tax-stat-number {
+            color: #2563eb;
+        }
+
+        .tax-stat-card.processing .tax-stat-number {
+            color: #7c3aed;
+        }
+
+        .tax-stat-card.completed .tax-stat-number {
+            color: #059669;
+        }
+
+        .tax-stat-card.total .tax-stat-number {
+            color: #374151;
+        }
+
+        /* Filters */
+        .tax-filters {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .tax-search {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 14px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .tax-search:focus {
+            outline: none;
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .tax-filter-btn {
+            padding: 8px 16px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tax-filter-btn:hover {
+            border-color: #818cf8;
+        }
+
+        .tax-filter-btn.active {
+            background: #4f46e5;
+            color: #fff;
+            border-color: #4f46e5;
+        }
+
+        /* Table area */
+        .tax-table-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .tax-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .tax-table thead {
+            background: #f9fafb;
+        }
+
+        .tax-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            font-size: 13px;
+            border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
+        }
+
+        .tax-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+        }
+
+        .tax-table tbody tr {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .tax-table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .tax-table .empty-row td {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+        }
+
+        /* Status badge */
+        .tax-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            gap: 5px;
+        }
+
+        .tax-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .tax-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .tax-badge.pending::before {
+            background: #d97706;
+        }
+
+        .tax-badge.submitted {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .tax-badge.submitted::before {
+            background: #2563eb;
+        }
+
+        .tax-badge.processing {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .tax-badge.processing::before {
+            background: #7c3aed;
+        }
+
+        .tax-badge.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .tax-badge.completed::before {
+            background: #059669;
+        }
+
+        .tax-badge.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .tax-badge.cancelled::before {
+            background: #dc2626;
+        }
+
+        /* Pagination */
+        .tax-pagination {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #6b7280;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .tax-pagination-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tax-page-btn {
+            padding: 6px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .tax-page-btn:hover:not(:disabled) {
+            border-color: #818cf8;
+        }
+
+        .tax-page-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .tax-page-btn.active {
+            background: #4f46e5;
+            color: #fff;
+            border-color: #4f46e5;
+        }
+
+        /* Detail Panel (modal) */
+        .tax-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1050;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tax-overlay.open {
+            display: flex;
+        }
+
+        .tax-panel {
+            background: #fff;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .tax-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .tax-panel-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .tax-panel-close {
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: #9ca3af;
+            padding: 4px;
+        }
+
+        .tax-panel-close:hover {
+            color: #374151;
+        }
+
+        .tax-panel-body {
+            padding: 24px;
+        }
+
+        .tax-panel-section {
+            margin-bottom: 20px;
+        }
+
+        .tax-panel-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4f46e5;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tax-panel-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+        }
+
+        .tax-panel-label {
+            color: #6b7280;
+        }
+
+        .tax-panel-value {
+            color: #111827;
+            font-weight: 500;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-all;
+        }
+
+        .tax-panel-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            padding: 16px 24px;
+            border-top: 1px solid #f3f4f6;
+            flex-wrap: wrap;
+        }
+
+        .tax-panel-btn {
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .tax-panel-btn.btn-close-panel {
+            background: #f3f4f6;
+            color: #374151;
+            border-color: #e5e7eb;
+        }
+
+        .tax-panel-btn.btn-close-panel:hover {
+            background: #e5e7eb;
+        }
+
+        .tax-panel-btn.btn-primary {
+            background: #4f46e5;
+            color: #fff;
+        }
+
+        .tax-panel-btn.btn-primary:hover {
+            background: #4338ca;
+        }
+
+        .tax-panel-btn.btn-success {
+            background: #059669;
+            color: #fff;
+        }
+
+        .tax-panel-btn.btn-success:hover {
+            background: #047857;
+        }
+
+        .tax-panel-btn.btn-danger {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .tax-panel-btn.btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        /* Admin notes textarea */
+        .tax-notes-area {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .tax-notes-area:focus {
+            outline: none;
+            border-color: #818cf8;
+        }
+
+        /* Loading spinner */
+        .tax-loading {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+        }
+
+        .tax-loading i {
+            font-size: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Custom responsive */
+        @media (max-width: 768px) {
+            .tax-content {
+                padding: 12px;
+            }
+
+            .tax-table th:nth-child(4),
+            .tax-table td:nth-child(4),
+            .tax-table th:nth-child(5),
+            .tax-table td:nth-child(5) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body class="app-shell">
+    <%- include('partials/admin-navbar', { activePage: 'tax-invoices' }) %>
+
+        <div class="tax-content">
+            <!-- Summary -->
+            <div class="tax-summary" id="taxSummary">
+                <div class="tax-stat-card total">
+                    <div class="tax-stat-number" id="statTotal">-</div>
+                    <div class="tax-stat-label">ทั้งหมด</div>
+                </div>
+                <div class="tax-stat-card pending">
+                    <div class="tax-stat-number" id="statPending">-</div>
+                    <div class="tax-stat-label">รอกรอกข้อมูล</div>
+                </div>
+                <div class="tax-stat-card submitted">
+                    <div class="tax-stat-number" id="statSubmitted">-</div>
+                    <div class="tax-stat-label">ส่งข้อมูลแล้ว</div>
+                </div>
+                <div class="tax-stat-card processing">
+                    <div class="tax-stat-number" id="statProcessing">-</div>
+                    <div class="tax-stat-label">กำลังดำเนินการ</div>
+                </div>
+                <div class="tax-stat-card completed">
+                    <div class="tax-stat-number" id="statCompleted">-</div>
+                    <div class="tax-stat-label">เสร็จสิ้น</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="tax-filters">
+                <input type="text" class="tax-search" id="taxSearch"
+                    placeholder="ค้นหาชื่อ, เลขผู้เสียภาษี, ชื่อลูกค้า...">
+                <button class="tax-filter-btn active" data-status="">ทั้งหมด</button>
+                <button class="tax-filter-btn" data-status="pending">รอกรอก</button>
+                <button class="tax-filter-btn" data-status="submitted">ส่งแล้ว</button>
+                <button class="tax-filter-btn" data-status="processing">ดำเนินการ</button>
+                <button class="tax-filter-btn" data-status="completed">เสร็จ</button>
+                <button class="tax-filter-btn" data-status="cancelled">ยกเลิก</button>
+            </div>
+
+            <!-- Table -->
+            <div class="tax-table-card">
+                <table class="tax-table">
+                    <thead>
+                        <tr>
+                            <th>วันที่</th>
+                            <th>ลูกค้า / ชื่อผู้เสียภาษี</th>
+                            <th>เลขผู้เสียภาษี</th>
+                            <th>ยอดเงิน</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="taxTableBody">
+                        <tr class="empty-row">
+                            <td colspan="5">
+                                <div class="tax-loading"><i class="fas fa-spinner"></i><br>กำลังโหลด...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="tax-pagination" id="taxPagination">
+                    <div id="taxPaginationInfo">-</div>
+                    <div class="tax-pagination-controls" id="taxPaginationControls"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detail Panel -->
+        <div class="tax-overlay" id="taxOverlay">
+            <div class="tax-panel">
+                <div class="tax-panel-header">
+                    <h3><i class="fas fa-file-invoice" style="color:#4f46e5; margin-right: 8px;"></i>
+                        รายละเอียดใบกำกับภาษี</h3>
+                    <button class="tax-panel-close" id="taxPanelClose"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="tax-panel-body" id="taxPanelBody">
+                    <!-- Filled by JS -->
+                </div>
+                <div class="tax-panel-footer" id="taxPanelFooter">
+                    <button class="tax-panel-btn btn-close-panel" id="taxPanelCloseBtn"><i class="fas fa-times"></i>
+                        ปิด</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            (function () {
+                // State
+                let currentPage = 1;
+                let currentStatus = '';
+                let currentSearch = '';
+                let items = [];
+                let totalItems = 0;
+                let totalPages = 1;
+                let openItemId = null;
+                const LIMIT = 20;
+
+                const statusLabels = {
+                    pending: 'รอกรอกข้อมูล',
+                    submitted: 'ส่งข้อมูลแล้ว',
+                    processing: 'กำลังดำเนินการ',
+                    completed: 'เสร็จสิ้น',
+                    cancelled: 'ยกเลิก',
+                };
+
+                // Elements
+                const tbody = document.getElementById('taxTableBody');
+                const paginationInfo = document.getElementById('taxPaginationInfo');
+                const paginationControls = document.getElementById('taxPaginationControls');
+                const overlay = document.getElementById('taxOverlay');
+                const panelBody = document.getElementById('taxPanelBody');
+                const panelFooter = document.getElementById('taxPanelFooter');
+                const searchInput = document.getElementById('taxSearch');
+
+                // Load data
+                async function loadData() {
+                    tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><div class="tax-loading"><i class="fas fa-spinner"></i><br>กำลังโหลด...</div></td></tr>';
+
+                    const params = new URLSearchParams({ page: currentPage, limit: LIMIT });
+                    if (currentStatus) params.set('status', currentStatus);
+                    if (currentSearch) params.set('search', currentSearch);
+
+                    try {
+                        const resp = await fetch('/api/tax-invoices?' + params.toString());
+                        const data = await resp.json();
+                        if (!data.success) throw new Error(data.error);
+
+                        items = data.items || [];
+                        totalItems = data.total || 0;
+                        totalPages = data.totalPages || 1;
+
+                        renderTable();
+                        renderPagination();
+                        loadStats();
+                    } catch (err) {
+                        console.error(err);
+                        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                    }
+                }
+
+                // Stats
+                async function loadStats() {
+                    try {
+                        const statuses = ['pending', 'submitted', 'processing', 'completed'];
+                        const counts = {};
+                        let total = 0;
+                        for (const s of statuses) {
+                            const resp = await fetch(`/api/tax-invoices?status=${s}&limit=1`);
+                            const data = await resp.json();
+                            counts[s] = data.total || 0;
+                            total += counts[s];
+                        }
+                        // Also count cancelled
+                        const cResp = await fetch('/api/tax-invoices?status=cancelled&limit=1');
+                        const cData = await cResp.json();
+                        total += (cData.total || 0);
+
+                        document.getElementById('statTotal').textContent = total;
+                        document.getElementById('statPending').textContent = counts.pending;
+                        document.getElementById('statSubmitted').textContent = counts.submitted;
+                        document.getElementById('statProcessing').textContent = counts.processing;
+                        document.getElementById('statCompleted').textContent = counts.completed;
+                    } catch (e) { /* ignore */ }
+                }
+
+                // Render table
+                function renderTable() {
+                    if (items.length === 0) {
+                        tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-inbox" style="font-size:32px; margin-bottom:8px;"></i><br>ยังไม่มีคำขอใบกำกับภาษี</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = items.map(item => {
+                        const date = item.createdAt ? new Date(item.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+                        const name = item.taxInfo?.name || item.orderSnapshot?.customerName || item.userId || '-';
+                        const taxId = item.taxInfo?.taxId || '-';
+                        const amount = item.orderSnapshot?.totalAmount ? `฿${Number(item.orderSnapshot.totalAmount).toLocaleString()}` : '-';
+                        const status = item.status || 'pending';
+                        return `<tr onclick="TaxAdmin.openDetail('${item._id}')">
+          <td>${date}</td>
+          <td>${escapeHtml(name)}</td>
+          <td style="font-family: monospace; font-size: 13px;">${escapeHtml(taxId)}</td>
+          <td>${amount}</td>
+          <td><span class="tax-badge ${status}">${statusLabels[status] || status}</span></td>
+        </tr>`;
+                    }).join('');
+                }
+
+                function escapeHtml(str) {
+                    const div = document.createElement('div');
+                    div.textContent = str || '';
+                    return div.innerHTML;
+                }
+
+                // Pagination
+                function renderPagination() {
+                    const start = (currentPage - 1) * LIMIT + 1;
+                    const end = Math.min(currentPage * LIMIT, totalItems);
+                    paginationInfo.textContent = totalItems > 0 ? `แสดง ${start}-${end} จาก ${totalItems} รายการ` : 'ไม่มีข้อมูล';
+
+                    let html = '';
+                    html += `<button class="tax-page-btn" onclick="TaxAdmin.goPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+                    for (let p = 1; p <= totalPages; p++) {
+                        if (totalPages > 7 && Math.abs(p - currentPage) > 2 && p !== 1 && p !== totalPages) {
+                            if (p === 2 || p === totalPages - 1) html += '<span style="padding:0 4px;">...</span>';
+                            continue;
+                        }
+                        html += `<button class="tax-page-btn ${p === currentPage ? 'active' : ''}" onclick="TaxAdmin.goPage(${p})">${p}</button>`;
+                    }
+                    html += `<button class="tax-page-btn" onclick="TaxAdmin.goPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                    paginationControls.innerHTML = html;
+                }
+
+                // Detail panel
+                async function openDetail(id) {
+                    openItemId = id;
+                    overlay.classList.add('open');
+
+                    panelBody.innerHTML = '<div class="tax-loading"><i class="fas fa-spinner"></i><br>กำลังโหลด...</div>';
+                    panelFooter.innerHTML = '<button class="tax-panel-btn btn-close-panel" onclick="TaxAdmin.closeDetail()"><i class="fas fa-times"></i> ปิด</button>';
+
+                    try {
+                        const resp = await fetch(`/api/tax-invoices/${id}`);
+                        const data = await resp.json();
+                        if (!data.success) throw new Error(data.error);
+
+                        const item = data.item;
+                        const tax = item.taxInfo || {};
+                        const snap = item.orderSnapshot || {};
+
+                        let html = '';
+
+                        // Order info
+                        html += `<div class="tax-panel-section">
+          <div class="tax-panel-section-title"><i class="fas fa-shopping-bag"></i> ข้อมูลออเดอร์</div>
+          <div class="tax-panel-row"><span class="tax-panel-label">รหัสออเดอร์</span><span class="tax-panel-value" style="font-family:monospace;">${item.orderId || '-'}</span></div>
+          <div class="tax-panel-row"><span class="tax-panel-label">ชื่อลูกค้า</span><span class="tax-panel-value">${escapeHtml(snap.customerName || '-')}</span></div>
+          <div class="tax-panel-row"><span class="tax-panel-label">ยอดรวม</span><span class="tax-panel-value">฿${Number(snap.totalAmount || 0).toLocaleString()}</span></div>`;
+                        if (Array.isArray(snap.items) && snap.items.length > 0) {
+                            html += snap.items.map(i => `<div class="tax-panel-row" style="padding-left:12px;"><span class="tax-panel-label">${escapeHtml(i.product || '-')}</span><span class="tax-panel-value">x${i.quantity || 1} @ ฿${(i.price || 0).toLocaleString()}</span></div>`).join('');
+                        }
+                        html += `</div>`;
+
+                        // Tax info
+                        if (tax.name) {
+                            html += `<div class="tax-panel-section">
+            <div class="tax-panel-section-title"><i class="fas fa-file-invoice"></i> ข้อมูลผู้เสียภาษี</div>
+            <div class="tax-panel-row"><span class="tax-panel-label">ประเภท</span><span class="tax-panel-value">${tax.type === 'company' ? 'นิติบุคคล' : 'บุคคลธรรมดา'}</span></div>
+            <div class="tax-panel-row"><span class="tax-panel-label">ชื่อ</span><span class="tax-panel-value">${escapeHtml(tax.name)}</span></div>
+            <div class="tax-panel-row"><span class="tax-panel-label">เลขผู้เสียภาษี</span><span class="tax-panel-value" style="font-family:monospace;">${escapeHtml(tax.taxId)}</span></div>
+            ${tax.type === 'company' ? `<div class="tax-panel-row"><span class="tax-panel-label">รหัสสาขา</span><span class="tax-panel-value">${escapeHtml(tax.branchCode || '00000')}</span></div>` : ''}
+            <div class="tax-panel-row"><span class="tax-panel-label">ที่อยู่</span><span class="tax-panel-value">${escapeHtml(tax.address)} ${escapeHtml(tax.subDistrict)} ${escapeHtml(tax.district)} ${escapeHtml(tax.province)} ${escapeHtml(tax.postalCode)}</span></div>
+            <div class="tax-panel-row"><span class="tax-panel-label">โทร</span><span class="tax-panel-value">${escapeHtml(tax.phone)}</span></div>
+            ${tax.email ? `<div class="tax-panel-row"><span class="tax-panel-label">อีเมล</span><span class="tax-panel-value">${escapeHtml(tax.email)}</span></div>` : ''}
+            ${tax.notes ? `<div class="tax-panel-row"><span class="tax-panel-label">หมายเหตุ</span><span class="tax-panel-value">${escapeHtml(tax.notes)}</span></div>` : ''}
+          </div>`;
+                        } else {
+                            html += `<div class="tax-panel-section"><div class="tax-panel-section-title"><i class="fas fa-file-invoice"></i> ข้อมูลผู้เสียภาษี</div><p style="color:#9ca3af; font-size:14px;">ลูกค้ายังไม่ได้กรอกข้อมูล</p></div>`;
+                        }
+
+                        // Status & dates
+                        html += `<div class="tax-panel-section">
+          <div class="tax-panel-section-title"><i class="fas fa-info-circle"></i> สถานะ</div>
+          <div class="tax-panel-row"><span class="tax-panel-label">สถานะ</span><span class="tax-panel-value"><span class="tax-badge ${item.status}">${statusLabels[item.status] || item.status}</span></span></div>
+          <div class="tax-panel-row"><span class="tax-panel-label">สร้างเมื่อ</span><span class="tax-panel-value">${item.createdAt ? new Date(item.createdAt).toLocaleString('th-TH') : '-'}</span></div>
+          ${item.submittedAt ? `<div class="tax-panel-row"><span class="tax-panel-label">ส่งข้อมูลเมื่อ</span><span class="tax-panel-value">${new Date(item.submittedAt).toLocaleString('th-TH')}</span></div>` : ''}
+          ${item.completedAt ? `<div class="tax-panel-row"><span class="tax-panel-label">เสร็จสิ้นเมื่อ</span><span class="tax-panel-value">${new Date(item.completedAt).toLocaleString('th-TH')}</span></div>` : ''}
+          <div class="tax-panel-row"><span class="tax-panel-label">Platform</span><span class="tax-panel-value">${escapeHtml(item.platform || '-')}</span></div>
+          <div class="tax-panel-row"><span class="tax-panel-label">User ID</span><span class="tax-panel-value" style="font-family:monospace; font-size:12px;">${escapeHtml(item.userId || '-')}</span></div>
+        </div>`;
+
+                        // Admin notes
+                        html += `<div class="tax-panel-section">
+          <div class="tax-panel-section-title"><i class="fas fa-sticky-note"></i> โน้ตแอดมิน</div>
+          <textarea class="tax-notes-area" id="adminNotesInput" placeholder="เพิ่มโน้ตส่วนตัว...">${escapeHtml(item.adminNotes || '')}</textarea>
+          <button class="tax-panel-btn btn-primary" style="margin-top:8px; font-size:13px; padding:6px 14px;" onclick="TaxAdmin.saveNotes()"><i class="fas fa-save"></i> บันทึกโน้ต</button>
+        </div>`;
+
+                        panelBody.innerHTML = html;
+
+                        // Footer actions based on status
+                        let footerHtml = '';
+                        if (item.status === 'submitted') {
+                            footerHtml += `<button class="tax-panel-btn btn-primary" onclick="TaxAdmin.updateStatus('processing')"><i class="fas fa-cog"></i> เริ่มดำเนินการ</button>`;
+                            footerHtml += `<button class="tax-panel-btn btn-success" onclick="TaxAdmin.updateStatus('completed')"><i class="fas fa-check"></i> เสร็จสิ้น</button>`;
+                        } else if (item.status === 'processing') {
+                            footerHtml += `<button class="tax-panel-btn btn-success" onclick="TaxAdmin.updateStatus('completed')"><i class="fas fa-check"></i> เสร็จสิ้น</button>`;
+                        }
+                        if (item.status !== 'cancelled' && item.status !== 'completed') {
+                            footerHtml += `<button class="tax-panel-btn btn-danger" onclick="TaxAdmin.updateStatus('cancelled')"><i class="fas fa-ban"></i> ยกเลิก</button>`;
+                        }
+                        footerHtml += `<button class="tax-panel-btn btn-close-panel" onclick="TaxAdmin.closeDetail()"><i class="fas fa-times"></i> ปิด</button>`;
+                        panelFooter.innerHTML = footerHtml;
+
+                    } catch (err) {
+                        console.error(err);
+                        panelBody.innerHTML = '<p style="color:#dc2626; text-align:center;">เกิดข้อผิดพลาด</p>';
+                    }
+                }
+
+                function closeDetail() {
+                    overlay.classList.remove('open');
+                    openItemId = null;
+                }
+
+                async function updateStatus(newStatus) {
+                    if (!openItemId) return;
+                    const label = statusLabels[newStatus] || newStatus;
+                    if (!confirm(`ยืนยันเปลี่ยนสถานะเป็น "${label}"?`)) return;
+
+                    try {
+                        const resp = await fetch(`/api/tax-invoices/${openItemId}/status`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: newStatus }),
+                        });
+                        const data = await resp.json();
+                        if (!data.success) throw new Error(data.error);
+
+                        closeDetail();
+                        loadData();
+                    } catch (err) {
+                        alert('เกิดข้อผิดพลาด: ' + (err.message || 'ลองใหม่'));
+                    }
+                }
+
+                async function saveNotes() {
+                    if (!openItemId) return;
+                    const notes = document.getElementById('adminNotesInput')?.value || '';
+
+                    try {
+                        const resp = await fetch(`/api/tax-invoices/${openItemId}/notes`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ adminNotes: notes }),
+                        });
+                        const data = await resp.json();
+                        if (!data.success) throw new Error(data.error);
+                        alert('บันทึกโน้ตเรียบร้อย');
+                    } catch (err) {
+                        alert('เกิดข้อผิดพลาด: ' + (err.message || 'ลองใหม่'));
+                    }
+                }
+
+                function goPage(p) {
+                    if (p < 1 || p > totalPages) return;
+                    currentPage = p;
+                    loadData();
+                }
+
+                // Filter buttons
+                document.querySelectorAll('.tax-filter-btn').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        document.querySelectorAll('.tax-filter-btn').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        currentStatus = this.dataset.status;
+                        currentPage = 1;
+                        loadData();
+                    });
+                });
+
+                // Search
+                let searchTimeout;
+                searchInput.addEventListener('input', function () {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        currentSearch = this.value.trim();
+                        currentPage = 1;
+                        loadData();
+                    }, 400);
+                });
+
+                // Close panel
+                document.getElementById('taxPanelClose').addEventListener('click', closeDetail);
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === overlay) closeDetail();
+                });
+
+                // Expose to inline handlers
+                window.TaxAdmin = { openDetail, closeDetail, updateStatus, saveNotes, goPage };
+
+                // Init
+                loadData();
+            })();
+        </script>
+</body>
+
+</html>
