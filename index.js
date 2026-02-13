@@ -811,6 +811,16 @@ async function ensureShortLinkIndexes(db) {
   }
 }
 
+async function ensureOrderCodeIndex(db) {
+  try {
+    const coll = db.collection("orders");
+    await coll.createIndex({ orderCode: 1 }, { unique: true, sparse: true });
+    console.log("[DB] Order code index ensured");
+  } catch (err) {
+    console.warn("[DB] ไม่สามารถตั้งค่า index สำหรับ orderCode ได้:", err?.message || err);
+  }
+}
+
 async function ensureTaxInvoiceIndexes(db) {
   try {
     const coll = db.collection("tax_invoices");
@@ -839,6 +849,7 @@ async function connectDB() {
       await ensureCategoryIndexes(db);
       await ensureNotificationIndexes(db);
       await ensureShortLinkIndexes(db);
+      await ensureOrderCodeIndex(db);
       await ensureTaxInvoiceIndexes(db);
     } catch (err) {
       console.warn(
@@ -4390,6 +4401,26 @@ ${existingProducts.map((p, i) => `${i + 1}. "${p}"`).join("\n")}
   }
 }
 
+// ============================ Order Code Generator ============================
+/**
+ * สร้างรหัสออเดอร์ที่อ่านง่าย เช่น WR20260214-A3B7
+ * Format: WR + YYYYMMDD + "-" + 4 chars (uppercase alphanumeric)
+ */
+function generateOrderCode() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const datePart = `${y}${m}${d}`;
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // exclude 0,O,I,1 for readability
+  let suffix = "";
+  const bytes = require("crypto").randomBytes(4);
+  for (let i = 0; i < 4; i++) {
+    suffix += chars[bytes[i] % chars.length];
+  }
+  return `WR${datePart}-${suffix}`;
+}
+
 async function saveOrderToDatabase(
   userId,
   platform,
@@ -4423,6 +4454,7 @@ async function saveOrderToDatabase(
       userId,
       platform: platform || "line",
       botId: botId || null,
+      orderCode: generateOrderCode(),
       orderData: normalizedOrderData,
       status,
       extractedAt,
@@ -4434,9 +4466,9 @@ async function saveOrderToDatabase(
     };
 
     const result = await coll.insertOne(orderDoc);
-    console.log(`[Order] บันทึกออเดอร์สำเร็จ: ${result.insertedId}`);
+    console.log(`[Order] บันทึกออเดอร์สำเร็จ: ${result.insertedId} (${orderDoc.orderCode})`);
 
-    return result.insertedId;
+    return { insertedId: result.insertedId, orderCode: orderDoc.orderCode };
   } catch (error) {
     console.error("[Order] บันทึกออเดอร์ไม่สำเร็จ:", error.message);
     return null;
@@ -4468,6 +4500,7 @@ async function getOrdersForTool(args = {}, context = {}) {
 
       return {
         orderId: order._id?.toString() || null,
+        orderCode: order.orderCode || null,
         status: order.status || "pending",
         createdAt: order.extractedAt || order.createdAt || null,
         totalAmount: orderData.totalAmount || null,
@@ -4535,8 +4568,9 @@ async function createOrderFromTool(args = {}, context = {}) {
         if (newItemsSummary === existingItemsSummary && newItemsSummary.length > 0) {
           return {
             success: false,
-            error: `พบออเดอร์ที่มีรายการสินค้าเหมือนกันอยู่แล้ว (ID: ${latestOrder._id?.toString()}) สร้างเมื่อ ${new Date(orderCreatedAt).toLocaleString("th-TH")}. กรุณาใช้ update_order แทน หากต้องการแก้ไข`,
+            error: `พบออเดอร์ที่มีรายการสินค้าเหมือนกันอยู่แล้ว (${latestOrder.orderCode || latestOrder._id?.toString()}) สร้างเมื่อ ${new Date(orderCreatedAt).toLocaleString("th-TH")}. กรุณาใช้ update_order แทน หากต้องการแก้ไข`,
             existingOrderId: latestOrder._id?.toString(),
+            existingOrderCode: latestOrder.orderCode || null,
             existingOrder: {
               status: latestOrder.status,
               items: existingItems,
@@ -4607,12 +4641,14 @@ async function createOrderFromTool(args = {}, context = {}) {
     return { success: false, error: "ไม่สามารถบันทึกออเดอร์ได้" };
   }
 
+  const insertedId = orderId.insertedId || orderId;
+  const orderCode = orderId.orderCode || null;
   const orderIdString =
-    typeof orderId?.toString === "function"
-      ? orderId.toString()
-      : String(orderId || "");
+    typeof insertedId?.toString === "function"
+      ? insertedId.toString()
+      : String(insertedId || "");
 
-  triggerOrderNotification(orderId);
+  triggerOrderNotification(insertedId);
 
   await maybeAnalyzeFollowUp(userId, platform, botId, {
     forceUpdate: true,
@@ -4634,6 +4670,7 @@ async function createOrderFromTool(args = {}, context = {}) {
   return {
     success: true,
     orderId: orderIdString,
+    orderCode,
     orderData: normalized.orderData,
     status,
   };
@@ -4659,19 +4696,26 @@ async function updateOrderFromTool(args = {}, context = {}) {
   if (args.orderId) {
     const orderIdRaw =
       typeof args.orderId === "string" ? args.orderId.trim() : "";
-    if (!ObjectId.isValid(orderIdRaw)) {
+
+    // Support both ObjectId and orderCode (WR format)
+    if (orderIdRaw.startsWith("WR")) {
+      // Lookup by orderCode
+      const query = { orderCode: orderIdRaw, userId, platform };
+      if (botId !== null) query.botId = botId;
+      order = await coll.findOne(query);
+      if (order?._id) orderIdString = order._id.toString();
+    } else if (ObjectId.isValid(orderIdRaw)) {
+      orderIdString = orderIdRaw;
+      const query = {
+        _id: new ObjectId(orderIdRaw),
+        userId,
+        platform,
+      };
+      if (botId !== null) query.botId = botId;
+      order = await coll.findOne(query);
+    } else {
       return { success: false, error: "orderId ไม่ถูกต้อง" };
     }
-    orderIdString = orderIdRaw;
-    const query = {
-      _id: new ObjectId(orderIdRaw),
-      userId,
-      platform,
-    };
-    if (botId !== null) {
-      query.botId = botId;
-    }
-    order = await coll.findOne(query);
   } else {
     const query = {
       userId,
@@ -4767,6 +4811,7 @@ async function updateOrderFromTool(args = {}, context = {}) {
   return {
     success: true,
     orderId: orderIdString,
+    orderCode: order.orderCode || null,
     order: updatedOrder || null,
   };
 }
@@ -4787,7 +4832,7 @@ async function requestTaxInvoiceFromTool(args = {}, context = {}) {
   }
 
   const orderIdRaw = typeof args.orderId === "string" ? args.orderId.trim() : "";
-  if (!orderIdRaw || !ObjectId.isValid(orderIdRaw)) {
+  if (!orderIdRaw) {
     return { success: false, error: "orderId ไม่ถูกต้อง" };
   }
 
@@ -4795,11 +4840,15 @@ async function requestTaxInvoiceFromTool(args = {}, context = {}) {
     const client = await connectDB();
     const db = client.db("chatbot");
 
-    // 1. ตรวจสอบว่า order มีจริง + เป็นของ userId นี้
-    const order = await db.collection("orders").findOne({
-      _id: new ObjectId(orderIdRaw),
-      userId,
-    });
+    // 1. ตรวจสอบว่า order มีจริง + เป็นของ userId นี้ (รองรับทั้ง ObjectId และ orderCode)
+    let order;
+    if (orderIdRaw.startsWith("WR")) {
+      order = await db.collection("orders").findOne({ orderCode: orderIdRaw, userId });
+    } else if (ObjectId.isValid(orderIdRaw)) {
+      order = await db.collection("orders").findOne({ _id: new ObjectId(orderIdRaw), userId });
+    } else {
+      return { success: false, error: "orderId ไม่ถูกต้อง" };
+    }
     if (!order) {
       return {
         success: false,
@@ -4809,7 +4858,7 @@ async function requestTaxInvoiceFromTool(args = {}, context = {}) {
 
     // 2. ตรวจสอบซ้ำ
     const existing = await db.collection(TAX_INVOICE_COLLECTION).findOne({
-      orderId: new ObjectId(orderIdRaw),
+      orderId: order._id,
     });
     if (existing) {
       if (existing.status === "pending") {
@@ -4840,7 +4889,7 @@ async function requestTaxInvoiceFromTool(args = {}, context = {}) {
 
     // 4. บันทึก
     const doc = {
-      orderId: new ObjectId(orderIdRaw),
+      orderId: order._id,
       userId,
       platform: context.platform || "line",
       botId: context.botId ? (ObjectId.isValid(context.botId) ? new ObjectId(context.botId) : context.botId) : null,
@@ -8976,6 +9025,12 @@ const ORDER_TOOL_INSTRUCTIONS = `🚨 สำคัญ! คุณต้องใ�
 3. update_order - แก้ไขออเดอร์ที่มีอยู่ (ใช้เมื่อลูกค้าต้องการเปลี่ยนข้อมูลออเดอร์เดิม)
 4. request_tax_invoice - สร้างลิงก์ให้ลูกค้ากรอกข้อมูลใบกำกับภาษี (ต้องมี orderId)
 
+🔖 รหัสออเดอร์ (orderCode):
+- ทุกออเดอร์จะมี orderCode ในรูปแบบ WR+วันที่+รหัส เช่น WR20260214-A3B7
+- เมื่อพูดคุยกับลูกค้า ให้ใช้ orderCode แทน orderId เสมอ (เช่น "ออเดอร์ WR20260214-A3B7")
+- เมื่อเรียก update_order หรือ request_tax_invoice สามารถใช้ orderCode แทน orderId ได้
+- ใน get_orders ผลลัพธ์จะมีทั้ง orderId และ orderCode — ให้แสดง orderCode ให้ลูกค้าเสมอ
+
 💰 วิธีใส่ข้อมูลสินค้าที่ถูกต้อง:
 
 กรณี 1: สินค้าปกติ (รู้ราคาต่อชิ้น)
@@ -9016,12 +9071,14 @@ const ORDER_TOOL_INSTRUCTIONS = `🚨 สำคัญ! คุณต้องใ�
 2. ห้ามคาดเดาข้อมูลออเดอร์ - ถามให้ครบก่อน
 3. ห้ามถามลูกค้าว่าจะรวมกับออเดอร์เก่าหรือไม่ (ถ้าลูกค้าไม่ได้พูดถึง)
 4. ถ้าไม่รู้ราคาแยกต่อชิ้น ให้ใส่ price: 0 แล้วใช้ totalAmount เป็นราคาโปร
+5. ห้ามแสดง orderId (ObjectId) ให้ลูกค้า — ให้ใช้ orderCode เท่านั้น
 
 💡 ตัวอย่าง:
 - "สั่งสินค้า A 2 ชิ้น ชิ้นละ 500" → items: [{product: "สินค้า A", quantity: 2, price: 500}], totalAmount: 1000
 - "สั่งโปร 3 ลัง 7,050" → items: [{product: "โปร 3 ลัง", quantity: 1, price: 0}], totalAmount: 7050
 - "สั่งใหม่ครับ" → เรียก create_order (ไม่ต้องถามเรื่องออเดอร์เก่า!)
-- "ขอใบกำกับภาษีครับ" → เรียก get_orders ก่อน แล้ว request_tax_invoice`;
+- "ขอใบกำกับภาษีครับ" → เรียก get_orders ก่อน แล้ว request_tax_invoice
+- ตอบลูกค้า: "บันทึกออเดอร์ WR20260214-A3B7 เรียบร้อยค่ะ" (ใช้ orderCode!)`;
 
 async function appendOrderToolInstructions(systemInstructions) {
   const requiredFields = await getOrderRequiredFieldsSetting();
@@ -22465,6 +22522,7 @@ app.get("/admin/orders/data", async (req, res) => {
         null;
       return {
         id: order._id?.toString?.() || "",
+        orderCode: order.orderCode || null,
         userId: order.userId || "",
         displayName,
         customerName: customerName || "",
@@ -23237,7 +23295,7 @@ app.get("/admin/orders/:orderId/print-label", async (req, res) => {
       .join("");
 
     // Format Order ID
-    const shortId = orderId.slice(-8).toUpperCase();
+    const orderCodeDisplay = order.orderCode || orderId.slice(-8).toUpperCase();
     const orderDate = order.extractedAt
       ? moment(order.extractedAt).tz("Asia/Bangkok").format("DD/MM/YYYY HH:mm")
       : "-";
@@ -23262,7 +23320,7 @@ app.get("/admin/orders/:orderId/print-label", async (req, res) => {
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>ใบปะหน้าพัสดุ - ${shortId}</title>
+  <title>ใบปะหน้าพัสดุ - ${orderCodeDisplay}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Sarabun', 'Arial', sans-serif; font-size: 14px; }
@@ -23309,7 +23367,7 @@ app.get("/admin/orders/:orderId/print-label", async (req, res) => {
     </div>
     
     <div class="footer">
-      <span>Order #${shortId}</span>
+      <span>${orderCodeDisplay}</span>
       <span>${orderDate}</span>
     </div>
   </div>

@@ -304,7 +304,10 @@
                    ${isSelected ? 'checked' : ''} 
                    onchange="window.OrdersV2.toggleSelect('${order.id}')">
           </td>
-          <td>${date}</td>
+          <td>
+            ${order.orderCode ? `<div class="orders-order-code" style="font-family:monospace;font-size:0.75rem;color:#666;margin-bottom:2px">${escapeHtml(order.orderCode)}</div>` : ''}
+            ${date}
+          </td>
 	          <td>
 	            <div class="orders-customer-info">
 	              <div class="orders-customer-name">${escapeHtml(order.recipientName || order.customerName || order.displayName || '-')}</div>
@@ -788,7 +791,7 @@
     // Update title
     const titleEl = document.getElementById('ordersDetailTitle');
     if (titleEl) {
-      titleEl.textContent = `Order #${order.id.slice(-8).toUpperCase()}`;
+      titleEl.textContent = order.orderCode ? `Order ${order.orderCode}` : `Order #${order.id.slice(-8).toUpperCase()}`;
     }
   }
 

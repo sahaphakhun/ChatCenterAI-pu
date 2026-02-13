@@ -2808,7 +2808,7 @@ class ChatManager {
                 <div class="order-card-header">
                     <h6 class="order-card-title">
                         <i class="fas fa-shopping-cart"></i>
-                        ออเดอร์ #${order._id.toString().slice(-6)}
+                        ${order.orderCode ? this.escapeHtml(order.orderCode) : 'ออเดอร์ #' + order._id.toString().slice(-6)}
                     </h6>
                     <span class="order-status ${status}">${statusLabels[status]}</span>
                 </div>
