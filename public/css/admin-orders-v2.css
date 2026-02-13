@@ -572,6 +572,171 @@
   color: var(--success);
 }
 
+.orders-action-btn.btn-shipping {
+  position: relative;
+}
+
+.orders-action-btn.btn-shipping:hover {
+  color: #3D7FC1;
+}
+
+/* ============ Quick Tracking Popover ============ */
+.quick-tracking-popover {
+  position: fixed;
+  width: 280px;
+  background: var(--card-bg, #fff);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 2000;
+  animation: qtFadeIn 0.15s ease;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+@keyframes qtFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.qt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  background: linear-gradient(135deg, #3D7FC1 0%, #4A6FA5 100%);
+  color: #fff;
+}
+
+.qt-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.qt-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.2rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.qt-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.qt-body {
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.qt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.qt-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-light, #5C6372);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.qt-select,
+.qt-input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border-color, #E1E5EF);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text-dark, #1E2430);
+  background: var(--card-bg, #fff);
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+
+.qt-select:focus,
+.qt-input:focus {
+  outline: none;
+  border-color: var(--primary, #4A6FA5);
+  box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.1);
+}
+
+.qt-checkbox-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qt-checkbox-field input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary, #4A6FA5);
+  cursor: pointer;
+}
+
+.qt-checkbox-field label {
+  font-size: 0.8rem;
+  color: var(--text-dark, #1E2430);
+  cursor: pointer;
+  user-select: none;
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.qt-submit {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #3D7FC1 0%, #4A6FA5 100%);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.qt-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(61, 127, 193, 0.35);
+}
+
+.qt-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* ============ Bulk Actions Bar ============ */
 .orders-bulk-bar {
   display: none;

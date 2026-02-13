@@ -335,6 +335,9 @@
               <button class="orders-action-btn btn-print" title="พิมพ์ใบปะหน้า" onclick="window.OrdersV2.printLabel('${order.id}')">
                 <i class="fas fa-print"></i>
               </button>
+              <button class="orders-action-btn btn-shipping" title="จัดการขนส่ง" onclick="event.stopPropagation(); window.OrdersV2.openQuickTracking('${order.id}', this)">
+                <i class="fas fa-truck"></i>
+              </button>
               <button class="orders-action-btn btn-chat" title="ไปยังแชท" onclick="window.OrdersV2.goToChat('${order.userId}')">
                 <i class="fas fa-comment"></i>
               </button>
@@ -984,6 +987,164 @@
   }
 
   // ============ Actions ============
+  // ============ Quick Tracking Popover ============
+  let activeQuickTrackingPopover = null;
+
+  function closeQuickTracking() {
+    if (activeQuickTrackingPopover) {
+      activeQuickTrackingPopover.remove();
+      activeQuickTrackingPopover = null;
+    }
+  }
+
+  async function openQuickTracking(orderId, anchorEl) {
+    // Close existing
+    closeQuickTracking();
+
+    const order = state.orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // Create popover
+    const popover = document.createElement('div');
+    popover.className = 'quick-tracking-popover';
+    popover.innerHTML = `
+      <div class="qt-header">
+        <span class="qt-title"><i class="fas fa-truck"></i> จัดการขนส่ง</span>
+        <button class="qt-close" onclick="window.OrdersV2.closeQuickTracking()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="qt-body">
+        <div class="qt-field">
+          <label class="qt-label">ขนส่ง</label>
+          <select class="qt-select" id="qtCarrierSelect">
+            <option value="">-- เลือกขนส่ง --</option>
+          </select>
+        </div>
+        <div class="qt-field">
+          <label class="qt-label">เลขพัสดุ</label>
+          <input type="text" class="qt-input" id="qtTrackingInput" placeholder="กรอกเลขแทรค..." value="${escapeHtml(order.trackingNumber || '')}">
+        </div>
+        <div class="qt-field qt-checkbox-field">
+          <input type="checkbox" id="qtNotifyCustomer" checked>
+          <label for="qtNotifyCustomer">แจ้งลูกค้าทาง LINE/FB</label>
+        </div>
+        <button class="qt-submit" id="qtSubmitBtn" onclick="window.OrdersV2.submitQuickTracking('${orderId}')">
+          <i class="fas fa-paper-plane"></i> บันทึกเลขพัสดุ
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(popover);
+    activeQuickTrackingPopover = popover;
+
+    // Position popover near the anchor button
+    const rect = anchorEl.getBoundingClientRect();
+    const popoverWidth = 280;
+    let left = rect.right - popoverWidth;
+    let top = rect.bottom + 6;
+
+    // Adjust if goes off-screen
+    if (left < 8) left = 8;
+    if (top + 300 > window.innerHeight) {
+      top = rect.top - 6;
+      popover.style.transform = 'translateY(-100%)';
+    }
+
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
+
+    // Load carriers
+    try {
+      const response = await fetch('/admin/shipping-carriers');
+      const data = await response.json();
+      if (data.success) {
+        const select = popover.querySelector('#qtCarrierSelect');
+        (data.carriers || []).forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.name;
+          opt.textContent = c.name;
+          if (order.trackingCarrier && c.name === order.trackingCarrier) opt.selected = true;
+          select.appendChild(opt);
+        });
+      }
+    } catch (err) {
+      console.error('[Orders] Load carriers for quick tracking:', err);
+    }
+
+    // Focus input
+    setTimeout(() => {
+      const input = popover.querySelector('#qtTrackingInput');
+      if (input) input.focus();
+    }, 100);
+
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', handleQuickTrackingOutsideClick);
+    }, 10);
+  }
+
+  function handleQuickTrackingOutsideClick(e) {
+    if (activeQuickTrackingPopover && !activeQuickTrackingPopover.contains(e.target) && !e.target.closest('.btn-shipping')) {
+      closeQuickTracking();
+      document.removeEventListener('click', handleQuickTrackingOutsideClick);
+    }
+  }
+
+  async function submitQuickTracking(orderId) {
+    const popover = activeQuickTrackingPopover;
+    if (!popover) return;
+
+    const trackingInput = popover.querySelector('#qtTrackingInput');
+    const carrierSelect = popover.querySelector('#qtCarrierSelect');
+    const notifyCheckbox = popover.querySelector('#qtNotifyCustomer');
+    const submitBtn = popover.querySelector('#qtSubmitBtn');
+
+    const trackingNumber = trackingInput?.value?.trim();
+    if (!trackingNumber) {
+      showToast('กรุณากรอกเลขพัสดุ', 'error');
+      trackingInput?.focus();
+      return;
+    }
+
+    const carrier = carrierSelect?.value || '';
+    const notifyCustomer = notifyCheckbox?.checked !== false;
+
+    try {
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
+      }
+
+      const response = await fetch(`/admin/orders/${orderId}/tracking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackingNumber, carrier, notifyCustomer })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const notifyText = data.notificationSent ? ' + แจ้งลูกค้าแล้ว' : '';
+        showToast(`บันทึกเลขพัสดุเรียบร้อย${notifyText}`, 'success');
+        closeQuickTracking();
+        document.removeEventListener('click', handleQuickTrackingOutsideClick);
+        // Reload orders to reflect changes
+        await loadOrders();
+      } else {
+        showToast(data.error || 'บันทึกเลขพัสดุไม่สำเร็จ', 'error');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> บันทึกเลขพัสดุ';
+        }
+      }
+    } catch (err) {
+      console.error('[Orders] Quick tracking error:', err);
+      showToast('บันทึกเลขพัสดุไม่สำเร็จ', 'error');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> บันทึกเลขพัสดุ';
+      }
+    }
+  }
+
   function printLabel(orderId) {
     window.open(`/admin/orders/${orderId}/print-label`, '_blank', 'width=450,height=600');
   }
@@ -1133,6 +1294,9 @@
     submitTracking,
     toggleAddCarrier,
     addCarrier,
+    openQuickTracking,
+    closeQuickTracking,
+    submitQuickTracking,
     showToast,
     showError
   };

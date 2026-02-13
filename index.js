@@ -833,7 +833,7 @@ async function seedDefaultCarriers(db) {
   try {
     const coll = db.collection("shipping_carriers");
     const defaultCarriers = [
-      { name: "Kerry Express", trackingUrl: "https://th.kerryexpress.com/th/track/?tracking={tracking}", sortOrder: 1 },
+      { name: "KEX Express", trackingUrl: "https://th.kex-express.com/th/track/?tracking={tracking}", sortOrder: 1 },
       { name: "Flash Express", trackingUrl: "https://flashexpress.com/fle/tracking?se={tracking}", sortOrder: 2 },
       { name: "Thailand Post", trackingUrl: "https://track.thailandpost.co.th/?trackNumber={tracking}", sortOrder: 3 },
     ];

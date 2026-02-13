@@ -268,7 +268,11 @@ class ChatManager {
                 if (e.isComposing) return;
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    this.sendMessage();
+                    if (this.pendingFiles && this.pendingFiles.length > 0) {
+                        this.sendPendingFiles();
+                    } else {
+                        this.sendMessage();
+                    }
                 }
             });
         }
@@ -294,6 +298,32 @@ class ChatManager {
             chatFileInput.addEventListener('change', (e) => {
                 this.handleFileSelection(e.target.files);
                 chatFileInput.value = '';
+            });
+        }
+
+        // Drag and drop file support
+        const inputArea = document.getElementById('messageInputArea');
+        if (inputArea) {
+            ['dragenter', 'dragover'].forEach(evt => {
+                inputArea.addEventListener(evt, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    inputArea.style.outline = '2px dashed var(--chat-primary)';
+                    inputArea.style.outlineOffset = '-4px';
+                });
+            });
+            ['dragleave', 'drop'].forEach(evt => {
+                inputArea.addEventListener(evt, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    inputArea.style.outline = '';
+                    inputArea.style.outlineOffset = '';
+                });
+            });
+            inputArea.addEventListener('drop', (e) => {
+                if (e.dataTransfer?.files?.length > 0) {
+                    this.handleFileSelection(e.dataTransfer.files);
+                }
             });
         }
 
