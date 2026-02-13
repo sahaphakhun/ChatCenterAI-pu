@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>สถิติลูกค้า | จัดการ AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Mali:wght@200;300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/admin-customer-stats.css" rel="stylesheet">
+</head>
+
+<body class="app-shell">
+    <%- include('partials/admin-navbar', { activePage: 'customer-stats' }) %>
+
+        <div class="app-content">
+            <!-- Summary Cards -->
+            <div class="stats-summary-grid" id="statsSummaryCards">
+                <!-- Rendered by JS -->
+            </div>
+
+            <div class="stats-layout">
+                <!-- Sidebar Filters -->
+                <aside class="stats-sidebar">
+                    <!-- Page/Bot Selection -->
+                    <div class="stats-filter-section">
+                        <div class="stats-filter-title">
+                            <i class="fas fa-robot"></i> เพจ/บอท
+                        </div>
+                        <select class="stats-page-select" id="statsPageSelect">
+                            <option value="">ทุกเพจ/บอท</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Filter -->
+                    <div class="stats-filter-section">
+                        <div class="stats-filter-title">
+                            <i class="fas fa-calendar-alt"></i> ช่วงวันที่
+                        </div>
+                        <div class="stats-date-group">
+                            <input type="date" class="stats-date-input" id="statsStartDate" placeholder="วันที่เริ่ม">
+                            <input type="date" class="stats-date-input" id="statsEndDate" placeholder="วันที่สิ้นสุด">
+                            <div class="stats-quick-dates">
+                                <button type="button" class="stats-quick-date-btn active"
+                                    data-range="today">วันนี้</button>
+                                <button type="button" class="stats-quick-date-btn" data-range="7days">7 วัน</button>
+                                <button type="button" class="stats-quick-date-btn" data-range="30days">30 วัน</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Refresh Button -->
+                    <div class="stats-filter-section">
+                        <button class="stats-btn stats-btn-primary w-100" id="statsRefreshBtn">
+                            <i class="fas fa-sync-alt"></i> รีเฟรช
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- Main Content -->
+                <main class="stats-main">
+                    <!-- 24-Hour Chart -->
+                    <div class="stats-card stats-chart-card">
+                        <div class="stats-card-header">
+                            <h3 class="stats-card-title"><i class="fas fa-chart-bar"></i> คนทักมารายชั่วโมง</h3>
+                            <div class="stats-chart-controls">
+                                <div class="stats-chart-mode-btns">
+                                    <button type="button" class="stats-chart-mode-btn active"
+                                        data-mode="all">ทั้งหมด</button>
+                                    <button type="button" class="stats-chart-mode-btn"
+                                        data-mode="buyers">ซื้อแล้ว</button>
+                                    <button type="button" class="stats-chart-mode-btn"
+                                        data-mode="nonBuyers">ยังไม่ซื้อ</button>
+                                </div>
+                                <span class="legend-peak"><i class="fas fa-circle"></i> ช่วงพีค</span>
+                            </div>
+                        </div>
+                        <div class="stats-hourly-chart" id="statsHourlyChart">
+                            <!-- Rendered by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Statistics Grid -->
+                    <div class="stats-grid">
+                        <!-- Sales Statistics -->
+                        <div class="stats-card">
+                            <div class="stats-card-header">
+                                <h3 class="stats-card-title"><i class="fas fa-shopping-cart"></i> สถิติการขาย</h3>
+                            </div>
+                            <div class="stats-card-body" id="statsSalesSection">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Conversion Statistics -->
+                        <div class="stats-card">
+                            <div class="stats-card-header">
+                                <h3 class="stats-card-title"><i class="fas fa-percentage"></i> อัตราการแปลง</h3>
+                            </div>
+                            <div class="stats-card-body" id="statsConversionSection">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Follow-up Statistics -->
+                        <div class="stats-card">
+                            <div class="stats-card-header">
+                                <h3 class="stats-card-title"><i class="fas fa-user-clock"></i> การติดตามลูกค้า</h3>
+                            </div>
+                            <div class="stats-card-body" id="statsFollowUpSection">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Payment Methods -->
+                        <div class="stats-card">
+                            <div class="stats-card-header">
+                                <h3 class="stats-card-title"><i class="fas fa-credit-card"></i> วิธีชำระเงิน</h3>
+                            </div>
+                            <div class="stats-card-body" id="statsPaymentSection">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Top Products -->
+                        <div class="stats-card">
+                            <div class="stats-card-header">
+                                <h3 class="stats-card-title"><i class="fas fa-star"></i> Top 5 สินค้าขายดี</h3>
+                            </div>
+                            <div class="stats-card-body" id="statsTopProducts">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Top Customers -->
+                        <div class="stats-card">
+                            <div class="stats-card-header">
+                                <h3 class="stats-card-title"><i class="fas fa-crown"></i> Top 5 ลูกค้า VIP</h3>
+                            </div>
+                            <div class="stats-card-body" id="statsTopCustomers">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="/js/admin-customer-stats.js"></script>
+</body>
+
+</html>

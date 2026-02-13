@@ -1,0 +1,10 @@
+.git
+.gitignore
+npm-debug.log
+.env
+.env.local
+.env.production
+README.md
+*.log
+.DS_Store
+Thumbs.db

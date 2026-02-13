@@ -1,0 +1,30 @@
+.filter-panel {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  outline: none;
+}
+
+.filter-panel[hidden],
+.filter-panel:not(.show) {
+  display: block !important;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
+}
+
+.filter-panel.show {
+  opacity: 1;
+  transform: translateY(0);
+  height: auto;
+  overflow: visible;
+}
+
+.filter-btn:focus,
+.tag-filter-btn:focus,
+.btn-header-action:focus,
+.btn-input-action:focus,
+.btn-send:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(165, 184, 217, 0.35);
+}

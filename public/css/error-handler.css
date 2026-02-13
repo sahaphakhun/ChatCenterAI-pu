@@ -1,0 +1,246 @@
+/* ===================================
+   ERROR HANDLER STYLES
+   ChatCenter AI - Toast & Error Styles
+   =================================== */
+
+/* Toast Container */
+.toast-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+
+/* Toast Notification */
+.toast-notification {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    max-width: 400px;
+    padding: 16px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: all;
+}
+
+.toast-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast-notification.hide {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+/* Toast Types */
+.toast-success {
+    border-left: 4px solid #68B984;
+}
+
+.toast-error {
+    border-left: 4px solid #FF6868;
+}
+
+.toast-warning {
+    border-left: 4px solid #FFD966;
+}
+
+.toast-info {
+    border-left: 4px solid #61A3BA;
+}
+
+/* Toast Icon */
+.toast-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.toast-success .toast-icon {
+    color: #68B984;
+}
+
+.toast-error .toast-icon {
+    color: #FF6868;
+}
+
+.toast-warning .toast-icon {
+    color: #f59e0b;
+}
+
+.toast-info .toast-icon {
+    color: #61A3BA;
+}
+
+/* Toast Message */
+.toast-message {
+    flex: 1;
+    font-size: 14px;
+    color: #2C3333;
+    line-height: 1.5;
+}
+
+/* Toast Close Button */
+.toast-close {
+    background: none;
+    border: none;
+    color: #6C757D;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.toast-close:hover {
+    color: #2C3333;
+}
+
+/* Confirm Modal */
+.confirm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.confirm-modal.show {
+    opacity: 1;
+}
+
+.confirm-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+.confirm-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.confirm-modal.show .confirm-modal-content {
+    transform: scale(1);
+}
+
+.confirm-modal-content h5 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #2C3333;
+}
+
+.confirm-modal-content p {
+    margin: 0 0 20px 0;
+    font-size: 14px;
+    color: #6C757D;
+    line-height: 1.5;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.confirm-modal-actions .btn {
+    min-width: 80px;
+}
+
+/* Validation Errors */
+.is-invalid {
+    border-color: #FF6868 !important;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23FF6868'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23FF6868' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.invalid-feedback {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #FF6868;
+}
+
+/* Mobile Responsive */
+@media (max-width: 767.98px) {
+    .toast-container {
+        top: 60px;
+        right: 12px;
+        left: 12px;
+    }
+    
+    .toast-notification {
+        min-width: auto;
+        max-width: 100%;
+    }
+    
+    .confirm-modal-content {
+        margin: 0 16px;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .toast-notification {
+        background: #2d2d2d;
+        color: #e0e0e0;
+    }
+    
+    .toast-message {
+        color: #e0e0e0;
+    }
+    
+    .toast-close {
+        color: #b3b3b3;
+    }
+    
+    .toast-close:hover {
+        color: #e0e0e0;
+    }
+    
+    .confirm-modal-content {
+        background: #2d2d2d;
+    }
+    
+    .confirm-modal-content h5 {
+        color: #e0e0e0;
+    }
+    
+    .confirm-modal-content p {
+        color: #b3b3b3;
+    }
+}
+

@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตอบคอมเมนต์ FB - ChatCenter AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+</head>
+
+<body class="app-shell">
+  <%- include('partials/admin-navbar', { activePage: 'facebook-comment' }) %>
+
+    <div class="app-content">
+      <div class="container mt-4 mb-5">
+        <div class="row justify-content-center">
+          <div class="col-lg-10">
+            <!-- Header Section -->
+            <div class="mb-4">
+              <h2 class="mb-2">
+                <i class="fas fa-comment-dots me-2 text-primary"></i>ตอบคอมเมนต์ Facebook
+              </h2>
+              <p class="text-muted mb-0">
+                ตั้งค่าระบบตอบคอมเมนต์อัตโนมัติแยกตามเพจและโพสต์ ด้วย AI หรือข้อความกำหนดเอง
+              </p>
+            </div>
+
+            <div class="card shadow-sm border-info-subtle mb-4">
+              <div class="card-header bg-info-subtle">
+                <span class="fw-semibold text-info-emphasis">
+                  <i class="fas fa-question-circle me-2"></i>วิธีใช้งานระบบตอบคอมเมนต์
+                </span>
+              </div>
+              <div class="card-body small text-body-secondary">
+                <div class="mb-3">
+                  <h6 class="fw-semibold text-body">เริ่มต้นใช้งาน</h6>
+                  <ol class="mb-0 ps-3">
+                    <li>เพิ่ม Facebook Page ในระบบให้เรียบร้อย (เมนู &ldquo;ตั้งค่าช่องทาง&rdquo;).</li>
+                    <li>กลับมาที่หน้านี้แล้วกดปุ่ม <strong>เพิ่มโพสต์</strong> เพื่อระบุ Post ID
+                      ที่ต้องการให้ระบบตอบคอมเมนต์.</li>
+                    <li>เลือกว่าจะให้ตอบด้วย <strong>ข้อความกำหนดเอง</strong> หรือให้ <strong>AI</strong> ตอบแทน
+                      พร้อมกำหนดข้อความ/Prompt.</li>
+                    <li>เปิดสวิตช์ <strong>ดึงเข้าแชท</strong> หากต้องการให้ระบบส่งแชทหาเจ้าของคอมเมนต์โดยอัตโนมัติ.
+                    </li>
+                    <li>กด <strong>บันทึกการตั้งค่า</strong> แล้วเปิดใช้งานเมื่อพร้อม.</li>
+                  </ol>
+                </div>
+                <div class="mb-3">
+                  <h6 class="fw-semibold text-body">การหา Post ID</h6>
+                  <ul class="mb-0 ps-3">
+                    <li>เปิดโพสต์บนหน้าเพจแล้วคัดลอก URL เต็ม (เช่น
+                      <code>https://www.facebook.com/123456789/posts/987654321</code>).</li>
+                    <li>ประกอบรหัสเป็นรูปแบบ <code>PAGE_ID_POST_ID</code> เช่น <code>123456789_987654321</code>
+                      แล้วนำมากรอก.</li>
+                    <li>หากไม่ทราบ Page ID สามารถดูได้จากหน้าตั้งค่าเพจ หรือคัดลอกจากระบบจัดการเพจ.</li>
+                  </ul>
+                </div>
+                <div class="mb-0">
+                  <h6 class="fw-semibold text-body">ทำงานกับโพสต์ที่ระบบจับอัตโนมัติ</h6>
+                  <ul class="mb-0 ps-3">
+                    <li>เมื่อมีคอมเมนต์บนโพสต์ที่ยังไม่ได้ตั้งค่า ระบบจะสร้างรายการใหม่ให้พร้อมป้าย
+                      <strong>จับโพสต์อัตโนมัติ</strong>.</li>
+                    <li>กดปุ่ม <strong>แก้ไข</strong> เพื่อกำหนดข้อความตอบกลับ/AI Prompt และเปิดใช้งาน.</li>
+                    <li>หากไม่ต้องการใช้โพสต์นั้น สามารถกด <strong>ลบ</strong> หรือปล่อยไว้โดยปิดสถานะการทำงานได้.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Alerts -->
+            <% if (typeof success !=='undefined' && success) { %>
+              <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <%= success %>
+                  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+              <% } %>
+
+                <% if (typeof error !=='undefined' && error) { %>
+                  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <%= error %>
+                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                  <% } %>
+
+                    <% if (autoCapturedCount && autoCapturedCount> 0) { %>
+                      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="fas fa-magic me-2"></i>
+                        พบโพสต์ที่ระบบจับให้อัตโนมัติจำนวน <strong>
+                          <%= autoCapturedCount %>
+                        </strong> โพสต์
+                        กรุณากดปุ่ม "แก้ไข" เพื่อกำหนดข้อความตอบกลับก่อนเปิดใช้งานจริง
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                      </div>
+                      <% } %>
+
+                        <!-- Page Cards -->
+                        <% if (facebookBots && facebookBots.length> 0) { %>
+                          <% facebookBots.forEach(function(bot) { %>
+                            <div class="component-card">
+                              <div class="component-card-header">
+                                <div class="component-card-title">
+                                  <div class="component-card-icon">
+                                    <i class="fab fa-facebook-f"></i>
+                                  </div>
+                                  <div class="component-card-info">
+                                    <h5>
+                                      <%= bot.name || bot.pageName || 'Facebook Page' %>
+                                    </h5>
+                                    <p class="text-muted">Page ID: <%= bot.pageId || 'ไม่ระบุ' %>
+                                    </p>
+                                  </div>
+                                </div>
+                                <button class="btn btn-primary"
+                                  onclick="addPostConfig('<%= bot._id %>', '<%= bot.name || bot.pageName || 'Facebook Page' %>')">
+                                  <i class="fas fa-plus me-2"></i>เพิ่มโพสต์
+                                </button>
+                              </div>
+
+                              <% const botPosts=(commentConfigs || []).filter(c=> c.pageId && c.pageId.toString() ===
+                                bot._id.toString());
+                                if (botPosts.length > 0) {
+                                %>
+                                <% botPosts.forEach(function(config) { %>
+                                  <div class="post-item">
+                                    <div class="post-header">
+                                      <div>
+                                        <span class="post-id-badge">
+                                          <i class="fas fa-file-alt me-1"></i>
+                                          <%= config.postId %>
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span
+                                          class="badge-status <%= config.isActive ? 'badge-active' : 'badge-inactive' %>">
+                                          <%= config.isActive ? '🟢 เปิดใช้งาน' : '🔴 ปิดใช้งาน' %>
+                                        </span>
+                                        <% if (config.autoCreated) { %>
+                                          <span class="badge bg-warning text-dark ms-2">
+                                            <i class="fas fa-magic me-1"></i>จับโพสต์อัตโนมัติ
+                                          </span>
+                                          <% } %>
+                                      </div>
+                                    </div>
+
+                                    <div class="config-info">
+                                      <% if (config.autoCreated) { %>
+                                        <div class="config-row">
+                                          <span class="config-label text-warning">
+                                            <i class="fas fa-lightbulb me-1"></i>หมายเหตุ:
+                                          </span>
+                                          <span class="config-value text-warning">
+                                            ระบบจับโพสต์นี้ให้อัตโนมัติจากคอมเมนต์ใหม่ กรุณากด "แก้ไข"
+                                            เพื่อกำหนดข้อความตอบกลับก่อนเปิดใช้งาน
+                                          </span>
+                                        </div>
+                                        <% } %>
+                                          <div class="config-row">
+                                            <span class="config-label">ประเภทการตอบ:</span>
+                                            <span class="config-value">
+                                              <% if (config.replyType==='custom' ) { %>
+                                                <span class="badge-reply-type badge-custom">
+                                                  <i class="fas fa-edit"></i>ข้อความกำหนดเอง
+                                                </span>
+                                                <% } else if (config.replyType==='ai' ) { %>
+                                                  <span class="badge-reply-type badge-ai">
+                                                    <i class="fas fa-robot"></i>AI ตอบอัตโนมัติ
+                                                  </span>
+                                                  <% } %>
+                                            </span>
+                                          </div>
+
+                                          <% if (config.replyType==='custom' && config.customMessage) { %>
+                                            <div class="config-row">
+                                              <span class="config-label">ข้อความตอบกลับ:</span>
+                                              <span class="config-value">
+                                                <%= config.customMessage.substring(0, 100) %>
+                                                  <%= config.customMessage.length> 100 ? '...' : '' %>
+                                              </span>
+                                            </div>
+                                            <% } %>
+
+                                              <% if (config.replyType==='ai' ) { %>
+                                                <div class="config-row">
+                                                  <span class="config-label">โมเดล AI:</span>
+                                                  <span
+                                                    class="config-value"><code><%= config.aiModel || 'ไม่ระบุ' %></code></span>
+                                                </div>
+                                                <% if (config.systemPrompt) { %>
+                                                  <div class="config-row">
+                                                    <span class="config-label">System Prompt:</span>
+                                                    <span class="config-value">
+                                                      <%= config.systemPrompt.substring(0, 120) %>
+                                                        <%= config.systemPrompt.length> 120 ? '...' : '' %>
+                                                    </span>
+                                                  </div>
+                                                  <% } %>
+                                                    <% } %>
+
+                                                      <div class="config-row">
+                                                        <span class="config-label">ดึงเข้าแชท:</span>
+                                                        <span class="config-value">
+                                                          <%= config.pullToChat ? '✅ ดึงเข้าแชทอัตโนมัติ'
+                                                            : '❌ ไม่ดึงเข้าแชท' %>
+                                                        </span>
+                                                      </div>
+                                    </div>
+
+                                    <div class="post-actions">
+                                      <button class="btn btn-post-action btn-edit"
+                                        onclick="editPostConfig('<%= config._id %>')">
+                                        <i class="fas fa-edit me-1"></i>แก้ไข
+                                      </button>
+                                      <button class="btn btn-post-action btn-toggle"
+                                        onclick="togglePostConfig('<%= config._id %>', <%= !config.isActive %>)">
+                                        <i class="fas fa-power-off me-1"></i>
+                                        <%= config.isActive ? 'ปิด' : 'เปิด' %>ใช้งาน
+                                      </button>
+                                      <button class="btn btn-post-action btn-delete"
+                                        onclick="deletePostConfig('<%= config._id %>')">
+                                        <i class="fas fa-trash me-1"></i>ลบ
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <% }); %>
+                                    <% } else { %>
+                                      <div class="empty-state">
+                                        <i class="fas fa-inbox"></i>
+                                        <h6>ยังไม่มีการตั้งค่า</h6>
+                                        <p class="mb-0">คลิกปุ่ม "เพิ่มโพสต์" เพื่อเริ่มต้นตั้งค่าการตอบคอมเมนต์</p>
+                                      </div>
+                                      <% } %>
+                            </div>
+                            <% }); %>
+                              <% } else { %>
+                                <div class="component-card">
+                                  <div class="empty-state">
+                                    <div class="empty-state-icon">
+                                      <i class="fas fa-exclamation-triangle"></i>
+                                    </div>
+                                    <h6 class="empty-state-title">ยังไม่มี Facebook Page</h6>
+                                    <p class="empty-state-description mb-3">กรุณาเพิ่ม Facebook Page
+                                      ก่อนที่จะตั้งค่าระบบตอบคอมเมนต์</p>
+                                    <a href="/admin/dashboard" class="btn btn-primary">
+                                      <i class="fas fa-plus me-2"></i>ไปเพิ่ม Facebook Page
+                                    </a>
+                                  </div>
+                                </div>
+                                <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Add/Edit Post Config -->
+    <div class="modal fade" id="postConfigModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalTitle">
+              <i class="fas fa-cog me-2"></i>เพิ่มการตั้งค่าโพสต์
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form id="postConfigForm" method="POST">
+            <div class="modal-body">
+              <input type="hidden" id="configId" name="configId">
+              <input type="hidden" id="pageId" name="pageId">
+
+              <div class="mb-3">
+                <label class="form-label">Facebook Page</label>
+                <input type="text" class="form-control" id="pageName" readonly>
+              </div>
+
+              <div class="mb-3">
+                <label for="postId" class="form-label">
+                  Post ID <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" id="postId" name="postId" required
+                  placeholder="ระบุ Post ID ที่ต้องการตอบคอมเมนต์">
+                <small class="text-muted">
+                  <i class="fas fa-info-circle"></i> ตัวอย่าง: 123456789_987654321
+                </small>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">
+                  ประเภทการตอบ <span class="text-danger">*</span>
+                </label>
+
+                <button type="button" class="selection-card" onclick="selectReplyType('custom', event)"
+                  aria-pressed="false" aria-controls="customMessageSection">
+                  <input type="radio" name="replyType" value="custom" id="replyTypeCustom" required
+                    aria-label="เลือกข้อความกำหนดเอง">
+                  <div class="d-flex align-items-start">
+                    <div>
+                      <strong><i class="fas fa-edit me-1"></i>ข้อความกำหนดเอง</strong>
+                      <p class="mb-0 mt-1 text-muted small">
+                        ระบบจะตอบคอมเมนต์ด้วยข้อความที่คุณกำหนดไว้
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                <button type="button" class="selection-card" onclick="selectReplyType('ai', event)" aria-pressed="false"
+                  aria-controls="aiConfigSection">
+                  <input type="radio" name="replyType" value="ai" id="replyTypeAI" required
+                    aria-label="เลือกตอบด้วย AI">
+                  <div class="d-flex align-items-start">
+                    <div>
+                      <strong><i class="fas fa-robot me-1"></i>AI ตอบอัตโนมัติ</strong>
+                      <p class="mb-0 mt-1 text-muted small">
+                        ให้ AI วิเคราะห์และตอบคอมเมนต์ตาม System Prompt ที่กำหนด
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Custom Message Section -->
+              <div id="customMessageSection" style="display: none;">
+                <div class="mb-3">
+                  <label for="customMessage" class="form-label">
+                    ข้อความตอบกลับ <span class="text-danger">*</span>
+                  </label>
+                  <textarea class="form-control" id="customMessage" name="customMessage" rows="4"
+                    placeholder="ระบุข้อความที่ต้องการตอบคอมเมนต์..."></textarea>
+                  <small class="text-muted">
+                    <i class="fas fa-lightbulb"></i> ข้อความนี้จะถูกส่งเป็นคำตอบทุกครั้งที่มีคอมเมนต์ใหม่
+                  </small>
+                </div>
+              </div>
+
+              <!-- AI Config Section -->
+              <div id="aiConfigSection" style="display: none;">
+                <div class="ai-config-section">
+                  <div class="mb-3">
+                    <label for="aiModel" class="form-label">
+                      เลือกโมเดล AI <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="aiModel" name="aiModel">
+                      <option value="">-- เลือกโมเดล --</option>
+                      <option value="gpt-5">GPT-5</option>
+                      <option value="gpt-5-mini">GPT-5 Mini (แนะนำ)</option>
+                      <option value="gpt-5-chat-latest">GPT-5 Chat Latest</option>
+                      <option value="gpt-5-nano">GPT-5 Nano</option>
+                      <option value="gpt-4.1">GPT-4.1</option>
+                      <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+                      <option value="o3">O3</option>
+                      <option value="gpt-4o">GPT-4o</option>
+                      <option value="gpt-4o-mini">GPT-4o Mini</option>
+                    </select>
+                    <div class="form-text">โมเดลเหมือนกับที่ใช้ในระบบแชท (แนะนำ GPT-4.1)</div>
+                  </div>
+
+                  <div class="mb-0">
+                    <label for="systemPrompt" class="form-label">
+                      System Prompt <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control system-prompt-textarea" id="systemPrompt" name="systemPrompt"
+                      rows="8">คุณคือผู้ช่วยตอบคอมเมนต์ Facebook ของร้านค้า
+- ตอบด้วยน้ำเสียงเป็นกันเอง สุภาพ และมีความเป็นมิตร
+- ให้ข้อมูลที่ถูกต้องและเป็นประโยชน์
+- หากมีคำถามที่ซับซ้อน แนะนำให้ติดต่อทีมงานผ่าน Messenger
+- ตอบสั้นกระชับ ไม่เกิน 2-3 ประโยค
+- ใช้ภาษาไทย และเพิ่ม emoji เล็กน้อยเพื่อความเป็นกันเอง</textarea>
+                    <div class="info-box">
+                      <i class="fas fa-info-circle"></i>
+                      <strong>System Prompt</strong> จะกำหนดบุคลิกและวิธีการตอบของ AI ปรับแต่งให้เหมาะกับธุรกิจของคุณ
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3 mt-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="pullToChat" name="pullToChat" value="true">
+                  <label class="form-check-label" for="pullToChat">
+                    <strong>ดึงผู้ใช้เข้าแชทอัตโนมัติ</strong>
+                    <p class="mb-0 mt-1 text-muted small">
+                      เมื่อมีคนคอมเมนต์ ระบบจะดึงคนนั้นเข้าแชทโดยอัตโนมัติ (ถ้ายังไม่เคยดึง)
+                    </p>
+                  </label>
+                </div>
+              </div>
+
+              <div class="mb-0">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="isActive" name="isActive" value="true">
+                  <label class="form-check-label" for="isActive">
+                    <strong>เปิดใช้งานทันที</strong>
+                    <p class="mb-0 mt-1 text-muted small">
+                      ระบบจะเริ่มตอบคอมเมนต์ทันทีหลังจากบันทึก (แนะนำให้ตรวจสอบการตั้งค่าก่อนเปิดใช้งาน)
+                    </p>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                <i class="fas fa-times me-1"></i>ยกเลิก
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i>บันทึกการตั้งค่า
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    </div> <!-- /container -->
+    </div> <!-- /app-content -->
+
+    <div id="facebookToastContainer" class="app-toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const modal = new bootstrap.Modal(document.getElementById('postConfigModal'));
+      let toastContainer = document.getElementById('facebookToastContainer');
+
+	      function ensureToastContainer() {
+	        if (!toastContainer || !document.body.contains(toastContainer)) {
+	          toastContainer = document.createElement('div');
+	          toastContainer.className = 'app-toast-container';
+	          document.body.appendChild(toastContainer);
+	        }
+	        return toastContainer;
+	      }
+
+	      function showToast(message, type = 'info') {
+	        const container = ensureToastContainer();
+	        const typeMap = {
+	          success: { icon: 'fa-check-circle', className: 'app-toast--success' },
+	          error: { icon: 'fa-times-circle', className: 'app-toast--danger' },
+	          warning: { icon: 'fa-exclamation-triangle', className: 'app-toast--warning' },
+	          info: { icon: 'fa-info-circle', className: 'app-toast--info' },
+	        };
+	        const toastType = typeMap[type] ? type : 'info';
+	        const { icon, className } = typeMap[toastType];
+	        const toast = document.createElement('div');
+	        toast.className = `app-toast ${className}`;
+	
+	        const iconWrap = document.createElement('div');
+	        iconWrap.className = 'app-toast__icon';
+	        iconWrap.innerHTML = `<i class="fas ${icon}"></i>`;
+	
+	        const body = document.createElement('div');
+	        body.className = 'app-toast__body';
+	
+	        const title = document.createElement('div');
+	        title.className = 'app-toast__title';
+	        title.textContent = message || '';
+	        body.appendChild(title);
+	
+	        const closeBtn = document.createElement('button');
+	        closeBtn.className = 'app-toast__close';
+	        closeBtn.setAttribute('aria-label', 'ปิดการแจ้งเตือน');
+	        closeBtn.innerHTML = '&times;';
+	
+	        toast.appendChild(iconWrap);
+	        toast.appendChild(body);
+	        toast.appendChild(closeBtn);
+
+	        const removeToast = () => {
+	          toast.classList.add('hide');
+	          setTimeout(() => toast.remove(), 200);
+	        };
+	        closeBtn.addEventListener('click', removeToast);
+	        container.appendChild(toast);
+	        setTimeout(removeToast, 3200);
+	      }
+
+      function selectReplyType(type, event) {
+        const customRadio = document.getElementById('replyTypeCustom');
+        const aiRadio = document.getElementById('replyTypeAI');
+        const customSection = document.getElementById('customMessageSection');
+        const aiSection = document.getElementById('aiConfigSection');
+
+        if (type === 'custom') {
+          customRadio.checked = true;
+          aiRadio.checked = false;
+          customSection.style.display = 'block';
+          aiSection.style.display = 'none';
+          document.getElementById('customMessage').required = true;
+          document.getElementById('aiModel').required = false;
+          document.getElementById('systemPrompt').required = false;
+        } else if (type === 'ai') {
+          customRadio.checked = false;
+          aiRadio.checked = true;
+          customSection.style.display = 'none';
+          aiSection.style.display = 'block';
+          document.getElementById('customMessage').required = false;
+          document.getElementById('aiModel').required = true;
+          document.getElementById('systemPrompt').required = true;
+        }
+
+        // Update card active state
+        document.querySelectorAll('.selection-card').forEach(card => {
+          card.classList.remove('active');
+          card.setAttribute('aria-pressed', 'false');
+        });
+
+        // Add active class to clicked card (if event is provided)
+        if (event && event.currentTarget) {
+          event.currentTarget.classList.add('active');
+          event.currentTarget.setAttribute('aria-pressed', 'true');
+        } else {
+          // If no event, find and activate the correct card based on type
+          const cards = document.querySelectorAll('.selection-card');
+          cards.forEach(card => {
+            const radio = card.querySelector('input[type="radio"]');
+            if (radio && radio.value === type) {
+              card.classList.add('active');
+              card.setAttribute('aria-pressed', 'true');
+            }
+          });
+        }
+      }
+
+      function addPostConfig(pageId, pageName) {
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus me-2"></i>เพิ่มการตั้งค่าโพสต์';
+        document.getElementById('postConfigForm').action = '/admin/facebook-comment/create';
+        document.getElementById('postConfigForm').reset();
+        document.getElementById('configId').value = '';
+        document.getElementById('pageId').value = pageId;
+        document.getElementById('pageName').value = pageName;
+        document.getElementById('customMessageSection').style.display = 'none';
+        document.getElementById('aiConfigSection').style.display = 'none';
+        document.querySelectorAll('.selection-card').forEach(card => card.classList.remove('active'));
+
+        // Reset system prompt to default
+        document.getElementById('systemPrompt').value = `คุณคือผู้ช่วยตอบคอมเมนต์ Facebook ของร้านค้า
+- ตอบด้วยน้ำเสียงเป็นกันเอง สุภาพ และมีความเป็นมิตร
+- ให้ข้อมูลที่ถูกต้องและเป็นประโยชน์
+- หากมีคำถามที่ซับซ้อน แนะนำให้ติดต่อทีมงานผ่าน Messenger
+- ตอบสั้นกระชับ ไม่เกิน 2-3 ประโยค
+- ใช้ภาษาไทย และเพิ่ม emoji เล็กน้อยเพื่อความเป็นกันเอง`;
+
+        modal.show();
+      }
+
+      async function editPostConfig(configId) {
+        try {
+          const response = await fetch(`/admin/facebook-comment/get/${configId}`);
+          const config = await response.json();
+
+          document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>แก้ไขการตั้งค่าโพสต์';
+          document.getElementById('postConfigForm').action = '/admin/facebook-comment/update';
+          document.getElementById('configId').value = config._id;
+          document.getElementById('pageId').value = config.pageId;
+          document.getElementById('pageName').value = config.pageName || 'Facebook Page';
+          document.getElementById('postId').value = config.postId;
+          document.getElementById('pullToChat').checked = config.pullToChat || false;
+          document.getElementById('isActive').checked = config.isActive !== false;
+
+          if (config.replyType === 'custom') {
+            selectReplyType('custom');
+            document.getElementById('customMessage').value = config.customMessage || '';
+          } else if (config.replyType === 'ai') {
+            selectReplyType('ai');
+            document.getElementById('aiModel').value = config.aiModel || '';
+            document.getElementById('systemPrompt').value = config.systemPrompt || '';
+          }
+
+          modal.show();
+        } catch (error) {
+          showToast('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'error');
+          console.error(error);
+        }
+      }
+
+      async function togglePostConfig(configId, isActive) {
+        if (confirm(`คุณต้องการ${isActive ? 'เปิด' : 'ปิด'}ใช้งานการตั้งค่านี้ใช่หรือไม่?`)) {
+          try {
+            const response = await fetch(`/admin/facebook-comment/toggle/${configId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ isActive })
+            });
+
+            if (response.ok) {
+              location.reload();
+            } else {
+              showToast('เกิดข้อผิดพลาด', 'error');
+            }
+          } catch (error) {
+            showToast('เกิดข้อผิดพลาด', 'error');
+            console.error(error);
+          }
+        }
+      }
+
+      async function deletePostConfig(configId) {
+        if (confirm('คุณต้องการลบการตั้งค่านี้ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
+          try {
+            const response = await fetch(`/admin/facebook-comment/delete/${configId}`, {
+              method: 'POST'
+            });
+
+            if (response.ok) {
+              location.reload();
+            } else {
+              showToast('เกิดข้อผิดพลาด', 'error');
+            }
+          } catch (error) {
+            showToast('เกิดข้อผิดพลาด', 'error');
+            console.error(error);
+          }
+        }
+      }
+
+      // Handle form submission
+      document.getElementById('postConfigForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const data = {};
+
+        for (const [key, value] of formData.entries()) {
+          if (key === 'pullToChat' || key === 'isActive') {
+            data[key] = value === 'true';
+          } else {
+            data[key] = value;
+          }
+        }
+
+        // Validate based on reply type
+        if (data.replyType === 'custom' && !data.customMessage) {
+          showToast('กรุณาระบุข้อความตอบกลับ', 'warning');
+          return;
+        }
+
+        if (data.replyType === 'ai') {
+          if (!data.aiModel) {
+            showToast('กรุณาเลือกโมเดล AI', 'warning');
+            return;
+          }
+          if (!data.systemPrompt) {
+            showToast('กรุณาระบุ System Prompt', 'warning');
+            return;
+          }
+        }
+
+        try {
+          const response = await fetch(e.target.action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+
+          if (response.ok) {
+            showToast('บันทึกการตั้งค่าแล้ว', 'success');
+            setTimeout(() => location.reload(), 300);
+          } else {
+            const result = await response.json();
+            showToast(result.error || 'เกิดข้อผิดพลาด', 'error');
+          }
+        } catch (error) {
+          showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
+          console.error(error);
+        }
+      });
+
+      // Listen to radio button changes
+      document.querySelectorAll('input[name="replyType"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          selectReplyType(e.target.value);
+        });
+      });
+    </script>
+    </div> <!-- /app-content -->
+</body>
+
+</html>

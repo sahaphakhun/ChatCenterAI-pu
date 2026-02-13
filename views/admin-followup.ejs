@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ติดตามลูกค้า | จัดการ AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Mali:wght@200;300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+  <link href="/css/admin-followup.css" rel="stylesheet">
+</head>
+
+<body class="app-shell">
+  <%- include('partials/admin-navbar', { activePage: 'followup' }) %>
+
+    <div class="app-content">
+      <!-- Summary Cards -->
+      <div class="followup-summary-grid" id="followupSummaryCards">
+        <div class="followup-summary-card">
+          <div class="followup-summary-icon icon-primary">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="followup-summary-content">
+            <div class="followup-summary-label">กำลังติดตาม</div>
+            <div class="followup-summary-value" id="followupMetricActive">0</div>
+          </div>
+        </div>
+        <div class="followup-summary-card">
+          <div class="followup-summary-icon icon-success">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="followup-summary-content">
+            <div class="followup-summary-label">ส่งครบแล้ว</div>
+            <div class="followup-summary-value" id="followupMetricCompleted">0</div>
+          </div>
+        </div>
+        <div class="followup-summary-card">
+          <div class="followup-summary-icon icon-muted">
+            <i class="fas fa-ban"></i>
+          </div>
+          <div class="followup-summary-content">
+            <div class="followup-summary-label">ยกเลิกแล้ว</div>
+            <div class="followup-summary-value" id="followupMetricCanceled">0</div>
+          </div>
+        </div>
+        <div class="followup-summary-card">
+          <div class="followup-summary-icon icon-danger">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="followup-summary-content">
+            <div class="followup-summary-label">ล้มเหลว</div>
+            <div class="followup-summary-value" id="followupMetricFailed">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="followup-layout">
+        <!-- Sidebar -->
+        <aside class="followup-sidebar">
+          <!-- Page/Bot Selection -->
+          <div class="followup-filter-section">
+            <div class="followup-filter-title">
+              <i class="fas fa-layer-group"></i> เพจ/บอท
+            </div>
+            <div class="followup-page-list" id="followupPageSelector"></div>
+          </div>
+
+          <!-- Status Filter -->
+          <div class="followup-filter-section">
+            <div class="followup-filter-title">
+              <i class="fas fa-filter"></i> สถานะ
+            </div>
+            <div class="followup-status-pills" id="followupStatusPills">
+              <button class="followup-status-pill active" data-status="all">
+                <span class="pill-label"><span class="pill-dot"></span> ทั้งหมด</span>
+                <span class="pill-count" id="countAll">0</span>
+              </button>
+              <button class="followup-status-pill" data-status="active">
+                <span class="pill-label"><span class="pill-dot"></span> กำลังติดตาม</span>
+                <span class="pill-count" id="countActive">0</span>
+              </button>
+              <button class="followup-status-pill" data-status="completed">
+                <span class="pill-label"><span class="pill-dot"></span> ส่งครบแล้ว</span>
+                <span class="pill-count" id="countCompleted">0</span>
+              </button>
+              <button class="followup-status-pill" data-status="canceled">
+                <span class="pill-label"><span class="pill-dot"></span> ยกเลิกแล้ว</span>
+                <span class="pill-count" id="countCanceled">0</span>
+              </button>
+              <button class="followup-status-pill" data-status="failed">
+                <span class="pill-label"><span class="pill-dot"></span> ล้มเหลว</span>
+                <span class="pill-count" id="countFailed">0</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Search -->
+          <div class="followup-filter-section">
+            <div class="followup-filter-title">
+              <i class="fas fa-search"></i> ค้นหา
+            </div>
+            <div class="followup-search-wrapper">
+              <i class="fas fa-search followup-search-icon"></i>
+              <input type="text" class="followup-search-input" id="followupSearch" placeholder="ชื่อลูกค้า...">
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="followup-main">
+          <!-- Toolbar -->
+          <div class="followup-toolbar">
+            <div class="followup-toolbar-left">
+              <span class="followup-current-page" id="followupPageLabel">เลือกเพจเพื่อดูรายการ</span>
+              <span class="followup-auto-badge" id="followupAutoStatusBadge">ปิดส่งอัตโนมัติ</span>
+            </div>
+            <div class="followup-toolbar-actions">
+              <button class="followup-btn followup-btn-secondary" id="followupRefreshBtn">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+              </button>
+              <button class="followup-btn followup-btn-primary" id="followupEditBtn" disabled>
+                <i class="fas fa-cog"></i> ตั้งค่า
+              </button>
+            </div>
+          </div>
+
+          <!-- Schedule Preview Card -->
+          <div class="followup-schedule-card" id="followupScheduleCard">
+            <div class="followup-schedule-header">
+              <div class="followup-schedule-title">
+                <i class="fas fa-calendar-alt"></i> แผนการส่งข้อความ
+              </div>
+            </div>
+            <div class="followup-schedule-timeline" id="followupSchedulePreview">
+              <div class="text-muted small">เลือกเพจเพื่อดูแผนการส่ง</div>
+            </div>
+          </div>
+
+          <!-- Customer List -->
+          <div class="followup-list-card">
+            <div class="followup-list-container" id="followupList">
+              <div class="followup-empty-state" id="followupEmptyState">
+                <div class="empty-icon"><i class="fas fa-user-clock"></i></div>
+                <div class="empty-title">ยังไม่มีลูกค้าที่ต้องติดตาม</div>
+                <div class="empty-desc">เลือกเพจจากด้านซ้ายเพื่อดูรายชื่อลูกค้า</div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="followupSettingsModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="followupModalTitle">ตั้งค่าเพจติดตามลูกค้า</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="followupModalAutoSend"
+                  style="width: 3em; height: 1.5em;">
+                <label class="form-check-label fw-semibold ms-2" for="followupModalAutoSend">
+                  เปิดระบบติดตามอัตโนมัติ
+                </label>
+              </div>
+              <div class="text-muted small mt-1">เมื่อเปิด ระบบจะส่งข้อความติดตามตามเวลาที่กำหนดโดยอัตโนมัติ</div>
+            </div>
+
+            <div class="card border-0 bg-light" id="followupModalRoundsContainer">
+              <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <div>
+                    <h6 class="mb-1">ลำดับข้อความติดตาม</h6>
+                    <div class="text-muted small">ระบบจะส่งข้อความตามเวลาที่กำหนด นับจากข้อความล่าสุดของลูกค้า</div>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-primary" id="followupModalAddRound">
+                    <i class="fas fa-plus me-1"></i>เพิ่ม
+                  </button>
+                </div>
+                <div id="followupModalRounds" class="followup-rounds-list"></div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-secondary" id="followupModalResetBtn">
+              <i class="fas fa-undo me-1"></i>คืนค่าเริ่มต้น
+            </button>
+            <div>
+              <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">ปิด</button>
+              <button type="button" class="btn btn-primary" id="followupModalSaveBtn">
+                <i class="fas fa-save me-1"></i>บันทึก
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="alertToastContainer" class="alert-toast-container"></div>
+
+	    <script>
+	      window.followUpDashboardConfig = {
+	        analysisEnabled: <%= (followUpConfig && followUpConfig.analysisEnabled) ? 'true' : 'false' %>,
+	        showDashboard: <%= (followUpConfig && followUpConfig.showDashboard) ? 'true' : 'false' %>,
+	        defaultOrderPromptInstructions: <%- JSON.stringify((orderPromptDefaults && orderPromptDefaults.instructions) || '').replace(/</g, '\\u003c') %>,
+	        orderPromptJsonSuffix: <%- JSON.stringify((orderPromptDefaults && orderPromptDefaults.jsonSuffix) || '').replace(/</g, '\\u003c') %>
+	    };
+	    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/followup-dashboard.js"></script>
+</body>
+
+</html>

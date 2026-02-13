@@ -1,0 +1,288 @@
+<!-- Add Facebook Bot Modal -->
+<div class="modal fade" id="addFacebookBotModal" tabindex="-1" aria-labelledby="addFacebookBotModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addFacebookBotModalLabel">
+                    <i class="fab fa-facebook me-2"></i>เพิ่ม Facebook Bot ใหม่
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>Facebook Bot พร้อมใช้งาน</h6>
+                    <p class="mb-0">Facebook Bot สามารถใช้งานได้แล้วเหมือนกับ Line Bot</p>
+                </div>
+                <form id="facebookBotForm">
+                    <input type="hidden" id="facebookBotId" name="id">
+
+                    <div class="mb-3">
+                        <label for="facebookBotName" class="form-label">ชื่อ Facebook Bot <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="facebookBotName" name="name"
+                            placeholder="เช่น: ฝ่ายขาย, ฝ่ายบริการลูกค้า, ฝ่ายเทคนิค" required>
+                        <div class="form-text">ชื่อที่แสดงในระบบและใช้เรียก Facebook Bot นี้</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="facebookBotDescription" class="form-label">คำอธิบาย</label>
+                        <textarea class="form-control" id="facebookBotDescription" name="description" rows="2"
+                            placeholder="อธิบายหน้าที่หรือวัตถุประสงค์ของ Facebook Bot นี้"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="facebookPageId" class="form-label">Facebook Page ID <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="facebookPageId" name="pageId"
+                                    placeholder="123456789012345" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="facebookAccessToken" class="form-label">Page Access Token <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="facebookAccessToken" name="accessToken"
+                                    placeholder="EAABwzLixnjYBO..." required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="facebookWebhookUrl" class="form-label">Webhook URL</label>
+                                <input type="text" class="form-control" id="facebookWebhookUrl" name="webhookUrl"
+                                    placeholder="https://yourdomain.com/webhook/facebook1" readonly>
+                                <div class="form-text">URL ที่จะใช้เป็น Webhook สำหรับ Facebook Bot นี้</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="facebookVerifyToken" class="form-label">Verify Token</label>
+                                <input type="text" class="form-control" id="facebookVerifyToken" name="verifyToken"
+                                    placeholder="your_verify_token">
+                                <div class="form-text">Token สำหรับยืนยัน Webhook</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Facebook Conversions API Settings -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="facebookDatasetId" class="form-label">
+                                    Dataset ID (Conversions API)
+                                    <i class="fas fa-info-circle text-muted ms-1" data-bs-toggle="tooltip"
+                                        title="ใส่ Dataset ID จาก Facebook Events Manager เพื่อส่งข้อมูลการซื้อไปยัง Facebook Ads เมื่อยืนยันออเดอร์"></i>
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="facebookDatasetId" name="datasetId"
+                                        placeholder="เช่น: 123456789012345">
+                                    <button class="btn btn-outline-primary" type="button" id="facebookDatasetAutoBtn">
+                                        สร้างอัตโนมัติ
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                    <i class="fab fa-facebook me-1"></i>
+                                    Dataset ID จาก Events Manager สำหรับส่ง Purchase event ไป Facebook Ads
+                                    เมื่อยืนยันออเดอร์
+                                    <a href="https://developers.facebook.com/docs/marketing-api/conversions-api/business-messaging"
+                                        target="_blank" class="text-primary">
+                                        <i class="fas fa-external-link-alt ms-1"></i> ดูวิธีตั้งค่า
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning d-flex align-items-start">
+                        <i class="fas fa-exclamation-triangle me-2 mt-1"></i>
+                        <div>
+                            <div class="mb-1"><strong>ขั้นตอน:</strong> 1) นำ Webhook URL และ Verify Token ไปยืนยันใน
+                                Facebook App → Messenger Webhooks 2) เมื่อยืนยันสำเร็จแล้ว จึงกรอก Page ID และ Page
+                                Access Token</div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="fbVerifiedToggle">
+                                <label class="form-check-label" for="fbVerifiedToggle">ฉันยืนยัน Webhook
+                                    สำเร็จแล้ว</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- API Key Selection -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="facebookBotApiKeyId" class="form-label">OpenAI API Key</label>
+                                <select class="form-select" id="facebookBotApiKeyId" name="openaiApiKeyId">
+                                    <option value="">ใช้ Key หลัก (Default)</option>
+                                    <!-- Options will be populated by JavaScript -->
+                                </select>
+                                <div class="form-text">เลือก API Key สำหรับ Facebook Bot นี้ หากไม่เลือกจะใช้ Key
+                                    หลักของระบบ</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <label for="facebookBotAiModel" class="form-label mb-0">AI Model <span
+                                            class="text-danger">*</span></label>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm ms-2"
+                                        data-bs-toggle="collapse" data-bs-target="#facebookBotAiParams"
+                                        aria-expanded="false" aria-controls="facebookBotAiParams"
+                                        title="กดเพื่อปรับโหมด API/พารามิเตอร์; ถ้าเลือก Chat API (ไม่รองรับ tool จัดการข้อมูล) ระบบจะตอบแบบไม่มี tool search/จัดการข้อมูล">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </div>
+                                <select class="form-select mt-1" id="facebookBotAiModel" name="aiModel" required>
+                                    <option value="gpt-5.2">GPT-5.2</option>
+                                    <option value="gpt-5.1">GPT-5.1</option>
+                                    <option value="gpt-5">GPT-5</option>
+                                    <option value="gpt-5-mini">GPT-5 mini</option>
+                                    <option value="gpt-5-nano">GPT-5 nano</option>
+                                    <option value="gpt-5-pro">GPT-5 pro</option>
+                                    <option value="gpt-4.1">GPT-4.1</option>
+                                    <option value="gpt-4.1-mini">GPT-4.1 mini</option>
+                                    <option value="gpt-4.1-nano">GPT-4.1 nano</option>
+                                    <option value="gpt-4o">GPT-4o</option>
+                                    <option value="gpt-4o-mini">GPT-4o mini</option>
+                                </select>
+                                <div class="form-text">เลือก AI Model ที่จะใช้สำหรับ Facebook Bot นี้ — ถ้าเลือก Chat
+                                    API (ใช้ tools ไม่ได้) ระบบจะไม่ส่ง tool จัดการข้อมูล/AI search ให้</div>
+                                <div class="collapse mt-2" id="facebookBotAiParams">
+                                    <div class="p-3 border rounded bg-light">
+                                        <div class="mb-3">
+                                            <label for="facebookBotApiMode" class="form-label mb-1">API Mode</label>
+                                            <select class="form-select form-select-sm" id="facebookBotApiMode"
+                                                name="apiMode">
+                                                <option value="responses">Responses API (รองรับ tools / reasoning)
+                                                </option>
+                                                <option value="chat">Chat Completions API (ไม่รองรับ tool จัดการข้อมูล)
+                                                </option>
+                                            </select>
+                                            <div class="form-text">Responses: เหมาะกับ reasoning + tools; Chat:
+                                                เร็ว/คงไลบรารีเดิมแต่ไม่มี tools</div>
+                                        </div>
+                                        <div id="facebookBotResponsesParams">
+                                            <div class="row g-2">
+                                                <div class="col-md-6" id="facebookBotReasoningGroup">
+                                                    <label class="form-label mb-1"
+                                                        for="facebookBotReasoningEffort">reasoning_effort</label>
+                                                    <select class="form-select form-select-sm"
+                                                        id="facebookBotReasoningEffort">
+                                                        <option value="">ตามค่า default ของโมเดล</option>
+                                                        <option value="none">none (GPT-5.1 เท่านั้น)</option>
+                                                        <option value="minimal">minimal (GPT-5 เท่านั้น)</option>
+                                                        <option value="low">low</option>
+                                                        <option value="medium">medium</option>
+                                                        <option value="high">high</option>
+                                                    </select>
+                                                    <div class="form-text">ใช้เฉพาะ Responses; หากเลือกค่านี้จะไม่ใช้
+                                                        temperature/top_p/penalties</div>
+                                                </div>
+                                                <div class="col-md-6 d-none" id="facebookBotReasoningNote">
+                                                    <div class="alert alert-info py-2 px-3 small mb-0">
+                                                        โมเดลนี้ไม่รองรับ reasoning_effort
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="facebookBotChatParams" class="d-none">
+                                            <div class="row g-2" id="facebookBotChatControls">
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1"
+                                                        for="facebookBotTemperature">temperature</label>
+                                                    <input type="range" step="0.1" min="0" max="2"
+                                                        class="form-range form-range-primary"
+                                                        id="facebookBotTemperature">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">0</small>
+                                                        <small id="facebookBotTemperatureValue"
+                                                            class="fw-semibold">—</small>
+                                                        <small class="text-muted">2</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1" for="facebookBotTopP">top_p</label>
+                                                    <input type="range" step="0.05" min="0" max="1"
+                                                        class="form-range form-range-primary" id="facebookBotTopP">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">0</small>
+                                                        <small id="facebookBotTopPValue" class="fw-semibold">—</small>
+                                                        <small class="text-muted">1</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1"
+                                                        for="facebookBotPresencePenalty">presence_penalty</label>
+                                                    <input type="range" step="0.1" min="-2" max="2"
+                                                        class="form-range form-range-primary"
+                                                        id="facebookBotPresencePenalty">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">-2</small>
+                                                        <small id="facebookBotPresencePenaltyValue"
+                                                            class="fw-semibold">—</small>
+                                                        <small class="text-muted">2</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1"
+                                                        for="facebookBotFrequencyPenalty">frequency_penalty</label>
+                                                    <input type="range" step="0.1" min="-2" max="2"
+                                                        class="form-range form-range-primary"
+                                                        id="facebookBotFrequencyPenalty">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">-2</small>
+                                                        <small id="facebookBotFrequencyPenaltyValue"
+                                                            class="fw-semibold">—</small>
+                                                        <small class="text-muted">2</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="alert alert-info mt-2 mb-0 py-2 px-3 small d-none"
+                                                id="facebookBotChatNote">
+                                                โมเดล reasoning ไม่รองรับ temperature/top_p/penalties
+                                            </div>
+                                            <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small">
+                                                Reasoning (reasoning_effort) + sampling params ใช้ร่วมกันไม่ได้ใน Chat
+                                                API หากจะ reasoning ให้ใช้ Responses แทน
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="facebookBotDefault"
+                                        name="isDefault">
+                                    <label class="form-check-label" for="facebookBotDefault">
+                                        ตั้งเป็น Facebook Bot หลัก (Default)
+                                    </label>
+                                </div>
+                                <div class="form-text">Facebook Bot หลักจะถูกใช้เมื่อไม่ระบุ Facebook Bot เฉพาะ</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" id="deleteFacebookBotBtn" style="display: none;">
+                    <i class="fas fa-trash me-2"></i>ลบ
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                <button type="button" class="btn btn-primary" id="saveFacebookBotBtn">
+                    <i class="fas fa-save me-2"></i>บันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>แชท | จัดการ AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/chat-redesign.css" rel="stylesheet">
+    <link href="/css/chat-a11y.css" rel="stylesheet">
+    <link href="/css/chat-meta.css" rel="stylesheet">
+</head>
+
+<body class="app-shell page-chat">
+    <!-- Navigation -->
+    <%- include('partials/admin-navbar', { activePage: 'chat' }) %>
+
+        <!-- Main Chat Container -->
+        <div class="app-content">
+            <div class="chat-app-wrapper">
+                <div class="container-fluid px-0">
+                    <div class="chat-app">
+                        <!-- Sidebar Overlay (Mobile) -->
+                        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+                        <div class="sidebar-overlay" id="orderSidebarOverlay"></div>
+
+                        <!-- Left Sidebar - User List -->
+                        <aside class="chat-sidebar" id="chatSidebar">
+                            <!-- Sidebar Header -->
+                            <div class="sidebar-header">
+                                <div class="sidebar-header-content">
+                                    <h5 class="sidebar-title">
+                                        <i class="fas fa-comments"></i>
+                                        แชท
+                                    </h5>
+                                    <div class="user-count-badge" id="userCountBadge">0</div>
+                                </div>
+                                <button class="btn-close-sidebar d-md-none" id="closeSidebar" title="ปิด" aria-label="ปิดรายชื่อผู้ใช้">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <!-- Search Bar -->
+                            <div class="search-container">
+                                <div class="search-input-wrapper">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" class="search-input" id="userSearch"
+                                        placeholder="ค้นหาผู้ใช้...">
+                                    <button class="btn-filter" id="filterToggle" title="ตัวกรอง">
+                                        <i class="fas fa-filter"></i>
+                                        <span class="filter-badge" id="filterBadge" style="display: none;">0</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Filter Panel (Collapsible) -->
+                            <div class="filter-panel" id="filterPanel" style="display: none;" role="region"
+                                aria-label="ตัวกรองรายชื่อผู้ใช้">
+                                <div class="filter-header">
+                                    <span class="filter-title">ตัวกรอง</span>
+                                    <button class="btn-clear-filter" id="clearFilters">ล้างทั้งหมด</button>
+                                </div>
+
+                                <!-- Status Filters -->
+                                <div class="filter-section">
+                                    <div class="filter-section-title">สถานะ</div>
+                                    <div class="filter-buttons">
+                                        <button class="filter-btn active" data-filter="all">
+                                            <i class="fas fa-list"></i>
+                                            ทั้งหมด
+                                        </button>
+                                        <button class="filter-btn" data-filter="unread">
+                                            <i class="fas fa-circle"></i>
+                                            ยังไม่อ่าน
+                                        </button>
+                                        <button class="filter-btn" data-filter="followup">
+                                            <i class="fas fa-star"></i>
+                                            ติดตาม
+                                        </button>
+                                        <button class="filter-btn" data-filter="purchased">
+                                            <i class="fas fa-shopping-cart"></i>
+                                            ซื้อแล้ว
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Tag Filters -->
+                                <div class="filter-section">
+                                    <div class="filter-section-title">แท็ก</div>
+                                    <div class="tag-filters" id="tagFilters">
+                                        <span class="no-tags">ไม่มีแท็ก</span>
+                                    </div>
+                                </div>
+
+                                <!-- Filter Summary -->
+                                <div class="filter-summary">
+                                    <span id="filteredCount">0</span> ผู้ใช้
+                                </div>
+                            </div>
+
+                            <!-- User List -->
+                            <div class="user-list" id="userList">
+                                <div class="loading-placeholder">
+                                    <div class="spinner"></div>
+                                    <span>กำลังโหลด...</span>
+                                </div>
+                            </div>
+                        </aside>
+
+                        <!-- Main Chat Area -->
+                        <main class="chat-main">
+                            <!-- Chat Header -->
+                            <header class="chat-header" id="chatHeader">
+                                <div class="chat-header-left">
+                                    <button class="btn-toggle-sidebar d-md-none" id="toggleSidebar" aria-label="เปิดรายชื่อผู้ใช้">
+                                        <i class="fas fa-bars"></i>
+                                    </button>
+                                    <div class="chat-user-info">
+                                        <div class="chat-avatar" id="chatAvatar">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div class="chat-user-details">
+                                            <h6 class="chat-user-name" id="chatUserName">เลือกแชทเพื่อเริ่มสนทนา</h6>
+                                            <div class="chat-user-meta" id="chatUserMeta">
+                                                <span class="meta-item">
+                                                    <i class="fas fa-comment"></i>
+                                                    <span id="messageCount">0</span> ข้อความ
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="chat-header-right" id="chatHeaderActions" style="display: none;">
+                                    <!-- Desktop actions (>= lg) -->
+                                    <div class="chat-actions chat-actions--desktop d-none d-lg-flex">
+                                        <button class="btn-header-action" id="btnTogglePurchase" title="สถานะการซื้อ"
+                                            aria-label="สลับสถานะการซื้อ">
+                                            <i class="fas fa-shopping-cart"></i>
+                                        </button>
+                                        <button class="btn-header-action" id="btnManageTags" title="จัดการแท็ก"
+                                            aria-label="จัดการแท็ก">
+                                            <i class="fas fa-tags"></i>
+                                        </button>
+                                        <button class="btn-header-action" id="btnUserNotes" title="โน้ตลูกค้า"
+                                            aria-label="โน้ตลูกค้า">
+                                            <i class="fas fa-sticky-note"></i>
+                                        </button>
+                                        <button class="btn-header-action" id="btnToggleAI" title="เปิด/ปิด AI"
+                                            aria-label="เปิดหรือปิด AI">
+                                            <i class="fas fa-robot"></i>
+                                        </button>
+                                        <button class="btn-header-action" id="btnRefreshProfile" title="อัปเดตข้อมูลผู้ใช้"
+                                            aria-label="อัปเดตข้อมูลผู้ใช้">
+                                            <i class="fas fa-sync"></i>
+                                        </button>
+                                        <button class="btn-header-action" id="btnToggleDebug" title="Debug"
+                                            aria-label="สลับมุมมอง Debug">
+                                            <i class="fas fa-bug"></i>
+                                        </button>
+                                        <div class="header-divider" aria-hidden="true"></div>
+                                        <button class="btn-header-action btn-danger" id="btnClearChat" title="ล้างแชท"
+                                            aria-label="ล้างแชท">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Mobile/Tablet actions (< lg) -->
+                                    <div class="chat-actions chat-actions--mobile d-lg-none">
+                                        <button class="btn-header-action" id="btnToggleOrders" title="ดูออเดอร์"
+                                            aria-label="ดูออเดอร์">
+                                            <i class="fas fa-clipboard-list"></i>
+                                        </button>
+
+                                        <div class="dropdown">
+                                            <button class="btn-header-action" id="btnMoreActions" type="button"
+                                                data-bs-toggle="dropdown" aria-expanded="false" title="เมนูเพิ่มเติม"
+                                                aria-label="เมนูเพิ่มเติม">
+                                                <i class="fas fa-ellipsis-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end chat-actions-menu"
+                                                id="chatHeaderMoreMenu" aria-label="เมนูแอคชันแชท">
+                                                <li>
+                                                    <button class="dropdown-item" type="button"
+                                                        data-chat-action="togglePurchase">
+                                                        <i class="fas fa-shopping-cart me-2"></i>สถานะการซื้อ
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item" type="button"
+                                                        data-chat-action="manageTags">
+                                                        <i class="fas fa-tags me-2"></i>จัดการแท็ก
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item" type="button"
+                                                        data-chat-action="userNotes">
+                                                        <i class="fas fa-sticky-note me-2"></i>โน้ตลูกค้า
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item" type="button"
+                                                        data-chat-action="toggleAI">
+                                                        <i class="fas fa-robot me-2"></i>เปิด/ปิด AI
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item" type="button"
+                                                        data-chat-action="refreshProfile">
+                                                        <i class="fas fa-sync me-2"></i>อัปเดตข้อมูลผู้ใช้
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item" type="button"
+                                                        data-chat-action="toggleDebug">
+                                                        <i class="fas fa-bug me-2"></i>Debug
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <hr class="dropdown-divider">
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item text-danger" type="button"
+                                                        data-chat-action="clearChat">
+                                                        <i class="fas fa-trash me-2"></i>ล้างแชท
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <!-- Messages Container -->
+                            <div class="messages-wrapper" id="messagesWrapper">
+                                <div class="messages-container" id="messagesContainer">
+                                    <!-- Empty State -->
+                                    <div class="empty-state app-empty" id="emptyState">
+                                        <div class="app-empty__icon">
+                                            <i class="fab fa-facebook-messenger"></i>
+                                        </div>
+                                        <div class="app-empty__title">เลือกแชทเพื่อเริ่มการสนทนา</div>
+                                        <div class="app-empty__desc">
+                                            เลือกผู้ใช้จากรายการด้านซ้ายเพื่อดูข้อความและตอบกลับได้ทันที</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Debug Panel (Hidden by default) -->
+                            <div class="chat-debug-panel" id="chatDebugPanel" hidden>
+                                <div class="chat-debug-header">
+                                    <div class="chat-debug-title">
+                                        <i class="fas fa-bug"></i>
+                                        Debug
+                                    </div>
+                                    <div class="chat-debug-actions">
+                                        <button type="button" class="chat-debug-btn" id="chatDebugCopyBtn"
+                                            title="คัดลอก" aria-label="คัดลอกข้อมูล Debug">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                        <button type="button" class="chat-debug-btn" id="chatDebugCloseBtn"
+                                            title="ซ่อน" aria-label="ซ่อน Debug">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <pre class="chat-debug-body" id="chatDebugBody">เลือกผู้ใช้เพื่อดูข้อมูล debug</pre>
+                            </div>
+
+                            <!-- Message Input Area (Fixed at bottom) -->
+                            <div class="message-input-area" id="messageInputArea" style="display: none;">
+                                <div class="message-input-container">
+                                    <button class="btn-input-action" id="btnTemplate" title="Templates">
+                                        <i class="fas fa-magic"></i>
+                                    </button>
+                                    <div class="message-input-wrapper">
+                                        <textarea class="message-input" id="messageInput" placeholder="พิมพ์ข้อความ..."
+                                            rows="1" maxlength="1000"></textarea>
+                                    </div>
+                                    <button class="btn-input-action" id="btnEmoji" title="อิโมจิ">
+                                        <i class="far fa-smile"></i>
+                                    </button>
+                                    <button class="btn-send" id="btnSend" title="ส่ง">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                                <div class="message-input-footer">
+                                    <span class="char-counter">
+                                        <span id="charCount">0</span>/1000
+                                    </span>
+                                    <span class="input-hints">
+                                        Enter เพื่อส่ง • Shift+Enter ขึ้นบรรทัดใหม่
+                                    </span>
+                                </div>
+                            </div>
+                        </main>
+
+                        <!-- Order Sidebar -->
+                        <aside class="order-sidebar" id="orderSidebar">
+                            <div class="order-sidebar-header">
+                                <div class="order-header-left">
+                                    <button class="btn-collapse-sidebar" id="btnCollapseOrderSidebar" title="ย่อ/ขยาย">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <h5 class="order-sidebar-title">
+                                        <i class="fas fa-shopping-cart"></i>
+                                        ออเดอร์
+                                    </h5>
+                                </div>
+                                <div class="order-count-badge" id="orderCountBadge">0</div>
+                            </div>
+
+                            <div class="order-content" id="orderContent">
+                                <div class="order-empty-state" id="orderEmptyState">
+                                    <div class="order-empty-icon">
+                                        <i class="fas fa-shopping-bag"></i>
+                                    </div>
+                                    <h6 class="order-empty-title">ไม่มีออเดอร์</h6>
+                                    <p class="order-empty-description">
+                                        เลือกผู้ใช้เพื่อดูออเดอร์ ระบบจะแสดงออเดอร์ที่ AI บันทึกไว้
+                                    </p>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Modal -->
+        <div class="modal fade" id="imageModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">รูปภาพ</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="modalImage" src="" alt="รูปภาพ" class="img-fluid">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="downloadImage">
+                            <i class="fas fa-download me-2"></i>ดาวน์โหลด
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tag Management Modal -->
+        <div class="modal fade" id="tagModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-tags me-2"></i>จัดการแท็ก
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">ผู้ใช้:</label>
+                            <div id="tagModalUserName" class="text-muted"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">แท็กปัจจุบัน:</label>
+                            <div id="currentTags" class="tag-list">
+                                <span class="text-muted">ไม่มีแท็ก</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">เพิ่มแท็กใหม่:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="newTagInput" placeholder="ชื่อแท็ก...">
+                                <button class="btn btn-primary" id="addTagBtn">
+                                    <i class="fas fa-plus"></i> เพิ่ม
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label fw-bold">แท็กที่ใช้บ่อย:</label>
+                            <div id="popularTags" class="tag-list">
+                                <span class="text-muted">ไม่มีแท็ก</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Modal -->
+        <div class="modal fade" id="templateModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-magic me-2"></i>Templates
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="templateSearch" placeholder="ค้นหา template...">
+                        </div>
+                        <div id="templateList" class="template-list">
+                            <div class="text-muted text-center py-3">ไม่มี template</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="createTemplateBtn">
+                            <i class="fas fa-plus me-2"></i>สร้าง Template ใหม่
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Editor Modal -->
+        <div class="modal fade" id="templateEditorModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="templateEditorModalLabel">
+                            <i class="fas fa-magic me-2"></i>สร้าง Template ใหม่
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อ Template</label>
+                            <input type="text" class="form-control" id="templateTitleInput"
+                                placeholder="เช่น ขอบคุณ, ตอบช้า">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ข้อความ</label>
+                            <textarea class="form-control" id="templateMessageInput" rows="4"
+                                placeholder="พิมพ์ข้อความ..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="button" class="btn btn-primary" id="templateEditorSaveBtn">
+                            <i class="fas fa-save me-2"></i>บันทึก
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Notes Modal -->
+        <div class="modal fade" id="userNotesModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-sticky-note me-2"></i>โน้ตลูกค้า
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">ผู้ใช้:</label>
+                            <div id="notesModalUserName" class="text-muted"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">โน้ต:</label>
+                            <textarea class="form-control" id="userNotesTextarea" rows="6"
+                                placeholder="เพิ่มโน้ตเกี่ยวกับลูกค้าคนนี้..."></textarea>
+                            <div class="form-text">สูงสุด 5,000 ตัวอักษร</div>
+                        </div>
+                        <div class="text-muted small" id="notesLastUpdated" style="display: none;">
+                            <i class="fas fa-clock me-1"></i>อัปเดตล่าสุด: <span id="notesUpdatedTime"></span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                        <button type="button" class="btn btn-primary" id="saveUserNotesBtn">
+                            <i class="fas fa-save me-2"></i>บันทึก
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Edit Modal -->
+        <div class="modal fade order-modal" id="orderEditModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-edit me-2"></i>แก้ไขออเดอร์
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="orderEditForm">
+                            <input type="hidden" id="editOrderId">
+
+                            <div class="order-form-group">
+                                <label class="order-form-label">สถานะออเดอร์</label>
+                                <select class="order-form-control" id="editOrderStatus">
+                                    <option value="pending">รอดำเนินการ</option>
+                                    <option value="confirmed">ยืนยันแล้ว</option>
+                                    <option value="shipped">จัดส่งแล้ว</option>
+                                    <option value="completed">เสร็จสิ้น</option>
+                                    <option value="cancelled">ยกเลิก</option>
+                                </select>
+                            </div>
+
+                            <div class="order-form-group">
+                                <label class="order-form-label">หมายเหตุ</label>
+                                <textarea class="order-form-control" id="editOrderNotes" rows="3"
+                                    placeholder="เพิ่มหมายเหตุ..."></textarea>
+                            </div>
+
+                            <div class="order-form-group">
+                                <label class="order-form-label">รายการสินค้า</label>
+                                <div id="editOrderItems">
+                                    <!-- Order items will be populated here -->
+                                </div>
+                            </div>
+
+                            <div class="order-form-group">
+                                <label class="order-form-label">ชื่อลูกค้า</label>
+                                <input type="text" class="order-form-control" id="editCustomerName"
+                                    placeholder="ชื่อผู้รับสินค้า">
+                            </div>
+
+                            <div class="order-form-group">
+                                <label class="order-form-label">ข้อมูลการจัดส่ง</label>
+                                <div class="row mb-2">
+                                    <div class="col-12">
+                                        <input type="text" class="order-form-control" id="editShippingAddress"
+                                            placeholder="ที่อยู่ (บ้านเลขที่ หมู่ ซอย ถนน)">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-6 mb-2 mb-md-0">
+                                        <input type="text" class="order-form-control" id="editAddressSubDistrict"
+                                            placeholder="ตำบล/แขวง">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="text" class="order-form-control" id="editAddressDistrict"
+                                            placeholder="อำเภอ/เขต">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-md-6 mb-2 mb-md-0">
+                                        <input type="text" class="order-form-control" id="editAddressProvince"
+                                            placeholder="จังหวัด">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="text" class="order-form-control" id="editAddressPostalCode"
+                                            placeholder="รหัสไปรษณีย์">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <input type="text" class="order-form-control" id="editPhone"
+                                            placeholder="เบอร์โทรศัพท์">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="order-form-group">
+                                <label class="order-form-label">วิธีชำระเงิน</label>
+                                <select class="order-form-control" id="editPaymentMethod">
+                                    <option value="เก็บเงินปลายทาง">เก็บเงินปลายทาง</option>
+                                    <option value="โอนเงิน">โอนเงิน</option>
+                                </select>
+                            </div>
+
+                            <div class="order-form-group">
+                                <label class="order-form-label">ค่าส่ง (บาท)</label>
+                                <input type="number" class="order-form-control" id="editShippingCost"
+                                    placeholder="ใส่ค่าส่ง (0 = ส่งฟรี)" min="0" step="1">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="button" class="btn btn-primary" id="saveOrderBtn">
+                            <i class="fas fa-save me-2"></i>บันทึก
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="/js/chat-redesign.js"></script>
+
+        <script>
+            // Initialize chat manager
+            const chatManager = new ChatManager();
+
+        // Pass follow-up config from server
+        <% if (typeof followUpConfig !== 'undefined') { %>
+                    chatManager.followUpConfig = <%- JSON.stringify(followUpConfig).replace(/</g, '\\u003c') %>;
+            <% } else { %>
+                    chatManager.followUpConfig = { };
+            <% } %>
+        </script>
+</body>
+
+</html>

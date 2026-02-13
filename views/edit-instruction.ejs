@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แก้ไข Instruction - จัดการ AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        .page-header-actions .btn {
+            min-width: 110px;
+        }
+
+        .table-builder-toolbar .btn {
+            min-width: 120px;
+        }
+
+        .table-builder-wrapper {
+            max-height: none;
+            overflow: auto;
+        }
+
+        .table-builder-wrapper table {
+            min-width: 480px;
+        }
+
+        .table-header-control {
+            display: flex;
+            align-items: center;
+        }
+
+        .table-header-input {
+            min-width: 150px;
+        }
+
+        .table-cell-input {
+            min-width: 200px;
+            width: 220px;
+            min-height: 72px;
+            resize: both;
+            max-width: none;
+            font-family: inherit;
+            line-height: 1.4;
+            box-sizing: border-box;
+        }
+
+        .table-actions-col {
+            width: 52px;
+            min-width: 52px;
+        }
+
+        .instruction-drag-handle {
+            display: inline-flex;
+            align-items: center;
+            color: var(--text-light);
+        }
+    </style>
+</head>
+<body class="app-shell">
+    <%- include('partials/admin-navbar', { activePage: 'dashboard' }) %>
+
+    <div class="app-content">
+    <div class="container-fluid mt-0">
+        <div class="d-flex justify-content-end mb-3">
+            <a href="/admin/dashboard" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> กลับแดชบอร์ด
+            </a>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12">
+                <form id="editInstructionForm" method="POST" action="/admin/instructions/<%= instruction._id %>/edit" class="needs-validation" novalidate>
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <input type="hidden" id="instructionType" name="type" value="<%= instruction.type %>">
+                            <div class="mb-3 text-muted small">
+                                รหัส: <span class="text-break"><%= instruction._id %></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="instructionTitle">
+                                    หัวข้อ (ไม่บังคับ)
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="instructionTitle"
+                                    name="title"
+                                    value="<%= instruction.title || '' %>"
+                                    placeholder="เช่น ข้อมูลสินค้า / ขั้นตอนบริการ / โปรโมชั่นล่าสุด">
+                            </div>
+
+                            <div id="textEditorSection" class="mb-3">
+                                <label class="form-label" for="instructionContent">
+                                    เนื้อหาข้อความ
+                                </label>
+                                <textarea
+                                    class="form-control"
+                                    id="instructionContent"
+                                    name="content"
+                                    rows="10"
+                                    placeholder="กรอกข้อมูลที่ต้องการให้ AI ใช้ตอบกลับให้ลูกค้า"><%= instruction.content || '' %></textarea>
+                                <div class="form-text d-flex justify-content-between">
+                                    <span>
+                                        <i class="fas fa-lightbulb me-1 text-warning"></i>
+                                        เขียนให้กระชับและเข้าใจง่าย เพื่อให้ AI นำไปใช้ตอบได้แม่นยำ
+                                    </span>
+                                    <span id="contentCharCount">0</span>
+                                </div>
+                            </div>
+
+                            <div id="tableEditorSection" class="mb-3" style="display: none;">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                    <div>
+                                        <label class="form-label mb-0">
+                                            ตั้งค่าตารางข้อมูล
+                                        </label>
+                                        <div class="form-text">
+                                            เพิ่ม/ลบคอลัมน์และแถวตามโครงสร้างข้อมูลที่ต้องการ
+                                        </div>
+                                    </div>
+                                    <div class="table-builder-toolbar btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-primary" id="addColumnBtn">
+                                            <i class="fas fa-plus me-1"></i> เพิ่มคอลัมน์
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" id="addRowBtn">
+                                            <i class="fas fa-plus me-1"></i> เพิ่มแถว
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger" id="clearTableBtn">
+                                            <i class="fas fa-trash me-1"></i> ล้างตาราง
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="card border-0 shadow-sm table-builder-card">
+                                    <div class="card-body">
+                                        <div class="table-responsive table-builder-wrapper">
+                                            <table class="table table-bordered table-sm align-middle" id="instructionTableBuilder">
+                                                <thead class="table-light">
+                                                    <tr id="tableHeaderRow"></tr>
+                                                </thead>
+                                                <tbody id="tableBodyRows"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="tableDataInput" name="tableData">
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <a href="/admin/dashboard" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i> ยกเลิก
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="saveInstructionBtn">
+                            <i class="fas fa-save me-1"></i> บันทึกการแก้ไข
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+    </div>
+
+    </div> <!-- /app-content -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+	        const initialInstruction = {
+	            id: '<%= instruction._id.toString() %>',
+	            instructionId: <%- JSON.stringify(instruction.instructionId || '').replace(/</g, '\\u003c') %>,
+	            type: '<%= instruction.type %>',
+	            title: <%- JSON.stringify(instruction.title || '').replace(/</g, '\\u003c') %>,
+	            content: <%- JSON.stringify(instruction.content || '').replace(/</g, '\\u003c') %>,
+	            data: <%- JSON.stringify(instruction.data || null).replace(/</g, '\\u003c') %>,
+	            version: <%- JSON.stringify(Number.isInteger(instruction.version) ? instruction.version : null).replace(/</g, '\\u003c') %>,
+	            createdAt: '<%= instruction.createdAt ? new Date(instruction.createdAt).toISOString() : '' %>',
+	            updatedAt: '<%= instruction.updatedAt ? new Date(instruction.updatedAt).toISOString() : '' %>'
+	        };
+
+        const instructionTableBuilder = (() => {
+            let isInitialized = false;
+            let columns = ['คอลัมน์ 1', 'คอลัมน์ 2'];
+            let rows = [
+                ['', ''],
+                ['', ''],
+                ['', '']
+            ];
+            const DEFAULT_COLUMN_WIDTH = 220;
+            const MIN_COLUMN_WIDTH = 160;
+            let columnSizes = new Array(columns.length).fill(DEFAULT_COLUMN_WIDTH);
+
+            const refs = {
+                headerRow: null,
+                bodyRows: null,
+                addColumnBtn: null,
+                addRowBtn: null,
+                clearBtn: null,
+                hiddenInput: null
+            };
+
+            const escapeHtml = (value) => {
+                if (value === null || value === undefined) return '';
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            };
+
+            const ensureColumnDefaults = () => {
+                columns = columns.map((col, index) => {
+                    const name = (col || '').trim();
+                    return name || `คอลัมน์ ${index + 1}`;
+                });
+                syncColumnSizesLength();
+            };
+
+            const ensureRowWidths = () => {
+                rows = rows.map(row => {
+                    const nextRow = Array.isArray(row) ? [...row] : [];
+                    while (nextRow.length < columns.length) {
+                        nextRow.push('');
+                    }
+                    if (nextRow.length > columns.length) {
+                        nextRow.length = columns.length;
+                    }
+                    return nextRow;
+                });
+            };
+
+            const renderHeader = () => {
+                if (!refs.headerRow) return;
+                ensureColumnDefaults();
+                refs.headerRow.innerHTML = columns.map((columnName, index) => `
+                    <th scope="col">
+                        <div class="table-header-control">
+                            <input
+                                type="text"
+                                class="form-control form-control-sm table-header-input"
+                                value="${escapeHtml(columnName)}"
+                                data-col-index="${index}"
+                                aria-label="ชื่อคอลัมน์ที่ ${index + 1}">
+                            ${columns.length > 1 ? `
+                                <button type="button" class="btn btn-link btn-sm text-danger p-0 ms-1 remove-column-btn" data-remove-column="${index}" title="ลบคอลัมน์นี้">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </th>
+                `).join('') + `
+                    <th scope="col" class="text-center table-actions-col">
+                        <i class="fas fa-ellipsis-h text-muted"></i>
+                    </th>
+                `;
+
+                refs.headerRow.querySelectorAll('.table-header-input').forEach(input => {
+                    const colIndex = Number(input.getAttribute('data-col-index'));
+                    if (!Number.isInteger(colIndex)) return;
+                    applyColumnWidthToElements(colIndex);
+                });
+
+                refs.headerRow.querySelectorAll('.table-header-input').forEach(input => {
+                    input.addEventListener('input', event => {
+                        const colIndex = Number(event.target.getAttribute('data-col-index'));
+                        if (Number.isInteger(colIndex) && colIndex >= 0 && colIndex < columns.length) {
+                            columns[colIndex] = event.target.value;
+                        }
+                        updatePreview();
+                    });
+                });
+
+                refs.headerRow.querySelectorAll('.remove-column-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const colIndex = Number(btn.getAttribute('data-remove-column'));
+                        if (!Number.isInteger(colIndex)) return;
+                        if (columns.length <= 1) {
+                            showAlert('ต้องมีคอลัมน์อย่างน้อย 1 คอลัมน์', 'warning');
+                            return;
+                        }
+                        columns.splice(colIndex, 1);
+                        if (columnSizes.length > colIndex) {
+                            columnSizes.splice(colIndex, 1);
+                        }
+                        rows.forEach(row => row.splice(colIndex, 1));
+                        syncColumnSizesLength();
+                        render();
+                        updatePreview();
+                    });
+                });
+            };
+
+            const renderBody = () => {
+                if (!refs.bodyRows) return;
+                ensureRowWidths();
+                refs.bodyRows.innerHTML = rows.map((row, rowIndex) => `
+                    <tr data-row-index="${rowIndex}">
+                        ${row.map((cellValue, colIndex) => `
+                            <td>
+                                <textarea
+                                    class="form-control form-control-sm table-cell-input"
+                                    data-row-index="${rowIndex}"
+                                    data-col-index="${colIndex}">${escapeHtml(cellValue)}</textarea>
+                            </td>
+                        `).join('')}
+                        <td class="text-center">
+                            <button type="button" class="btn btn-link text-danger btn-sm remove-row-btn" data-remove-row="${rowIndex}" title="ลบแถวนี้">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                refs.bodyRows.querySelectorAll('.table-cell-input').forEach(input => {
+                    const colIndex = Number(input.getAttribute('data-col-index'));
+                    if (Number.isInteger(colIndex)) {
+                        applyColumnWidthToElements(colIndex);
+                    }
+
+                    input.addEventListener('input', event => {
+                        const rowIndex = Number(event.target.getAttribute('data-row-index'));
+                        const colIndex = Number(event.target.getAttribute('data-col-index'));
+                        if (!Number.isInteger(rowIndex) || !Number.isInteger(colIndex)) return;
+                        if (!rows[rowIndex]) rows[rowIndex] = [];
+                        rows[rowIndex][colIndex] = event.target.value;
+                        updatePreview();
+                    });
+
+                    input.addEventListener('mouseup', event => {
+                        handleColumnResize(event.target);
+                    });
+
+                    input.addEventListener('keyup', event => {
+                        if (event.key === 'Enter') {
+                            handleColumnResize(event.target);
+                        }
+                    });
+
+                    input.addEventListener('blur', event => {
+                        handleColumnResize(event.target);
+                    });
+                });
+
+                refs.bodyRows.querySelectorAll('.remove-row-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const rowIndex = Number(btn.getAttribute('data-remove-row'));
+                        if (!Number.isInteger(rowIndex)) return;
+                        if (rows.length <= 1) {
+                            rows[0] = new Array(columns.length).fill('');
+                        } else {
+                            rows.splice(rowIndex, 1);
+                        }
+                        render();
+                        updatePreview();
+                    });
+                });
+            };
+
+            const render = () => {
+                renderHeader();
+                renderBody();
+            };
+
+            const addColumn = () => {
+                columns.push(`คอลัมน์ ${columns.length + 1}`);
+                rows.forEach(row => row.push(''));
+                columnSizes.push(DEFAULT_COLUMN_WIDTH);
+                render();
+                updatePreview();
+            };
+
+            const addRow = () => {
+                const newRow = new Array(columns.length).fill('');
+                rows.push(newRow);
+                render();
+                setTimeout(() => {
+                    const lastInput = refs.bodyRows?.querySelector('tr:last-child .table-cell-input');
+                    if (lastInput) lastInput.focus();
+                }, 0);
+                updatePreview();
+            };
+
+            const clear = () => {
+                columns = ['คอลัมน์ 1', 'คอลัมน์ 2'];
+                rows = [
+                    ['', ''],
+                    ['', ''],
+                    ['', '']
+                ];
+                columnSizes = new Array(columns.length).fill(DEFAULT_COLUMN_WIDTH);
+                render();
+                updatePreview();
+                if (refs.hiddenInput) {
+                    refs.hiddenInput.value = '';
+                }
+            };
+
+            const sanitizeRows = (dataRows) => {
+                if (!Array.isArray(dataRows)) return [];
+                return dataRows
+                    .map(row => {
+                        if (!Array.isArray(row)) return new Array(columns.length).fill('');
+                        const normalized = row.map(cell => {
+                            if (cell === null || cell === undefined) return '';
+                            return String(cell).replace(/\r\n/g, '\n');
+                        });
+                        while (normalized.length < columns.length) {
+                            normalized.push('');
+                        }
+                        if (normalized.length > columns.length) {
+                            normalized.length = columns.length;
+                        }
+                        return normalized;
+                    })
+                    .filter(row => row.some(cell => cell.trim() !== ''));
+            };
+
+            const syncColumnSizesLength = () => {
+                if (columnSizes.length < columns.length) {
+                    columnSizes = columnSizes.concat(new Array(columns.length - columnSizes.length).fill(DEFAULT_COLUMN_WIDTH));
+                } else if (columnSizes.length > columns.length) {
+                    columnSizes.length = columns.length;
+                }
+            };
+
+            const getStoredColumnWidth = (colIndex) => {
+                const stored = columnSizes[colIndex];
+                if (typeof stored === 'number' && stored > 0) {
+                    return Math.max(stored, MIN_COLUMN_WIDTH);
+                }
+                return DEFAULT_COLUMN_WIDTH;
+            };
+
+            const applyColumnWidthToElements = (colIndex) => {
+                const width = getStoredColumnWidth(colIndex);
+                const px = `${width}px`;
+                if (refs.headerRow) {
+                    refs.headerRow.querySelectorAll(`.table-header-input[data-col-index="${colIndex}"]`).forEach(input => {
+                        input.style.width = px;
+                    });
+                }
+                if (refs.bodyRows) {
+                    refs.bodyRows.querySelectorAll(`.table-cell-input[data-col-index="${colIndex}"]`).forEach(textarea => {
+                        textarea.style.width = px;
+                    });
+                }
+            };
+
+            const handleColumnResize = (element) => {
+                if (!element || !element.classList || !element.classList.contains('table-cell-input')) return;
+                const colIndex = Number(element.getAttribute('data-col-index'));
+                if (!Number.isInteger(colIndex)) return;
+                requestAnimationFrame(() => {
+                    const rect = element.getBoundingClientRect();
+                    const width = Math.max(rect.width, MIN_COLUMN_WIDTH);
+                    columnSizes[colIndex] = width;
+                    applyColumnWidthToElements(colIndex);
+                });
+            };
+
+            const getPayload = () => {
+                ensureColumnDefaults();
+                ensureRowWidths();
+                const sanitizedColumns = columns.map(col => col.trim());
+                const sanitizedRows = sanitizeRows(rows);
+                return {
+                    columns: sanitizedColumns,
+                    rows: sanitizedRows
+                };
+            };
+
+            const commit = () => {
+                if (!refs.hiddenInput) return { success: false, message: 'ไม่พบข้อมูลตาราง' };
+                const payload = getPayload();
+
+                const hasColumn = payload.columns.some(col => col !== '');
+                if (!hasColumn) {
+                    return { success: false, message: 'กรุณาตั้งชื่อคอลัมน์อย่างน้อย 1 คอลัมน์' };
+                }
+
+                refs.hiddenInput.value = JSON.stringify(payload);
+                return { success: true, payload };
+            };
+
+            const populate = (data) => {
+                if (!data || typeof data !== 'object') {
+                    clear();
+                    return;
+                }
+
+                if (Array.isArray(data.columns) && data.columns.length) {
+                    columns = data.columns.map(col => String(col || ''));
+                } else {
+                    columns = ['คอลัมน์ 1', 'คอลัมน์ 2'];
+                }
+                columnSizes = new Array(columns.length).fill(DEFAULT_COLUMN_WIDTH);
+
+                if (Array.isArray(data.rows) && data.rows.length) {
+                    rows = data.rows.map(row => {
+                        if (Array.isArray(row)) {
+                            return row.map(cell => String(cell ?? '').replace(/\r\n/g, '\n'));
+                        }
+                        if (row && typeof row === 'object') {
+                            return columns.map(col => String(row[col] ?? '').replace(/\r\n/g, '\n'));
+                        }
+                        return new Array(columns.length).fill('');
+                    });
+                } else {
+                    rows = [new Array(columns.length).fill('')];
+                }
+
+                ensureColumnDefaults();
+                ensureRowWidths();
+                render();
+                updatePreview();
+            };
+
+            return {
+                init() {
+                    refs.headerRow = document.getElementById('tableHeaderRow');
+                    refs.bodyRows = document.getElementById('tableBodyRows');
+                    refs.addColumnBtn = document.getElementById('addColumnBtn');
+                    refs.addRowBtn = document.getElementById('addRowBtn');
+                    refs.clearBtn = document.getElementById('clearTableBtn');
+                    refs.hiddenInput = document.getElementById('tableDataInput');
+
+                    if (!refs.headerRow || !refs.bodyRows) {
+                        return;
+                    }
+
+                    if (!isInitialized) {
+                        if (refs.addColumnBtn) {
+                            refs.addColumnBtn.addEventListener('click', addColumn);
+                        }
+                        if (refs.addRowBtn) {
+                            refs.addRowBtn.addEventListener('click', addRow);
+                        }
+                        if (refs.clearBtn) {
+                            refs.clearBtn.addEventListener('click', () => {
+                                if (confirm('ต้องการล้างข้อมูลตารางทั้งหมดหรือไม่?')) {
+                                    clear();
+                                }
+                            });
+                        }
+                        isInitialized = true;
+                    }
+
+                    syncColumnSizesLength();
+                    render();
+                    updatePreview();
+                },
+                reset() {
+                    clear();
+                },
+                populateFromExisting(data) {
+                    populate(data);
+                },
+                commitToHiddenInput() {
+                    return commit();
+                },
+                getPayload() {
+                    return getPayload();
+                }
+            };
+        })();
+
+	        function showAlert(message, type = 'info') {
+	            const existingToast = document.querySelector('.notification-toast');
+	            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `notification-toast alert alert-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show`;
+	            toast.style.cssText = `
+	                position: fixed;
+	                bottom: 20px;
+	                right: 20px;
+	                z-index: 1055;
+	                max-width: 360px;
+	                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+	            `;
+
+	            const row = document.createElement('div');
+	            row.className = 'd-flex align-items-center';
+
+	            const icon = document.createElement('i');
+	            const iconClass =
+	                type === 'success'
+	                    ? 'fa-check-circle'
+	                    : type === 'warning'
+	                        ? 'fa-exclamation-triangle'
+	                        : type === 'error'
+	                            ? 'fa-times-circle'
+	                            : 'fa-info-circle';
+	            icon.className = `fas ${iconClass} me-2`;
+
+	            const text = document.createElement('span');
+	            text.textContent = message || '';
+
+	            const close = document.createElement('button');
+	            close.type = 'button';
+	            close.className = 'btn-close ms-auto';
+	            close.setAttribute('data-bs-dismiss', 'alert');
+	            close.setAttribute('aria-label', 'Close');
+
+	            row.appendChild(icon);
+	            row.appendChild(text);
+	            row.appendChild(close);
+	            toast.appendChild(row);
+	            document.body.appendChild(toast);
+	            setTimeout(() => {
+	                toast.classList.remove('show');
+	                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 200);
+            }, 4000);
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '-';
+            try {
+                return new Date(value).toLocaleString('th-TH');
+            } catch (_) {
+                return '-';
+            }
+        }
+
+        function updateSidebarMeta() {
+            const metaTypeLabel = document.getElementById('metaTypeLabel');
+            const metaDataCount = document.getElementById('metaDataCount');
+            const type = document.getElementById('instructionType').value;
+
+            if (metaTypeLabel) {
+                metaTypeLabel.textContent = type === 'table' ? 'ตาราง' : 'ข้อความ';
+            }
+
+            if (metaDataCount) {
+                if (type === 'table') {
+                    const payload = instructionTableBuilder.getPayload();
+                    const rowCount = Array.isArray(payload.rows) ? payload.rows.length : 0;
+                    metaDataCount.textContent = `${rowCount} แถว`;
+                } else {
+                    const text = document.getElementById('instructionContent').value || '';
+                    metaDataCount.textContent = `${text.length} อักขระ`;
+                }
+            }
+        }
+
+        function updatePreview() {
+            updateSidebarMeta();
+        }
+
+        function updateCharCount() {
+            const counter = document.getElementById('contentCharCount');
+            if (!counter) return;
+            const value = document.getElementById('instructionContent').value || '';
+            counter.textContent = `${value.length} อักขระ`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const typeSelect = document.getElementById('instructionType');
+            const textSection = document.getElementById('textEditorSection');
+            const tableSection = document.getElementById('tableEditorSection');
+            const contentInput = document.getElementById('instructionContent');
+            const titleInput = document.getElementById('instructionTitle');
+
+            const toggleEditorSection = () => {
+                const type = typeSelect ? typeSelect.value : 'text';
+                if (type === 'table') {
+                    textSection.style.display = 'none';
+                    tableSection.style.display = '';
+                    instructionTableBuilder.init();
+                    updatePreview();
+                } else {
+                    textSection.style.display = '';
+                    tableSection.style.display = 'none';
+                    updatePreview();
+                }
+            };
+
+            instructionTableBuilder.init();
+
+            if (initialInstruction.type === 'table' && initialInstruction.data) {
+                instructionTableBuilder.populateFromExisting(initialInstruction.data);
+            }
+
+            toggleEditorSection();
+            updateCharCount();
+            updatePreview();
+
+            if (typeSelect && typeSelect.tagName === 'SELECT') {
+                typeSelect.addEventListener('change', () => {
+                    toggleEditorSection();
+                    updatePreview();
+                });
+            }
+
+            contentInput.addEventListener('input', () => {
+                updateCharCount();
+                updatePreview();
+            });
+
+            titleInput.addEventListener('input', () => {
+                const metaUpdated = document.getElementById('metaUpdatedAt');
+                if (metaUpdated && !initialInstruction.updatedAt) {
+                    metaUpdated.textContent = formatDateTime(new Date().toISOString());
+                }
+            });
+
+            document.getElementById('editInstructionForm').addEventListener('submit', async (event) => {
+                const type = typeSelect ? typeSelect.value : 'text';
+                if (type === 'table') {
+                    const result = instructionTableBuilder.commitToHiddenInput();
+                    if (!result.success) {
+                        event.preventDefault();
+                        showAlert(result.message || 'ไม่สามารถบันทึกข้อมูลตารางได้', 'warning');
+                        return false;
+                    }
+                    if (contentInput) {
+                        contentInput.value = '';
+                    }
+                } else {
+                    const hidden = document.getElementById('tableDataInput');
+                    if (hidden) {
+                        hidden.value = '';
+                    }
+                }
+                return true;
+            });
+        });
+    </script>
+</body>
+</html>

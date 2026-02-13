@@ -1,0 +1,547 @@
+/* Spreadsheet Editor V3 - Modern Google Sheets-like UI */
+
+:root {
+    --header-height: 56px;
+    --toolbar-height: 42px;
+    --formula-bar-height: 36px;
+    --statusbar-height: 28px;
+    --primary-color: #1a73e8;
+    --primary-hover: #1557b0;
+    --border-color: #e0e0e0;
+    --bg-light: #f8f9fa;
+    --bg-dark: #f1f3f4;
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+    --success-color: #0f9d58;
+    --warning-color: #f9ab00;
+    --error-color: #d93025;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body.spreadsheet-editor-body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #fff;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: var(--header-height);
+    padding: 0 16px;
+    background: linear-gradient(180deg, #fff 0%, #fafbfc 100%);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.header-center {
+    flex: 0 0 auto;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.btn-back {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 16px;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-back:hover {
+    background: var(--bg-light);
+    color: var(--text-primary);
+}
+
+.document-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.breadcrumb-path {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.parent-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 12px;
+}
+
+.title-input {
+    border: none;
+    font-size: 18px;
+    font-weight: 500;
+    padding: 4px 8px;
+    margin: -4px -8px;
+    border-radius: 4px;
+    min-width: 200px;
+    max-width: 400px;
+    color: var(--text-primary);
+    background: transparent;
+    transition: background 0.15s;
+}
+
+.title-input:hover {
+    background: var(--bg-light);
+}
+
+.title-input:focus {
+    outline: none;
+    background: var(--bg-light);
+    box-shadow: inset 0 0 0 2px var(--primary-color);
+}
+
+.title-input::placeholder {
+    color: var(--text-secondary);
+}
+
+/* Save Status */
+.save-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--bg-light);
+    color: var(--text-secondary);
+}
+
+.save-status.status-saved,
+.save-status.status-info {
+    background: #e6f4ea;
+    color: var(--success-color);
+}
+
+.save-status.status-saving {
+    background: #fef7e0;
+    color: var(--warning-color);
+}
+
+.save-status.status-error {
+    background: #fce8e6;
+    color: var(--error-color);
+}
+
+.save-status.status-dirty {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+/* ============================================
+   TOOLBAR
+   ============================================ */
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    height: var(--toolbar-height);
+    padding: 0 12px;
+    background: var(--bg-light);
+    border-bottom: 1px solid var(--border-color);
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.toolbar-section {
+    display: flex;
+    gap: 2px;
+}
+
+.toolbar-btn {
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    transition: all 0.15s;
+}
+
+.toolbar-btn:hover {
+    background: #e8eaed;
+    color: var(--text-primary);
+}
+
+.toolbar-btn:active {
+    background: #dadce0;
+}
+
+.toolbar-btn.active {
+    background: #e8f0fe;
+    color: var(--primary-color);
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border-color);
+    margin: 0 8px;
+}
+
+.toolbar-spacer {
+    flex: 1;
+}
+
+.toolbar-info {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 4px 12px;
+    background: #fff;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+/* ============================================
+   FORMULA BAR
+   ============================================ */
+.formula-bar {
+    display: flex;
+    align-items: center;
+    height: var(--formula-bar-height);
+    background: #fff;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 8px;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.cell-reference {
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.cell-reference input {
+    width: 100%;
+    height: 26px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--bg-light);
+    color: var(--text-primary);
+}
+
+.formula-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.formula-input {
+    flex: 1;
+}
+
+.formula-input input {
+    width: 100%;
+    height: 26px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    padding: 0 8px;
+    font-size: 13px;
+    background: transparent;
+    color: var(--text-primary);
+    transition: all 0.15s;
+}
+
+.formula-input input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: #fff;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15);
+}
+
+/* ============================================
+   SPREADSHEET CONTAINER
+   ============================================ */
+.spreadsheet-container {
+    flex: 1;
+    overflow: auto;
+    background: #fff;
+}
+
+/* Jspreadsheet overrides */
+.jexcel {
+    font-family: inherit !important;
+}
+
+.jexcel>thead>tr>td {
+    background: linear-gradient(180deg, #f8f9fa 0%, #f1f3f4 100%) !important;
+    border-color: #e0e0e0 !important;
+    font-weight: 500 !important;
+    color: var(--text-secondary) !important;
+    height: 24px !important;
+}
+
+.jexcel>tbody>tr>td {
+    border-color: #e8eaed !important;
+    height: 32px !important;
+    vertical-align: middle !important;
+}
+
+.jexcel>tbody>tr>td:first-child {
+    background: linear-gradient(180deg, #f8f9fa 0%, #f1f3f4 100%) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    width: 50px !important;
+    min-width: 50px !important;
+}
+
+.jexcel>tbody>tr:hover>td {
+    background: #f8f9fa !important;
+}
+
+.jexcel>tbody>tr>td.highlight {
+    background: #e8f0fe !important;
+}
+
+.jexcel>tbody>tr.selected>td,
+.jexcel>tbody>tr>td.selected {
+    background: #e8f0fe !important;
+}
+
+.jexcel_corner {
+    background: var(--primary-color) !important;
+}
+
+/* ============================================
+   STATUS BAR
+   ============================================ */
+.editor-statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: var(--statusbar-height);
+    background: linear-gradient(180deg, #f1f3f4 0%, #e8eaed 100%);
+    border-top: 1px solid var(--border-color);
+    padding: 0 12px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.status-left,
+.status-center,
+.status-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff;
+    border-radius: 4px;
+    padding: 2px;
+    border: 1px solid var(--border-color);
+}
+
+.zoom-btn {
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 2px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.zoom-btn:hover {
+    background: var(--bg-light);
+    color: var(--text-primary);
+}
+
+#zoomLevel {
+    min-width: 40px;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+.toast-notification {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: #323232;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    animation: slideUp 0.3s ease;
+}
+
+.toast-notification.toast-success {
+    background: var(--success-color);
+}
+
+.toast-notification.toast-error {
+    background: var(--error-color);
+}
+
+.toast-notification.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn-primary {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+}
+
+/* ============================================
+   MODAL OVERRIDES
+   ============================================ */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 20px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .header-right .btn span {
+        display: none;
+    }
+
+    .title-input {
+        min-width: 120px;
+        max-width: 200px;
+    }
+
+    .toolbar-info {
+        display: none;
+    }
+
+    .header-center {
+        display: none;
+    }
+}
+
+@media (max-width: 576px) {
+    .toolbar-section:not(:first-child):not(:last-child) {
+        display: none;
+    }
+
+    .toolbar-divider {
+        display: none;
+    }
+}

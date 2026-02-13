@@ -1,0 +1,102 @@
+<!-- Import/Export Sheets Modal -->
+<div class="modal fade" id="importExportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">จัดการข้อมูล (Import / Export)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <ul class="nav nav-tabs nav-fill" id="ieTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="import-tab" data-bs-toggle="tab" data-bs-target="#importPanel" type="button" role="tab">นำเข้า (Import)</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="export-tab" data-bs-toggle="tab" data-bs-target="#exportPanel" type="button" role="tab">ส่งออก (Export)</button>
+                    </li>
+                </ul>
+                <div class="tab-content p-3" id="ieTabContent">
+                    <!-- Import Panel -->
+                    <div class="tab-pane fade show active" id="importPanel" role="tabpanel">
+                        <div id="importStep1">
+                            <div class="text-center py-5 border rounded bg-light" style="border-style: dashed !important;">
+                                <i class="fas fa-file-excel fa-3x text-success mb-3"></i>
+                                <h5>อัปโหลดไฟล์ Excel (.xlsx)</h5>
+                                <p class="text-muted">1 Sheet = 1 ชุดข้อมูล (Instruction)</p>
+                                <input type="file" id="importFile" class="d-none" accept=".xlsx">
+                                <button class="btn btn-primary mt-2" onclick="document.getElementById('importFile').click()">
+                                    <i class="fas fa-upload me-2"></i>เลือกไฟล์
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="importLoading" class="d-none text-center py-5">
+                            <div class="spinner-border text-primary mb-2" role="status"></div>
+                            <p>กำลังตรวจสอบไฟล์...</p>
+                        </div>
+
+                        <div id="importStep2" class="d-none">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">ตรวจสอบและจับคู่ข้อมูล</h6>
+                                <button class="btn btn-outline-secondary btn-sm" id="btnResetImport">
+                                    <i class="fas fa-undo me-1"></i>เลือกไฟล์ใหม่
+                                </button>
+                            </div>
+                            <div class="table-responsive border rounded" style="max-height: 350px;">
+                                <table class="table table-bordered table-sm align-middle mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th style="width: 20%">Sheet Name</th>
+                                            <th style="width: 25%">Action</th>
+                                            <th style="width: 35%">Target</th>
+                                            <th style="width: 20%">Mode</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sheetMappingTable">
+                                        <!-- Mappings generated via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="alert alert-info small mt-3 mb-0">
+                                <i class="fas fa-info-circle me-1"></i> 
+                                <strong>Create New:</strong> สร้าง Instruction และตารางใหม่<br>
+                                <strong>Update:</strong> เพิ่ม/ทับข้อมูลลงในตารางแรกของ Instruction ที่เลือก
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Panel -->
+                    <div class="tab-pane fade" id="exportPanel" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6>เลือกข้อมูลที่ต้องการส่งออก</h6>
+                            <button class="btn btn-outline-primary btn-sm" id="selectAllExport">
+                                <i class="fas fa-check-double me-1"></i>เลือกทั้งหมด
+                            </button>
+                        </div>
+                        <div class="list-group list-group-flush border rounded" id="exportList" style="max-height: 350px; overflow-y: auto;">
+                            <!-- Items generated via JS -->
+                            <div class="text-center py-5 text-muted">
+                                <div class="spinner-border spinner-border-sm mb-2"></div>
+                                <div>กำลังโหลดข้อมูล...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <div id="importFooter" class="w-100 d-flex justify-content-end">
+                     <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">ปิด</button>
+                     <button type="button" class="btn btn-primary d-none" id="btnConfirmImport">
+                        <i class="fas fa-check me-1"></i>ยืนยันการนำเข้า
+                     </button>
+                </div>
+                <div id="exportFooter" class="w-100 d-flex justify-content-end d-none">
+                     <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">ปิด</button>
+                     <button type="button" class="btn btn-success" id="btnExecuteExport">
+                        <i class="fas fa-file-export me-1"></i>ส่งออก Excel
+                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

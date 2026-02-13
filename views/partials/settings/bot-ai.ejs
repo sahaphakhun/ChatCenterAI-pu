@@ -1,0 +1,178 @@
+<div class="tab-pane fade show active" id="line-ai-settings" role="tabpanel" aria-labelledby="line-ai-tab">
+    <div class="bot-ai-container">
+        <section class="bot-ai-hero shadow-sm">
+            <div>
+                <h3 class="mb-1">
+                    <i class="fas fa-robot text-primary me-2"></i>
+                    Bot & AI Management
+                </h3>
+                <p class="text-muted mb-0">จัดการบอททุกช่องทาง กำหนดโมเดล AI และ Instruction ให้เหมาะกับการตอบแชทของทีม</p>
+            </div>
+            <div class="bot-ai-actions">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFacebookBotModal">
+                    <i class="fab fa-facebook me-2"></i>เพิ่ม Facebook Bot
+                </button>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addLineBotModal">
+                    <i class="fab fa-line me-2"></i>เพิ่ม Line Bot
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="refreshLineBotList()">
+                    <i class="fas fa-sync-alt me-2"></i>รีเฟรชข้อมูล
+                </button>
+            </div>
+        </section>
+
+        <!-- Bot Overview Section -->
+        <section class="bot-ai-section">
+            <div class="bot-ai-section__header flex-column flex-lg-row align-items-lg-center">
+                <div class="mb-3 mb-lg-0">
+                    <h5 class="mb-1"><i class="fas fa-layer-group me-2 text-primary"></i>ภาพรวมบอททั้งหมด</h5>
+                    <p class="text-muted mb-0 small">ตรวจสอบสถานะและโมเดลที่ใช้ของแต่ละบอท ปรับแต่งได้ทันที</p>
+                </div>
+                <div class="bot-ai-legend">
+                    <span class="legend-item text-success"><i class="fas fa-circle me-1"></i>Active</span>
+                    <span class="legend-item text-warning"><i class="fas fa-circle me-1"></i>Inactive</span>
+                </div>
+            </div>
+            <div class="bot-ai-section__body bot-overview">
+                <div class="bot-group">
+                    <div class="bot-group__header">
+                        <h6 class="mb-0"><i class="fab fa-facebook text-primary me-2"></i>Facebook Bots</h6>
+                        <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="modal" data-bs-target="#addFacebookBotModal">
+                            <i class="fas fa-plus-circle me-1"></i>เพิ่มใหม่
+                        </button>
+                    </div>
+                    <div id="facebookBotList" class="bot-overview-table-container">
+                        <!-- Facebook Bot items load here -->
+                    </div>
+                </div>
+                <div class="bot-group">
+                    <div class="bot-group__header">
+                        <h6 class="mb-0"><i class="fab fa-line text-success me-2"></i>Line Bots</h6>
+                        <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="modal" data-bs-target="#addLineBotModal">
+                            <i class="fas fa-plus-circle me-1"></i>เพิ่มใหม่
+                        </button>
+                    </div>
+                    <div id="lineBotAiModelInfo" class="bot-group__summary"></div>
+                    <div id="lineBotList" class="bot-overview-table-container">
+                        <!-- Line Bot items load here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Image Collections Section -->
+        <section class="bot-ai-section" id="imageCollectionsSection">
+            <div class="bot-ai-section__header flex-column flex-lg-row align-items-lg-center">
+                <div class="mb-3 mb-lg-0">
+                    <h5 class="mb-1"><i class="fas fa-images me-2 text-primary"></i>คลังรูปภาพ & การกำหนดให้บอท</h5>
+                    <p class="text-muted mb-0 small">จัดชุดรูปภาพสำหรับ AI แล้วเลือกให้แต่ละบอทใช้งานได้ตรงกับเพจหรือแชแนลที่ต้องการ</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" id="createImageCollectionBtn">
+                        <i class="fas fa-plus me-1"></i>เพิ่มคลังรูปภาพ
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshImageCollectionsBtn">
+                        <i class="fas fa-sync-alt me-1"></i>รีเฟรช
+                    </button>
+                </div>
+            </div>
+            <div class="bot-ai-section__body">
+                <div class="row g-3">
+                    <div class="col-lg-5">
+                        <div class="gallery-step-label">
+                            <span class="step-number" id="secretFixBtn" style="cursor: pointer; user-select: none;" title="คลิก 3 ครั้งเพื่อซ่อมแซมข้อมูล">ขั้นตอนที่ 1</span>
+                            <span class="step-text">อัปโหลดรูปเข้าสู่ระบบ</span>
+                        </div>
+                        <div class="card image-assets-card mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h6 class="mb-1">คลังรูปภาพทั้งหมด</h6>
+                                        <small class="text-muted">ใช้โทเคน <code>#[IMAGE:ชื่อรูป]</code> ในข้อความ AI</small>
+                                    </div>
+                                    <span class="badge bg-secondary-soft text-secondary" id="imageAssetsCount">0 รูป</span>
+                                </div>
+                                <div class="image-upload-dropzone" id="imageAssetDropzone">
+                                    <div class="dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                    <div class="dropzone-text">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือก</div>
+                                    <div class="dropzone-subtext text-muted">รองรับการเลือกหลายไฟล์พร้อมกัน (JPEG/PNG/WebP)</div>
+                                    <input type="file" id="imageAssetFile" accept="image/*" multiple hidden>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-3" id="triggerImageAssetSelect">
+                                        <i class="fas fa-folder-open me-1"></i>เลือกไฟล์จากเครื่อง
+                                    </button>
+                                </div>
+                                <div class="upload-queue-toolbar d-flex justify-content-between align-items-center mt-3">
+                                    <div class="small text-muted" id="uploadQueueSummary">ยังไม่มีไฟล์ในคิว</div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="clearUploadQueueBtn" disabled>
+                                            <i class="fas fa-times me-1"></i>ล้างคิว
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-primary" id="startUploadQueueBtn" disabled>
+                                            <i class="fas fa-upload me-1"></i>อัปโหลดทั้งหมด
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="upload-queue-list mt-3" id="imageAssetQueue">
+                                    <div class="empty-state small text-muted text-center py-3">
+                                        <i class="fas fa-images me-1"></i>เพิ่มรูปภาพเพื่อเตรียมตั้งชื่อและคำอธิบายได้ที่นี่
+                                    </div>
+                                </div>
+                                <hr class="my-4">
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" id="imageAssetsSearch" placeholder="ค้นหาชื่อหรือคำอธิบายรูป">
+                                </div>
+                                <div class="asset-selection-toolbar d-flex justify-content-between align-items-center mb-2" id="assetSelectionToolbar" style="display: none;">
+                                    <div class="asset-selection-count text-muted small"></div>
+                                    <div class="asset-selection-actions d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" id="bulkDeleteAssetsBtn">
+                                            <i class="fas fa-trash me-1"></i>ลบรูปที่เลือก
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="image-assets-list" id="imageAssetsList">
+                                    <div class="text-muted small py-3 text-center">กำลังโหลดรายการรูปภาพ...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="gallery-step-label mb-3">
+                            <span class="step-number">ขั้นตอนที่ 2</span>
+                            <span class="step-text">จัดรูปเป็นชุด (Collections)</span>
+                        </div>
+                        <div class="card image-collections-card mb-3">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h6 class="mb-1">ชุดรูปภาพ (Collections)</h6>
+                                        <small class="text-muted">รวมรูปเป็นหมวดหมู่เพื่อเลือกให้แต่ละบอท</small>
+                                    </div>
+                                    <span class="badge bg-primary-soft text-primary" id="imageCollectionsCount">0 ชุด</span>
+                                </div>
+                                <div class="d-flex gap-2 mb-3 collection-filter-group">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary active" data-usage-filter="all">
+                                        ทั้งหมด
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-usage-filter="assigned">
+                                        ใช้งานอยู่
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-usage-filter="unassigned">
+                                        ยังไม่ถูกเลือก
+                                    </button>
+                                </div>
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" id="imageCollectionsSearch" placeholder="ค้นหาชื่อหรือคำอธิบาย">
+                                </div>
+                                <div class="image-collections-list" id="imageCollectionsList">
+                                    <div class="text-muted small py-3 text-center">กำลังโหลดรายการคลังรูปภาพ...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>

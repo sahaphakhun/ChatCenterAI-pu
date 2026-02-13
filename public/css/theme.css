@@ -1,0 +1,119 @@
+:root {
+  /* Base palette */
+  --color-primary: #4A6FA5;
+  --color-primary-light: #6F92C2;
+  --color-primary-dark: #365983;
+  --color-accent: #E6B75C;
+  --color-success: #2D8F6F;
+  --color-warning: #DFA94B;
+  --color-danger: #D2555A;
+  --color-info: #3D7FC1;
+
+  /* Neutral */
+  --bg-body: #F6F7FB;
+  --bg-card: #FFFFFF;
+  --border: #E1E5EF;
+  --text-main: #1E2430;
+  --text-sub: #5C6372;
+  --text-muted: #8B92A3;
+  --overlay: rgba(18, 25, 38, 0.35);
+
+  /* Common scales */
+  --radius-lg: 10px;
+  --radius-md: 8px;
+  --radius-pill: 999px;
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --transition-base: all 0.2s ease;
+  --focus-ring: #A5B8D9;
+}
+
+/* Flat buttons (theme override helpers) */
+.btn {
+  border: 1px solid transparent;
+  border-radius: var(--radius-md, 8px);
+  box-shadow: none;
+  transition: var(--transition-base);
+}
+
+.btn:focus {
+  box-shadow: 0 0 0 3px rgba(165, 184, 217, 0.35);
+  outline: none;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.btn-success {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.btn-secondary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #2b1d0d;
+}
+
+.btn-outline-primary {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+  color: #fff;
+  background: var(--color-primary);
+}
+
+/* Card reset */
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 10px);
+  box-shadow: var(--shadow-soft);
+}
+
+.card-header {
+  background: #f9fafc;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Form */
+.form-control,
+.form-select {
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(165, 184, 217, 0.35);
+  outline: none;
+}
+
+/* Badge & Pill */
+.badge {
+  border-radius: var(--radius-pill, 999px);
+  font-weight: 600;
+}
+
+/* Minimal navbar override */
+.navbar {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+}

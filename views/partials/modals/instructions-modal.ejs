@@ -1,0 +1,160 @@
+<!-- Manage Instructions Modal -->
+<div class="modal fade" id="manageInstructionsModal" tabindex="-1" aria-labelledby="manageInstructionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="manageInstructionsModalLabel">
+                    <i class="fas fa-book me-2"></i>จัดการ Instructions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Alert: Single Selection Mode -->
+                <div class="alert alert-primary border-primary" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle fa-lg me-3"></i>
+                        <div>
+                            <strong>โหมดเลือกเดี่ยว (Single-Select Mode)</strong>
+                            <div class="small mt-1">แต่ละเพจ/ไลน์สามารถเลือก Instruction ได้เพียง <strong>1 อัน</strong> เท่านั้น - คลิกเลือกอันใหม่เพื่อแทนที่อันเก่าอัตโนมัติ</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="mb-0"><i class="fas fa-list me-2"></i>คลัง Instructions ที่มีอยู่</h6>
+                                <span class="badge bg-secondary" id="librariesCount">0</span>
+                            </div>
+                        </div>
+                        <div id="instructionLibraries" class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">
+                            <!-- รายการคลัง instructions จะถูกโหลดที่นี่ -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Instruction ที่เลือกใช้</h6>
+                            <span class="badge bg-primary" id="selectedCount">0 / 1</span>
+                        </div>
+                        <div id="selectedInstructions" class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">
+                            <!-- รายการ instructions ที่เลือกจะแสดงที่นี่ -->
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="alert alert-info d-flex align-items-start">
+                    <i class="fas fa-images me-2 mt-1"></i>
+                    <div>
+                        <strong>คลังรูปภาพถูกย้ายไปยังศูนย์กลางรูปภาพ</strong>
+                        <div class="small mt-1">
+                            จัดการการอัปโหลด สร้างคอลเลกชัน และเลือกให้แต่ละบอทใช้งานได้ที่ส่วน
+                            <em>“คลังรูปภาพ &amp; การกำหนดให้บอท”</em> บนหน้า Bot &amp; AI Management
+                        </div>
+                        <div class="small mt-2 text-muted">
+                            อ้างอิงรูปในข้อความ AI ด้วยโทเคน <code>#[IMAGE:ชื่อรูป]</code> ได้เหมือนเดิม
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <h6><i class="fas fa-info-circle me-2"></i>คำแนะนำ</h6>
+                    <ul class="text-muted small">
+                        <li><strong>แต่ละเพจ/ไลน์สามารถเลือก instruction ได้เพียง 1 อันเท่านั้น</strong></li>
+                        <li>คลิกเลือก instruction ใหม่ได้ทันที ระบบจะแทนที่อันเก่าอัตโนมัติ</li>
+                        <li>การเปลี่ยนแปลงจะมีผลทันทีหลังจากบันทึก</li>
+                        <li>หากต้องการยกเลิกการเลือก กดปุ่ม "ยกเลิก" ที่อันที่เลือกอยู่</li>
+                        <li>รูปภาพที่ต้องใช้ให้จัดการจากศูนย์กลางรูปภาพ แล้วนำ token มาใช้ในข้อความ AI</li>
+                    </ul>
+                </div>
+
+                <!-- Keyword Settings Section -->
+                <hr class="my-4">
+                <h5 class="mb-3">
+                    <i class="fas fa-key me-2"></i>การตั้งค่าคีย์เวิร์ด (Keyword Settings)
+                </h5>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <small>กำหนดคำสำคัญที่แอดมินสามารถใช้เพื่อควบคุมระบบได้ทันที เมื่อพิมพ์คำเหล่านี้ในแชท</small>
+                </div>
+
+                <!-- Enable AI Keyword -->
+                <div class="card mb-3">
+                    <div class="card-header bg-success-subtle">
+                        <i class="fas fa-check-circle text-success me-2"></i><strong>คีย์เวิร์ดเปิด AI</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="instructionsKeywordEnableAI" class="form-label">คีย์เวิร์ด</label>
+                            <input type="text" class="form-control" id="instructionsKeywordEnableAI" name="keywordEnableAI" 
+                                   placeholder="เช่น: แอดมิน VIVA ยินดีดูแลลูกค้าค่ะ">
+                        </div>
+                        <div class="mb-3">
+                            <label for="instructionsKeywordEnableAIResponse" class="form-label">ข้อความตอบกลับ (ถ้ามี)</label>
+                            <textarea class="form-control" id="instructionsKeywordEnableAIResponse" name="keywordEnableAIResponse" rows="2"
+                                      placeholder="เช่น: ✅ เปิดระบบ AI แล้วค่ะ"></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                ข้อความที่จะบันทึกในแชท (แสดงเฉพาะแอดมิน) - <strong>ถ้าว่างเปล่า = ไม่ส่งข้อความตอบกลับ</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Disable AI Keyword -->
+                <div class="card mb-3">
+                    <div class="card-header bg-warning-subtle">
+                        <i class="fas fa-pause-circle text-warning me-2"></i><strong>คีย์เวิร์ดปิด AI</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="instructionsKeywordDisableAI" class="form-label">คีย์เวิร์ด</label>
+                            <input type="text" class="form-control" id="instructionsKeywordDisableAI" name="keywordDisableAI" 
+                                   placeholder="เช่น: แอดมิน VIVA รอให้คำปรึกษาค่ะ">
+                        </div>
+                        <div class="mb-3">
+                            <label for="instructionsKeywordDisableAIResponse" class="form-label">ข้อความตอบกลับ (ถ้ามี)</label>
+                            <textarea class="form-control" id="instructionsKeywordDisableAIResponse" name="keywordDisableAIResponse" rows="2"
+                                      placeholder="เช่น: ⏸️ ปิดระบบ AI แล้วค่ะ"></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                ข้อความที่จะบันทึกในแชท (แสดงเฉพาะแอดมิน) - <strong>ถ้าว่างเปล่า = ไม่ส่งข้อความตอบกลับ</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Disable Follow-up Keyword -->
+                <div class="card mb-3">
+                    <div class="card-header bg-danger-subtle">
+                        <i class="fas fa-bell-slash text-danger me-2"></i><strong>คีย์เวิร์ดปิดระบบติดตาม</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="instructionsKeywordDisableFollowUp" class="form-label">คีย์เวิร์ด</label>
+                            <input type="text" class="form-control" id="instructionsKeywordDisableFollowUp" name="keywordDisableFollowUp" 
+                                   placeholder="เช่น: #รับออเดอร์">
+                        </div>
+                        <div class="mb-3">
+                            <label for="instructionsKeywordDisableFollowUpResponse" class="form-label">ข้อความตอบกลับ (ถ้ามี)</label>
+                            <textarea class="form-control" id="instructionsKeywordDisableFollowUpResponse" name="keywordDisableFollowUpResponse" rows="2"
+                                      placeholder="เช่น: 🔕 ปิดระบบติดตามแล้วค่ะ"></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                ข้อความที่จะบันทึกในแชท (แสดงเฉพาะแอดมิน) - <strong>ถ้าว่างเปล่า = ไม่ส่งข้อความตอบกลับ</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-primary" id="saveInstructionsBtn">
+                    <i class="fas fa-save me-2"></i>บันทึกการเลือกใช้
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

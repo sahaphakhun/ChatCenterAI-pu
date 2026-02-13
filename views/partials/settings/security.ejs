@@ -1,0 +1,177 @@
+<div class="tab-pane fade" id="filter-settings" role="tabpanel">
+    <div class="row">
+        <div class="col-12">
+            <div class="settings-card">
+                <div class="settings-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        ความปลอดภัยและการกรองข้อความ
+                    </h4>
+                    <p class="text-muted mb-0">
+                        ตั้งค่าการกรองข้อความและระบบความปลอดภัยเพื่อป้องกันเนื้อหาที่ไม่เหมาะสม
+                    </p>
+                </div>
+                <div class="settings-body">
+                    <!-- Passcode Management (visible for superadmin only) -->
+                    <div class="setting-item" id="passcodeManagementSection" style="display: none;">
+                        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-lg-between gap-3">
+                            <div>
+                                <div class="setting-label mb-1">การจัดการรหัสเข้าใช้งานทีม</div>
+                                <div class="setting-description">
+                                    ตั้งค่ารหัสผ่านสำหรับสมาชิกทีม ให้เข้าถึงระบบแอดมินได้อย่างปลอดภัย
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success-subtle text-success-emphasis" id="passcodeStatusBadge">
+                                    <i class="fas fa-lock me-1"></i> ระบบล็อกอินเปิดใช้งาน
+                                </span>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="togglePasscodeCreateBtn">
+                                    <i class="fas fa-plus-circle me-2"></i>สร้างรหัสใหม่
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3 d-none" id="passcodeMessageBox" role="alert"></div>
+
+                        <div class="card border-0 shadow-sm mt-3" id="passcodeCreateContainer" style="display: none;">
+                            <div class="card-body">
+                                <form id="createPasscodeForm" class="row g-3 align-items-end">
+                                    <div class="col-md-5">
+                                        <label for="newPasscodeLabel" class="form-label">ชื่อรหัส <span class="text-danger">*</span></label>
+                                        <input type="text" id="newPasscodeLabel" class="form-control" placeholder="เช่น ทีมขาย, ทีมบริการลูกค้า" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="newPasscodeValue" class="form-label">รหัสสำหรับเข้าใช้งาน <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="text" id="newPasscodeValue" class="form-control" placeholder="กำหนดเองหรือกดสุ่ม" minlength="4" required>
+                                            <button class="btn btn-outline-secondary" type="button" id="generatePasscodeBtn">
+                                                <i class="fas fa-random"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text">แนะนำใช้ความยาว 6-12 ตัวอักษร มีทั้งตัวเลข/ตัวอักษร</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="submit" class="btn btn-primary w-100" id="createPasscodeSubmitBtn">
+                                            <span class="default-label"><i class="fas fa-save me-2"></i>บันทึกรหัส</span>
+                                            <span class="loading-label d-none">
+                                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                กำลังบันทึก...
+                                            </span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive mt-3" id="passcodeListContainer">
+                            <table class="table table-sm align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="min-width: 160px;">ชื่อรหัส</th>
+                                        <th style="min-width: 120px;">สถานะ</th>
+                                        <th style="min-width: 160px;">ใช้งานล่าสุด</th>
+                                        <th style="min-width: 100px;">จำนวนครั้งที่ใช้</th>
+                                        <th style="min-width: 140px;" class="text-end">การจัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="passcodeTableBody">
+                                    <tr id="passcodeEmptyState">
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            <i class="fas fa-key me-2"></i>ยังไม่มีรหัสสำหรับทีมงาน เริ่มสร้างรหัสชุดแรกได้เลย
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Security Overview -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-shield-alt fa-2x text-success mb-3"></i>
+                                    <h6>การกรองข้อความ</h6>
+                                    <div class="form-check form-switch d-flex justify-content-center">
+                                        <input class="form-check-input" type="checkbox" id="enableMessageFiltering" checked>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-search fa-2x text-info mb-3"></i>
+                                    <h6>การกรองแบบละเอียด</h6>
+                                    <div class="form-check form-switch d-flex justify-content-center">
+                                        <input class="form-check-input" type="checkbox" id="enableStrictFiltering" checked>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-eye-slash fa-2x text-warning mb-3"></i>
+                                    <h6>คำที่ถูกซ่อน</h6>
+                                    <h5 id="hiddenWordsCount">0</h5>
+                                    <small>คำ</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="filterSettingsForm">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="setting-item">
+                                    <div class="setting-label">คำที่ต้องการซ่อน (หนึ่งคำต่อบรรทัด)</div>
+                                    <div class="setting-description">
+                                        ใส่คำหรือวลีที่ต้องการซ่อนจากข้อความของ Assistant (ไม่คำนึงถึงตัวพิมพ์เล็ก-ใหญ่)
+                                    </div>
+                                    <textarea class="form-control" id="hiddenWords" rows="8" 
+                                              placeholder="ตัวอย่าง:&#10;คำหยาบ&#10;ข้อมูลส่วนตัว&#10;ลิงก์ที่ไม่เหมาะสม&#10;ข้อมูลลับ"></textarea>
+                                    <small class="text-muted">แต่ละคำหรือวลีให้ใส่ในบรรทัดใหม่</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="setting-item">
+                                    <div class="setting-label">คำที่ต้องการแทนที่</div>
+                                    <div class="setting-description">
+                                        ใส่คำหรือวลีที่ต้องการใช้แทนที่คำที่ซ่อน
+                                    </div>
+                                    <input type="text" class="form-control" id="replacementText" 
+                                           placeholder="[ข้อความถูกซ่อน]">
+                                    <small class="text-muted">ถ้าไม่ใส่จะใช้ "[ข้อความถูกซ่อน]" เป็นค่าเริ่มต้น</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">ทดสอบการกรองข้อความ</div>
+                            <div class="setting-description">
+                                ทดสอบการกรองข้อความกับข้อความตัวอย่าง
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <textarea class="form-control" id="testMessage" rows="3" 
+                                              placeholder="ใส่ข้อความที่ต้องการทดสอบการกรอง"></textarea>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-primary w-100 h-100" onclick="testFiltering()">
+                                        <i class="fas fa-eye me-2"></i>ทดสอบการกรอง
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="testResult" class="mt-3 p-3 bg-light rounded" style="display: none;"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-save text-white">
+                            <i class="fas fa-save me-2"></i>
+                            บันทึกการตั้งค่าการกรอง
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

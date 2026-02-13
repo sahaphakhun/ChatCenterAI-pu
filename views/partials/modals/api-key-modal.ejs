@@ -1,0 +1,59 @@
+<!-- API Key Modal -->
+<div class="modal fade" id="apiKeyModal" tabindex="-1" aria-labelledby="apiKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="apiKeyModalLabel">
+                    <i class="fas fa-key me-2"></i>เพิ่ม API Key
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="apiKeyForm">
+                    <input type="hidden" id="apiKeyId">
+
+                    <div class="mb-3">
+                        <label for="apiKeyName" class="form-label">ชื่อ API Key <span
+                                class="text-danger">*</span></label>
+                        <input type="text" id="apiKeyName" class="form-control"
+                            placeholder="เช่น: Production Key, Dev Key" required>
+                        <div class="form-text">ตั้งชื่อเพื่อให้จำได้ว่า key นี้ใช้งานอะไร</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="apiKeyValue" class="form-label">API Key <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" id="apiKeyValue" class="form-control" placeholder="sk-..." required>
+                            <button class="btn btn-outline-secondary" type="button" id="toggleApiKeyVisibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">API Key จาก OpenAI (ขึ้นต้นด้วย sk-)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="apiKeyIsDefault">
+                            <label class="form-check-label" for="apiKeyIsDefault">
+                                ตั้งเป็น Key หลัก (Default)
+                            </label>
+                        </div>
+                        <div class="form-text">Key หลักจะถูกใช้เมื่อไม่ได้ระบุ key สำหรับ bot นั้นๆ</div>
+                    </div>
+
+                    <div id="apiKeyTestResult" class="alert d-none mb-0"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-outline-primary" id="testApiKeyBtn"
+                    onclick="testApiKeyFromModal()">
+                    <i class="fas fa-check-circle me-1"></i>ทดสอบ
+                </button>
+                <button type="button" class="btn btn-primary" id="saveApiKeyBtn" onclick="saveApiKey()">
+                    <i class="fas fa-save me-1"></i>บันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

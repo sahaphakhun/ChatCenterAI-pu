@@ -1,0 +1,82 @@
+<div class="tab-pane fade" id="system-settings" role="tabpanel">
+    <div class="row">
+        <div class="col-12">
+            <div class="settings-card">
+                <div class="settings-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-server me-2"></i>
+                        การตั้งค่าระบบทั่วไป
+                    </h4>
+                </div>
+                <div class="settings-body">
+                    <form id="systemSettingsForm">
+                        <div class="setting-item">
+                            <div class="setting-label">สถานะการใช้งาน AI</div>
+                            <div class="setting-description">
+                                เปิด/ปิดการใช้งาน AI ในระบบทั้งหมด
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="aiEnabled" checked>
+                                <label class="form-check-label" for="aiEnabled">
+                                    เปิดใช้งาน AI
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">การบันทึกประวัติแชท</div>
+                            <div class="setting-description">
+                                เปิด/ปิดการบันทึกประวัติการสนทนาของผู้ใช้
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableChatHistory" checked>
+                                <label class="form-check-label" for="enableChatHistory">
+                                    บันทึกประวัติแชท
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">จำนวนข้อความย้อนหลังสำหรับ AI</div>
+                            <div class="setting-description">
+                                จำกัดจำนวนประวัติที่ส่งให้ AI (ค่าเริ่มต้น 20) ยิ่งตัวเลขสูงยิ่งใช้แรมและค่าใช้จ่าย Railway
+                            </div>
+                            <input type="number" class="form-control" id="aiHistoryLimit" min="1" max="100"
+                                placeholder="20">
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">การแจ้งเตือนแอดมิน</div>
+                            <div class="setting-description">
+                                แจ้งเตือนแอดมินเมื่อมีข้อความใหม่จากผู้ใช้
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableAdminNotifications" checked>
+                                <label class="form-check-label" for="enableAdminNotifications">
+                                    แจ้งเตือนแอดมิน
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label">โหมดการทำงาน</div>
+                            <div class="setting-description">
+                                เลือกโหมดการทำงานของระบบ
+                            </div>
+                            <select class="form-select" id="systemMode">
+                                <option value="production">Production (ใช้งานจริง)</option>
+                                <option value="development">Development (พัฒนา)</option>
+                                <option value="maintenance">Maintenance (บำรุงรักษา)</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-save text-white">
+                            <i class="fas fa-save me-2"></i>
+                            บันทึกการตั้งค่าระบบ
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

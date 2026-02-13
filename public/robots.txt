@@ -1,0 +1,25 @@
+# robots.txt for ChatCenter AI
+# Allow Meta/Facebook crawlers to fetch media (Messenger attachments)
+
+# Default: allow all
+User-agent: *
+Disallow:
+
+# Explicitly allow Meta/Facebook-related user agents to access media paths
+User-agent: FacebookExternalHit
+Allow: /assets/
+Allow: /assets/instructions/
+
+User-agent: Facebot
+Allow: /assets/
+Allow: /assets/instructions/
+
+User-agent: Meta-ExternalAgent
+Allow: /assets/
+Allow: /assets/instructions/
+
+# WhatsApp link preview bot (optional)
+User-agent: WhatsApp
+Allow: /assets/
+Allow: /assets/instructions/
+

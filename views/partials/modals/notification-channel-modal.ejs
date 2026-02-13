@@ -1,0 +1,202 @@
+<!-- Add/Edit Notification Channel Modal -->
+<div class="modal fade" id="notificationChannelModal" tabindex="-1"
+    aria-labelledby="notificationChannelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notificationChannelModalLabel">
+                    <i class="fas fa-bell me-2"></i>ตั้งค่าช่องทางแจ้งเตือนออเดอร์
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="notificationChannelForm">
+                    <input type="hidden" id="notificationChannelId">
+
+                    <div class="mb-3">
+                        <label for="notificationChannelName" class="form-label">ชื่อช่องทาง <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="notificationChannelName"
+                            placeholder="เช่น: กลุ่มออเดอร์หลัก" required>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="notificationChannelSenderBot" class="form-label">LINE Bot (ผู้ส่ง) <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select" id="notificationChannelSenderBot" required>
+                                <option value="">กำลังโหลด...</option>
+                            </select>
+                            <div class="form-text">ต้องเชิญบอทเข้ากลุ่มก่อน ระบบถึงจะส่งแจ้งเตือนได้</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label for="notificationChannelGroup" class="form-label mb-0">กลุ่ม/ห้อง (ปลายทาง)
+                                    <span class="text-danger">*</span></label>
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    id="notificationChannelRefreshGroupsBtn">
+                                    <i class="fas fa-sync-alt"></i> รีเฟรช
+                                </button>
+                            </div>
+                            <select class="form-select" id="notificationChannelGroup" required>
+                                <option value="">เลือก LINE Bot ก่อน</option>
+                            </select>
+                            <div class="form-text">หากไม่พบกลุ่ม: เชิญบอทเข้ากลุ่ม แล้วพิมพ์ 1 ข้อความในกลุ่ม</div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <div class="mb-2">
+                        <label class="form-label mb-1">ออเดอร์จากบอทไหนบ้าง</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="notificationReceiveMode"
+                                id="notificationReceiveAll" value="all" checked>
+                            <label class="form-check-label" for="notificationReceiveAll">รับจากทุกบอท</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="notificationReceiveMode"
+                                id="notificationReceiveSelected" value="selected">
+                            <label class="form-check-label" for="notificationReceiveSelected">เลือกบอทต้นทาง</label>
+                        </div>
+                    </div>
+
+                    <div class="border rounded p-2 d-none" id="notificationChannelSourcesBox">
+                        <div class="small text-muted mb-2">เลือกได้ทั้ง LINE และ Facebook</div>
+                        <div id="notificationChannelSourcesList">
+                            <div class="text-muted small">กำลังโหลดรายการบอท...</div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <label class="form-label mb-1">รูปแบบการแจ้งเตือน</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="notificationDeliveryMode"
+                            id="notificationDeliveryRealtime" value="realtime" checked>
+                        <label class="form-check-label" for="notificationDeliveryRealtime">เรียลไทม์ (ส่งทันทีเมื่อมีออเดอร์)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="notificationDeliveryMode"
+                            id="notificationDeliveryScheduled" value="scheduled">
+                        <label class="form-check-label" for="notificationDeliveryScheduled">สรุปตามเวลา</label>
+                    </div>
+                    <div class="border rounded p-2 mt-2 d-none" id="notificationSummaryBox">
+                        <label for="notificationSummaryTimes" class="form-label mb-1">เวลาสรุปต่อวัน</label>
+                        <input type="text" class="form-control" id="notificationSummaryTimes"
+                            placeholder="เช่น 09:00, 13:00, 18:00">
+                        <div class="form-text">รองรับหลายเวลา คั่นด้วยจุลภาคหรือขึ้นบรรทัดใหม่ (รูปแบบ 24 ชั่วโมง)</div>
+                        <div class="form-text">ระบบตัดรอบตามเวลาที่กำหนด</div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <label class="form-label mb-1">รูปแบบข้อความ</label>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                    id="notificationSettingIncludeCustomer" checked>
+                                <label class="form-check-label" for="notificationSettingIncludeCustomer">แสดงชื่อลูกค้า
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                    id="notificationSettingIncludePhone" checked>
+                                <label class="form-check-label" for="notificationSettingIncludePhone">แสดงเบอร์โทร
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                    id="notificationSettingIncludeItemsCount" checked>
+                                <label class="form-check-label" for="notificationSettingIncludeItemsCount">แสดงจำนวนสินค้า
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                    id="notificationSettingIncludeItemsDetail" checked>
+                                <label class="form-check-label" for="notificationSettingIncludeItemsDetail">แสดงรายการสินค้า
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                    id="notificationSettingIncludeAddress" checked>
+                                <label class="form-check-label" for="notificationSettingIncludeAddress">แสดงที่อยู่จัดส่ง
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                    id="notificationSettingIncludePaymentMethod" checked>
+                                <label class="form-check-label" for="notificationSettingIncludePaymentMethod">แสดงวิธีชำระเงิน
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                    id="notificationSettingIncludeTotalAmount" checked>
+                                <label class="form-check-label" for="notificationSettingIncludeTotalAmount">แสดงยอดรวม
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="notificationSettingIncludeOrderLink">
+                                <label class="form-check-label" for="notificationSettingIncludeOrderLink">แนบลิงก์หน้าออเดอร์
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <label class="form-label mb-1">ตรวจสลิป SlipOK (ตอบเฉพาะรูปภาพในกลุ่ม)</label>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                            id="notificationSettingSlipOkEnabled">
+                        <label class="form-check-label" for="notificationSettingSlipOkEnabled">เปิดใช้งานตรวจสลิป</label>
+                    </div>
+                    <div class="form-text mb-2">เมื่อเปิดใช้งาน: หากมีคนส่งรูปภาพในกลุ่ม/ห้องนี้ ระบบจะตรวจสลิปและตอบกลับผล (ไม่ตอบข้อความ)</div>
+
+                    <div class="border rounded p-2 d-none" id="notificationSlipOkConfigBox">
+                        <div class="mb-2">
+                            <label for="notificationSettingSlipOkApiUrl" class="form-label mb-1">SlipOK API URL</label>
+                            <input type="text" class="form-control" id="notificationSettingSlipOkApiUrl"
+                                placeholder="https://api.slipok.com/api/line/apikey/57824" autocomplete="off">
+                        </div>
+                        <div>
+                            <label for="notificationSettingSlipOkApiKey" class="form-label mb-1">SlipOK API Key</label>
+                            <input type="password" class="form-control" id="notificationSettingSlipOkApiKey"
+                                placeholder="SLIPOKWU4P56T" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="mt-3 d-flex align-items-center justify-content-between">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                id="notificationChannelIsActive" checked>
+                            <label class="form-check-label" for="notificationChannelIsActive">เปิดใช้งาน</label>
+                        </div>
+                        <div class="small text-muted">Event: ออเดอร์ใหม่ (new_order)</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-primary" id="notificationChannelSaveBtn">
+                    <i class="fas fa-save me-1"></i>บันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

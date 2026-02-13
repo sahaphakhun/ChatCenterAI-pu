@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แก้ไขชุดข้อมูล - <%= instruction.title || instruction.parentInstructionName || 'ไม่มีชื่อ' %>
+    </title>
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Jspreadsheet CE (v5 to match jsuites@5) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5.0.4/dist/jspreadsheet.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsuites@5/dist/jsuites.css">
+
+    <!-- Main Styles -->
+    <link href="/css/style.css" rel="stylesheet">
+
+    <style>
+        /* ===== Layout ===== */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--light-bg, #F6F7FB);
+        }
+
+        /* ===== Editor Container ===== */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: var(--light-bg);
+        }
+
+        /* ===== Editor Header ===== */
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: var(--card-bg, #fff);
+            border-bottom: 1px solid var(--border-color, #E1E5EF);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-back {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            color: var(--text-light);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-back:hover {
+            background: var(--light-bg);
+            color: var(--primary);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .parent-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .title-input-wrapper {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .title-input {
+            width: 100%;
+            border: 1px solid var(--border-color);
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: var(--font-family-heading);
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: var(--light-bg);
+            color: var(--text-dark);
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .title-input:hover {
+            border-color: var(--primary);
+            background: #fff;
+        }
+
+        .title-input:focus {
+            border-color: var(--primary);
+            background: #fff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+        }
+
+        .title-input::placeholder {
+            color: var(--text-light);
+            font-weight: 400;
+        }
+
+        .save-status {
+            font-size: 12px;
+            color: var(--text-light);
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: var(--light-bg);
+            margin-right: 16px;
+            white-space: nowrap;
+        }
+
+        .save-status.dirty {
+            background: rgba(var(--warning-rgb, 223, 169, 75), 0.15);
+            color: #b8860b;
+        }
+
+        .save-status.saving {
+            background: rgba(var(--info-rgb, 61, 127, 193), 0.15);
+            color: var(--info);
+        }
+
+        .save-status.saved {
+            background: rgba(var(--success-rgb, 45, 143, 111), 0.15);
+            color: var(--success);
+        }
+
+        /* ===== Toolbar ===== */
+        .editor-toolbar {
+            display: flex;
+            align-items: center;
+            height: 48px;
+            padding: 0 16px;
+            background: var(--card-bg, #fff);
+            border-bottom: 1px solid var(--border-color);
+            gap: 8px;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .toolbar-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            height: 34px;
+            border: none;
+            background: var(--light-bg);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .toolbar-btn i {
+            font-size: 12px;
+        }
+
+        .toolbar-label {
+            display: none;
+        }
+
+        @media (min-width: 768px) {
+            .toolbar-label {
+                display: inline;
+            }
+        }
+
+        .toolbar-btn:hover {
+            background: rgba(var(--primary-rgb), 0.1);
+            color: var(--primary);
+        }
+
+        .toolbar-btn:active {
+            transform: scale(0.97);
+        }
+
+        .toolbar-btn-success:hover {
+            background: rgba(var(--success-rgb, 45, 143, 111), 0.15);
+            color: var(--success, #2d8f6f);
+        }
+
+        .toolbar-btn-danger:hover {
+            background: rgba(var(--danger-rgb, 220, 53, 69), 0.15);
+            color: var(--danger, #dc3545);
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-color);
+            margin: 0 4px;
+        }
+
+        .toolbar-spacer {
+            flex: 1;
+        }
+
+        .save-reminder {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(220, 53, 69, 0.1) 100%);
+            color: #dc3545;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            animation: pulse-reminder 2s infinite;
+            margin-right: 12px;
+        }
+
+        .save-reminder i {
+            font-size: 14px;
+        }
+
+        @keyframes pulse-reminder {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .toolbar-help {
+            font-size: var(--font-size-sm);
+            color: var(--text-light);
+            padding: 6px 12px;
+            background: var(--light-bg);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .toolbar-help i {
+            color: var(--primary);
+        }
+
+        /* ===== Cancel Button ===== */
+        .btn-cancel {
+            background: #6c757d;
+            border: 1px solid #5a6268;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #5a6268;
+            border-color: #545b62;
+            color: #fff;
+        }
+
+        .btn-cancel:active {
+            background: #545b62;
+            transform: scale(0.98);
+        }
+
+        /* ===== Header Actions ===== */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions .btn-label {
+            display: none;
+        }
+
+        @media (min-width: 576px) {
+            .header-actions .btn-label {
+                display: inline;
+            }
+        }
+
+        /* ===== Spreadsheet ===== */
+        .spreadsheet-wrapper {
+            flex: 1;
+            overflow: auto;
+            background: #fff;
+        }
+
+        /* ===== Status Bar ===== */
+        .editor-statusbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 32px;
+            background: linear-gradient(180deg, var(--light-bg) 0%, #e8eaef 100%);
+            border-top: 1px solid var(--border-color);
+            padding: 0 16px;
+            font-size: 11px;
+            color: var(--text-light);
+        }
+
+        .status-left,
+        .status-center,
+        .status-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-shortcut {
+            padding: 2px 8px;
+            background: rgba(var(--primary-rgb), 0.1);
+            border-radius: 4px;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+
+            .status-center,
+            .status-shortcut {
+                display: none;
+            }
+        }
+
+        /* ===== Export Modal ===== */
+        .export-format-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .export-format-option {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+
+        .export-format-option:hover {
+            border-color: var(--primary);
+            background: rgba(var(--primary-rgb), 0.02);
+        }
+
+        .export-format-option.active {
+            border-color: var(--primary);
+            background: rgba(var(--primary-rgb), 0.05);
+        }
+
+        .export-format-option input[type="radio"] {
+            display: none;
+        }
+
+        .format-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #217346 0%, #185c37 100%);
+            color: #fff;
+            font-size: 20px;
+        }
+
+        .format-icon.csv {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        }
+
+        .format-info {
+            flex: 1;
+        }
+
+        .format-info strong {
+            display: block;
+            font-size: 15px;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .format-info span {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .export-preview {
+            background: var(--light-bg);
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+
+        .preview-header {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .preview-stats {
+            display: flex;
+            gap: 24px;
+        }
+
+        .preview-stats span {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .preview-stats i {
+            color: var(--primary);
+        }
+
+        #exportModal .modal-content {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+        }
+
+        #exportModal .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 24px;
+        }
+
+        #exportModal .modal-body {
+            padding: 24px;
+        }
+
+        #exportModal .modal-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 16px 24px;
+        }
+
+        /* ===== Toast ===== */
+        .toast-msg {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            background: var(--text-dark);
+            color: #fff;
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-base);
+            z-index: 9999;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+        }
+
+        .toast-msg.success {
+            background: var(--success);
+        }
+
+        .toast-msg.error {
+            background: var(--danger);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* ===== Jspreadsheet Overrides ===== */
+        .jexcel {
+            font-family: var(--font-family-base) !important;
+            font-size: var(--font-size-base) !important;
+        }
+
+        /* ===== Cell Editor - ป้องกันหลุดจอและ scroll ได้ ===== */
+        .jexcel_editor,
+        .jexcel .editor {
+            max-width: calc(100vw - 40px) !important;
+            max-height: calc(100vh - 100px) !important;
+            min-width: 200px !important;
+            min-height: 80px !important;
+            overflow: auto !important;
+        }
+
+        .jexcel_editor textarea,
+        .jexcel .editor textarea {
+            max-width: 100% !important;
+            max-height: calc(100vh - 120px) !important;
+            min-height: 80px !important;
+            resize: vertical !important;
+            overflow-y: auto !important;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            font-family: var(--font-family-base) !important;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+            padding: 8px !important;
+        }
+
+        /* Cell content wrapper */
+        .jexcel>tbody>tr>td {
+            max-height: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .jexcel>tbody>tr>td.edition {
+            overflow: visible !important;
+        }
+
+        .jexcel>thead>tr>td {
+            background: linear-gradient(180deg, var(--light-bg) 0%, #e8eaef 100%) !important;
+            font-weight: 600 !important;
+            color: var(--text-dark) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        .jexcel>tbody>tr>td {
+            border-color: var(--border-color) !important;
+            color: var(--text-dark) !important;
+            white-space: pre-wrap !important;
+            word-break: break-word;
+            text-align: left !important;
+        }
+
+        .jexcel>tbody>tr>td:first-child {
+            background: var(--light-bg) !important;
+            font-weight: 600 !important;
+            color: var(--text-light) !important;
+        }
+
+        .jexcel>tbody>tr:hover>td {
+            background: rgba(var(--primary-rgb), 0.05) !important;
+        }
+
+        .jexcel>tbody>tr>td.highlight,
+        .jexcel>tbody>tr>td.selected {
+            background: rgba(var(--primary-rgb), 0.12) !important;
+        }
+
+        .jexcel_corner {
+            background: var(--primary) !important;
+        }
+
+        /* ===== Row Resizer - Real-time like Column Resize ===== */
+        .jexcel>tbody>tr>td:first-child {
+            position: relative !important;
+        }
+
+        .row-resize-handle {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -3px;
+            height: 6px;
+            cursor: row-resize;
+            z-index: 10;
+            background: transparent;
+            transition: background 0.15s ease;
+        }
+
+        .row-resize-handle:hover,
+        .row-resize-handle.active {
+            background: rgba(var(--primary-rgb, 59, 130, 246), 0.3);
+        }
+
+        .row-resize-handle::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: 2px;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 2px;
+            background: var(--primary, #3b82f6);
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        .row-resize-handle:hover::after,
+        .row-resize-handle.active::after {
+            opacity: 1;
+        }
+
+        /* Resize guide line */
+        .row-resize-guide {
+            position: fixed;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary, #3b82f6);
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 0 4px rgba(var(--primary-rgb, 59, 130, 246), 0.5);
+        }
+
+        /* Prevent text selection during resize */
+        body.resizing-row {
+            cursor: row-resize !important;
+            user-select: none !important;
+        }
+
+        body.resizing-row * {
+            cursor: row-resize !important;
+        }
+
+        /* Context menu - Thai styled */
+        .jcontextmenu {
+            font-family: var(--font-family-base) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+            border: 1px solid var(--border-color) !important;
+            padding: 6px 0 !important;
+            min-width: 200px !important;
+        }
+
+        .jcontextmenu>div {
+            padding: 8px 16px !important;
+            font-size: 13px !important;
+            display: flex !important;
+            align-items: center !important;
+            transition: background 0.15s ease !important;
+        }
+
+        .jcontextmenu>div:hover {
+            background: rgba(var(--primary-rgb), 0.08) !important;
+        }
+
+        .jcontextmenu>div i {
+            width: 20px;
+        }
+
+        .jcontextmenu>div.line {
+            height: 1px !important;
+            background: var(--border-color) !important;
+            margin: 4px 12px !important;
+            padding: 0 !important;
+        }
+
+        .jcontextmenu>div span {
+            margin-left: auto;
+            font-size: 11px;
+            color: var(--text-light);
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor-container">
+        <!-- Editor Header -->
+        <header class="editor-header">
+            <div class="header-left">
+                <span class="parent-badge">
+                    <i class="fas fa-folder me-1"></i>
+                    <%= instruction.parentInstructionName %>
+                </span>
+                <div class="title-input-wrapper">
+                    <input type="text" id="docTitle" class="title-input" value="<%= instruction.title || '' %>"
+                        placeholder="ระบุชื่อชุดข้อมูล...">
+                </div>
+            </div>
+            <span class="save-status" id="saveStatus"><i class="fas fa-check-circle me-1"></i>พร้อมใช้งาน</span>
+            <div class="header-actions">
+                <button class="btn btn-success btn-sm" id="exportBtn" title="ดาวน์โหลดไฟล์ Excel">
+                    <i class="fas fa-file-excel me-1"></i><span class="btn-label">ส่งออก</span>
+                </button>
+                <button class="btn btn-cancel" id="cancelBtn" title="ยกเลิกและกลับไปหน้าหลัก">
+                    <i class="fas fa-times me-1"></i><span class="btn-label">ยกเลิก</span>
+                </button>
+                <button class="btn btn-primary" id="saveBtn" title="บันทึกข้อมูล (Ctrl+S)">
+                    <i class="fas fa-save me-1"></i><span class="btn-label">บันทึก</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Toolbar -->
+        <div class="editor-toolbar">
+            <div class="toolbar-group">
+                <button class="toolbar-btn" id="undoBtn" title="เลิกทำ (Ctrl+Z)">
+                    <i class="fas fa-undo"></i>
+                    <span class="toolbar-label">เลิกทำ</span>
+                </button>
+                <button class="toolbar-btn" id="redoBtn" title="ทำซ้ำ (Ctrl+Y)">
+                    <i class="fas fa-redo"></i>
+                    <span class="toolbar-label">ทำซ้ำ</span>
+                </button>
+            </div>
+            <div class="toolbar-divider"></div>
+            <div class="toolbar-group">
+                <button class="toolbar-btn toolbar-btn-success" id="addRowBtn" title="เพิ่มแถวใหม่">
+                    <i class="fas fa-plus"></i>
+                    <span class="toolbar-label">เพิ่มแถว</span>
+                </button>
+                <button class="toolbar-btn toolbar-btn-success" id="addColBtn" title="เพิ่มคอลัมน์ใหม่">
+                    <i class="fas fa-columns"></i>
+                    <span class="toolbar-label">เพิ่มคอลัมน์</span>
+                </button>
+            </div>
+
+            <div class="toolbar-spacer"></div>
+            <!-- Save Reminder -->
+            <div class="save-reminder" id="saveReminder" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>อย่าลืมกดบันทึก!</span>
+            </div>
+        </div>
+
+        <!-- Spreadsheet -->
+        <div id="spreadsheet" class="spreadsheet-wrapper"></div>
+
+        <!-- Status Bar -->
+        <footer class="editor-statusbar">
+            <div class="status-left">
+                <span class="status-item"><i class="fas fa-table me-1"></i>ตารางข้อมูล</span>
+            </div>
+            <div class="status-center">
+                <span class="status-item" id="selInfo"><i class="fas fa-mouse-pointer me-1"></i>เซลล์:
+                    ยังไม่ได้เลือก</span>
+            </div>
+            <div class="status-right">
+                <span class="status-item">
+                    <i class="fas fa-th-large me-1"></i>
+                    <span id="rowCount">0</span> แถว × <span id="colCount">0</span> คอลัมน์
+                </span>
+                <span class="status-item status-shortcut" title="คีย์ลัด">
+                    <i class="fas fa-keyboard me-1"></i>Ctrl+S บันทึก
+                </span>
+            </div>
+        </footer>
+
+        <!-- Form -->
+        <form id="saveForm" method="POST"
+            action="<%= typeof isNew !== 'undefined' && isNew ? '/admin/instructions-v3/' + instructionId + '/data-items/new' : '/admin/instructions-v3/' + instructionId + '/data-items/' + itemId + '/edit' %>">
+            <input type="hidden" name="type" value="table">
+            <input type="hidden" name="title" id="frmTitle">
+            <input type="hidden" name="tableData" id="frmTableData">
+        </form>
+
+        <!-- Export Modal -->
+        <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exportModalLabel">
+                            <i class="fas fa-file-export me-2 text-primary"></i>ส่งออกข้อมูล
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-file me-1"></i>ชื่อไฟล์
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="exportFilename"
+                                    value="<%= instruction.title || 'data-export' %>" placeholder="ระบุชื่อไฟล์...">
+                                <span class="input-group-text" id="exportExtension">.xlsx</span>
+                            </div>
+                            <small class="text-muted">ชื่อไฟล์จะถูกสร้างอัตโนมัติพร้อมวันที่</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-file-alt me-1"></i>รูปแบบไฟล์
+                            </label>
+                            <div class="export-format-options">
+                                <label class="export-format-option active" data-format="xlsx">
+                                    <input type="radio" name="exportFormat" value="xlsx" checked>
+                                    <div class="format-icon">
+                                        <i class="fas fa-file-excel"></i>
+                                    </div>
+                                    <div class="format-info">
+                                        <strong>Excel (.xlsx)</strong>
+                                        <span>เปิดได้ใน Microsoft Excel, Google Sheets</span>
+                                    </div>
+                                </label>
+                                <label class="export-format-option" data-format="csv">
+                                    <input type="radio" name="exportFormat" value="csv">
+                                    <div class="format-icon csv">
+                                        <i class="fas fa-file-csv"></i>
+                                    </div>
+                                    <div class="format-info">
+                                        <strong>CSV (.csv)</strong>
+                                        <span>ไฟล์ข้อความ รองรับทุกโปรแกรม</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="export-preview">
+                            <div class="preview-header">
+                                <i class="fas fa-eye me-1"></i>ตัวอย่างข้อมูล
+                            </div>
+                            <div class="preview-stats">
+                                <span><i class="fas fa-columns me-1"></i><span id="previewCols">0</span> คอลัมน์</span>
+                                <span><i class="fas fa-list me-1"></i><span id="previewRows">0</span> แถว</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>ยกเลิก
+                        </button>
+                        <button type="button" class="btn btn-success" id="confirmExportBtn">
+                            <i class="fas fa-download me-1"></i>ดาวน์โหลดไฟล์
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jsuites@5/dist/jsuites.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@5.0.4/dist/index.js"></script>
+
+        <!-- Server Data -->
+	        <script id="serverDataScript" type="application/json"><%- JSON.stringify(instruction.data || null).replace(/</g, '\\u003c') %></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                // ===== DATA FROM SERVER =====
+                var serverData = null;
+                try {
+                    var dataEl = document.getElementById('serverDataScript');
+                    if (dataEl && dataEl.textContent) {
+                        serverData = JSON.parse(dataEl.textContent);
+                    }
+	                } catch (e) {
+	                    console.error('Parse error:', e);
+	                }
+
+                // ===== CONVERT DATA =====
+                function toJsData(data) {
+                    if (!data || !data.columns || !data.rows) {
+                        return {
+                            columns: [
+                                { title: 'คอลัมน์ 1', width: 200, wordWrap: true },
+                                { title: 'คอลัมน์ 2', width: 200, wordWrap: true },
+                                { title: 'คอลัมน์ 3', width: 200, wordWrap: true }
+                            ],
+                            data: [['', '', ''], ['', '', ''], ['', '', '']]
+                        };
+                    }
+
+                    var cols = data.columns.map(function (c, i) {
+                        return { title: c || 'คอลัมน์ ' + (i + 1), width: 200, wordWrap: true };
+                    });
+
+                    var rows = data.rows && data.rows.length > 0 ? data.rows : [[]];
+
+                    return { columns: cols, data: rows };
+                }
+
+	                function fromJsData(sheet) {
+	                    var headers = getCorrectHeaders();
+	                    var data = sheet.getData();
+	                    return { columns: headers, rows: data };
+	                }
+
+	                // ===== INIT SPREADSHEET =====
+	                var converted = toJsData(serverData);
+
+	                if (typeof jspreadsheet === 'undefined') {
+	                    console.error('jspreadsheet library failed to load');
+	                    var container = document.getElementById('spreadsheet');
+	                    container.innerHTML = '<div class="p-3 text-danger">ไม่สามารถโหลดตัวแก้ไขตารางได้ กรุณารีเฟรชหรือเชื่อมต่ออินเทอร์เน็ต<div class="mt-2"><button type="button" class="btn btn-sm btn-outline-primary" onclick="location.reload()">ลองใหม่</button></div></div>';
+	                    return;
+	                }
+
+                var sheetConfig = {
+                    data: converted.data,
+                    columns: converted.columns,
+                    search: false,
+                    allowInsertRow: true,
+                    allowInsertColumn: true,
+                    allowDeleteRow: true,
+                    allowDeleteColumn: true,
+                    allowRenameColumn: true,
+                    columnSorting: true,
+                    columnDrag: true,
+                    rowDrag: true,
+                    tableOverflow: true,
+                    tableWidth: '100%',
+                    defaultColWidth: 200,
+                    // Thai context menu
+                    contextMenu: function (obj, x, y, e) {
+                        var items = [];
+
+                        // Copy & Paste
+                        items.push({
+                            title: '<i class="fas fa-copy me-2"></i>คัดลอก',
+                            shortcut: 'Ctrl+C',
+                            onclick: function () { obj.copy(); }
+                        });
+                        items.push({
+                            title: '<i class="fas fa-paste me-2"></i>วาง',
+                            shortcut: 'Ctrl+V',
+                            onclick: function () { obj.paste(); }
+                        });
+                        items.push({ type: 'line' });
+
+                        // Row operations
+                        items.push({
+                            title: '<i class="fas fa-plus me-2 text-success"></i>เพิ่มแถวด้านบน',
+                            onclick: function () { obj.insertRow(1, y, true); }
+                        });
+                        items.push({
+                            title: '<i class="fas fa-plus me-2 text-success"></i>เพิ่มแถวด้านล่าง',
+                            onclick: function () { obj.insertRow(1, y); }
+                        });
+                        items.push({
+                            title: '<i class="fas fa-trash-alt me-2 text-danger"></i>ลบแถวนี้',
+                            onclick: function () { obj.deleteRow(y); }
+                        });
+                        items.push({ type: 'line' });
+
+                        // Column operations
+                        items.push({
+                            title: '<i class="fas fa-columns me-2 text-success"></i>เพิ่มคอลัมน์ด้านซ้าย',
+                            onclick: function () { obj.insertColumn(1, x, true); }
+                        });
+                        items.push({
+                            title: '<i class="fas fa-columns me-2 text-success"></i>เพิ่มคอลัมน์ด้านขวา',
+                            onclick: function () { obj.insertColumn(1, x); }
+                        });
+                        items.push({
+                            title: '<i class="fas fa-times me-2 text-danger"></i>ลบคอลัมน์นี้',
+                            onclick: function () { obj.deleteColumn(x); }
+                        });
+                        items.push({ type: 'line' });
+
+                        // Edit column name
+                        items.push({
+                            title: '<i class="fas fa-edit me-2"></i>เปลี่ยนชื่อคอลัมน์',
+                            onclick: function () {
+                                var currentName = obj.getHeader(x);
+                                var newName = prompt('ระบุชื่อคอลัมน์ใหม่:', currentName);
+                                if (newName !== null && newName.trim() !== '') {
+                                    obj.setHeader(x, newName.trim());
+                                    setDirty(true);
+                                }
+                            }
+                        });
+
+                        return items;
+                    },
+                    onchange: function () {
+                        setDirty(true);
+                        updateDimensions();
+                    },
+                    onselection: function (el, x1, y1) {
+                        updateCellInfo(x1, y1);
+                    },
+                    oninsertrow: function () { setDirty(true); updateDimensions(); },
+                    ondeleterow: function () { setDirty(true); updateDimensions(); },
+                    oninsertcolumn: function () { setDirty(true); updateDimensions(); },
+                    ondeletecolumn: function () { setDirty(true); updateDimensions(); }
+                };
+
+                var spreadsheet = jspreadsheet(document.getElementById('spreadsheet'), {
+                    worksheets: [sheetConfig],
+                    toolbar: false
+                });
+
+                var sheet = Array.isArray(spreadsheet) ? spreadsheet[0] : spreadsheet;
+
+                if (!sheet || typeof sheet.getData !== 'function') {
+                    console.error('jspreadsheet worksheet failed to initialize');
+                    var fallback = document.getElementById('spreadsheet');
+                    fallback.innerHTML = '<div class="p-3 text-danger">โหลดตัวแก้ไขตารางไม่สำเร็จ กรุณารีเฟรช</div>';
+                    return;
+                }
+
+                // Responsive height for the sheet content
+                function applyTableHeight() {
+                    if (!sheet || !sheet.content) return;
+                    var headerH = (document.querySelector('.editor-header') || {}).offsetHeight || 0;
+                    var toolbarH = (document.querySelector('.editor-toolbar') || {}).offsetHeight || 0;
+                    var statusH = (document.querySelector('.editor-statusbar') || {}).offsetHeight || 0;
+                    var available = window.innerHeight - (headerH + toolbarH + statusH);
+                    var height = Math.max(240, available);
+                    sheet.content.style.height = height + 'px';
+                    sheet.content.style.maxHeight = height + 'px';
+                }
+
+                applyTableHeight();
+                window.addEventListener('resize', applyTableHeight);
+
+                // ===== CONSTRAIN EDITOR TO VIEWPORT =====
+                // ป้องกัน cell editor หลุดออกนอกหน้าจอ
+                function constrainEditorToViewport() {
+                    var editors = document.querySelectorAll('.jexcel_editor, .jexcel .editor');
+                    editors.forEach(function (editor) {
+                        if (!editor || editor.style.display === 'none') return;
+
+                        var rect = editor.getBoundingClientRect();
+                        var viewportWidth = window.innerWidth;
+                        var viewportHeight = window.innerHeight;
+                        var padding = 12;
+
+                        // ตรวจสอบและปรับตำแหน่งด้านขวา
+                        if (rect.right > viewportWidth - padding) {
+                            var newLeft = Math.max(padding, viewportWidth - rect.width - padding);
+                            editor.style.left = newLeft + 'px';
+                        }
+
+                        // ตรวจสอบและปรับตำแหน่งด้านล่าง
+                        if (rect.bottom > viewportHeight - padding) {
+                            var newTop = Math.max(padding, viewportHeight - rect.height - padding);
+                            editor.style.top = newTop + 'px';
+                        }
+
+                        // จำกัดความสูงสูงสุด
+                        var maxHeight = viewportHeight - padding * 2;
+                        if (rect.height > maxHeight) {
+                            editor.style.maxHeight = maxHeight + 'px';
+                            editor.style.overflowY = 'auto';
+                        }
+
+                        // ตรวจสอบว่าหลุดด้านซ้าย
+                        if (rect.left < padding) {
+                            editor.style.left = padding + 'px';
+                        }
+
+                        // ตรวจสอบว่าหลุดด้านบน
+                        if (rect.top < padding) {
+                            editor.style.top = padding + 'px';
+                        }
+                    });
+                }
+
+                // สังเกตการณ์เมื่อ editor ถูกสร้างขึ้น
+                var editorObserver = new MutationObserver(function (mutations) {
+                    mutations.forEach(function (mutation) {
+                        if (mutation.addedNodes.length > 0) {
+                            setTimeout(constrainEditorToViewport, 10);
+                        }
+                    });
+                });
+
+                var spreadsheetEl = document.getElementById('spreadsheet');
+                if (spreadsheetEl) {
+                    editorObserver.observe(spreadsheetEl, {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        attributeFilter: ['style', 'class']
+                    });
+                }
+
+                // ตรวจสอบเมื่อ scroll
+                window.addEventListener('scroll', constrainEditorToViewport, true);
+
+                // ===== STATE =====
+                var dirty = false;
+
+                function setDirty(val) {
+                    dirty = val;
+                    var el = document.getElementById('saveStatus');
+                    var reminder = document.getElementById('saveReminder');
+                    if (dirty) {
+                        el.innerHTML = '<i class="fas fa-circle me-1"></i>มีการเปลี่ยนแปลง';
+                        el.className = 'save-status dirty';
+                        if (reminder) reminder.style.display = 'flex';
+                    } else {
+                        el.innerHTML = '<i class="fas fa-check-circle me-1"></i>บันทึกแล้ว';
+                        el.className = 'save-status saved';
+                        if (reminder) reminder.style.display = 'none';
+                    }
+                }
+
+                function updateCellInfo(x, y) {
+                    if (!sheet) return;
+                    var colName = jspreadsheet.getColumnName(x);
+                    var ref = colName + (y + 1);
+                    var val = sheet.getValue(ref) || '';
+                    var selInfoEl = document.getElementById('selInfo');
+                    var cellInfoEl = document.getElementById('cellInfo');
+                    if (selInfoEl) selInfoEl.innerHTML = '<i class="fas fa-mouse-pointer me-1"></i>เซลล์: ' + ref;
+                    if (cellInfoEl) {
+                        var displayVal = val.length > 50 ? val.substring(0, 50) + '...' : val;
+                        cellInfoEl.textContent = displayVal ? 'กำลังแก้ไข ' + ref + ': ' + displayVal : 'เซลล์ ' + ref + ' (ว่าง)';
+                    }
+                }
+
+	                function updateDimensions() {
+	                    if (!sheet) return;
+	                    var data = sheet.getData();
+	                    var headers = getCorrectHeaders();
+	                    document.getElementById('rowCount').textContent = data.length;
+	                    document.getElementById('colCount').textContent = headers.length;
+	                }
+
+                function showToast(msg, type) {
+                    var old = document.querySelector('.toast-msg');
+                    if (old) old.remove();
+
+                    var t = document.createElement('div');
+                    t.className = 'toast-msg ' + (type || '');
+                    t.textContent = msg;
+                    document.body.appendChild(t);
+
+                    setTimeout(function () { t.remove(); }, 3000);
+                }
+
+                // ===== SAVE =====
+                function save() {
+                    var title = document.getElementById('docTitle').value.trim();
+                    if (!title) {
+                        showToast('กรุณาระบุชื่อชุดข้อมูล', 'error');
+                        document.getElementById('docTitle').focus();
+                        return;
+                    }
+
+                    var el = document.getElementById('saveStatus');
+                    el.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>กำลังบันทึก...';
+                    el.className = 'save-status saving';
+
+                    var tableData = fromJsData(sheet);
+
+                    document.getElementById('frmTitle').value = title;
+                    document.getElementById('frmTableData').value = JSON.stringify(tableData);
+                    document.getElementById('saveForm').submit();
+                }
+
+                // ===== EVENT BINDINGS =====
+                document.getElementById('saveBtn').onclick = save;
+
+                // ===== CANCEL BUTTON =====
+                document.getElementById('cancelBtn').onclick = function () {
+                    if (dirty) {
+                        var confirmLeave = confirm('คุณต้องการกลับไปหน้าหลักใช่ไหม?\n\nข้อมูลที่แก้ไขจะไม่ถูกบันทึก');
+                        if (!confirmLeave) {
+                            return;
+                        }
+                    }
+                    // Navigate back to the dashboard without saving
+                    window.onbeforeunload = null; // Disable the unsaved warning
+                    window.location.href = '/admin/dashboard?instructionId=<%= instructionId %>';
+                };
+
+                // ===== EXPORT FUNCTIONALITY =====
+                var exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
+
+                // Open export modal
+	                document.getElementById('exportBtn').onclick = function () {
+	                    // Update preview stats
+	                    if (sheet) {
+	                        var data = sheet.getData();
+	                        var headers = getCorrectHeaders();
+	                        document.getElementById('previewCols').textContent = headers.length;
+	                        document.getElementById('previewRows').textContent = data.length;
+	                    }
+	                    exportModal.show();
+	                };
+
+                // Format selection
+                document.querySelectorAll('.export-format-option').forEach(function (option) {
+                    option.addEventListener('click', function () {
+                        document.querySelectorAll('.export-format-option').forEach(function (o) {
+                            o.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                        var format = this.getAttribute('data-format');
+                        this.querySelector('input[type="radio"]').checked = true;
+                        document.getElementById('exportExtension').textContent = '.' + format;
+                    });
+                });
+
+                // Export confirmation
+	                document.getElementById('confirmExportBtn').onclick = async function () {
+	                    if (!sheet) return;
+
+	                    var confirmBtn = document.getElementById('confirmExportBtn');
+	                    var originalBtnHtml = confirmBtn ? confirmBtn.innerHTML : '';
+	                    if (confirmBtn) {
+	                        confirmBtn.disabled = true;
+	                        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>กำลังดาวน์โหลด...';
+	                    }
+
+	                    var format = document.querySelector('input[name="exportFormat"]:checked').value;
+	                    var baseFilename = document.getElementById('exportFilename').value.trim() || 'data-export';
+
+                    // Add date suffix
+                    var now = new Date();
+                    var dateSuffix = now.getFullYear() +
+                        String(now.getMonth() + 1).padStart(2, '0') +
+                        String(now.getDate()).padStart(2, '0') + '_' +
+                        String(now.getHours()).padStart(2, '0') +
+                        String(now.getMinutes()).padStart(2, '0');
+
+                    var filename = baseFilename.replace(/[^a-zA-Z0-9ก-๙\s\-_]/g, '') + '_' + dateSuffix;
+
+	                    // Get correct headers from column configuration
+	                    var headers = getCorrectHeaders();
+	                    var data = sheet.getData();
+
+	                    try {
+	                        if (format === 'xlsx') {
+	                            // Export as Excel (.xlsx) via backend for true XLSX file
+	                            await exportAsExcel(filename, headers, data);
+	                        } else {
+	                            // Export as CSV
+	                            exportAsCSV(filename, headers, data);
+	                        }
+
+	                        exportModal.hide();
+	                        showToast('ส่งออกข้อมูลสำเร็จ!', 'success');
+	                    } catch (err) {
+	                        console.error('Export failed:', err);
+	                        showToast((err && err.message) ? err.message : 'ส่งออกไม่สำเร็จ', 'error');
+	                    } finally {
+	                        if (confirmBtn) {
+	                            confirmBtn.disabled = false;
+	                            confirmBtn.innerHTML = originalBtnHtml;
+	                        }
+	                    }
+	                };
+
+                // Get correct column headers from the spreadsheet
+	                function getCorrectHeaders() {
+	                    var headers = [];
+
+                    // Try to get headers from the column header row in DOM
+                    var headerCells = document.querySelectorAll('.jexcel > thead > tr > td');
+                    if (headerCells && headerCells.length > 1) {
+                        // Skip first cell (row number header)
+                        for (var i = 1; i < headerCells.length; i++) {
+                            var text = headerCells[i].textContent || headerCells[i].innerText || '';
+                            headers.push(text.trim());
+                        }
+	                    }
+
+	                    // Fallback: use sheet options
+	                    if (headers.length === 0 && sheet && sheet.options && Array.isArray(sheet.options.columns)) {
+	                        headers = sheet.options.columns.map(function (col, index) {
+	                            if (col && col.title !== undefined && col.title !== null && String(col.title).trim() !== '') {
+	                                return String(col.title).trim();
+	                            }
+	                            return 'คอลัมน์ ' + (index + 1);
+	                        });
+	                    }
+
+	                    // Fallback: use getHeaders if DOM method fails
+	                    if (headers.length === 0 && sheet.getHeaders) {
+	                        var rawHeaders = sheet.getHeaders();
+	                        if (typeof rawHeaders === 'string') {
+	                            headers = rawHeaders.split(',').map(function (h) { return h.trim(); });
+                        }
+                    }
+
+                    // Last fallback: use original columns from config
+                    if (headers.length === 0 && converted && converted.columns) {
+                        headers = converted.columns.map(function (col) {
+                            return col.title || 'คอลัมน์';
+                        });
+                    }
+
+                    return headers;
+                }
+
+                // CSV Export function (fixed)
+                function exportAsCSV(filename, headers, data) {
+                    // Build CSV content with BOM for Thai support
+                    var csvContent = '\uFEFF'; // UTF-8 BOM
+
+                    // Add headers
+                    csvContent += headers.map(function (h) {
+                        return '"' + String(h).replace(/"/g, '""') + '"';
+                    }).join(',') + '\n';
+
+                    // Add data rows - ensure correct column count
+                    data.forEach(function (row) {
+                        var rowData = [];
+                        for (var i = 0; i < headers.length; i++) {
+                            var value = (row && row[i] !== null && row[i] !== undefined) ? String(row[i]) : '';
+                            rowData.push('"' + value.replace(/"/g, '""') + '"');
+                        }
+                        csvContent += rowData.join(',') + '\n';
+                    });
+
+                    // Download
+                    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    var link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = filename + '.csv';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                }
+
+	                // Excel Export function (custom for correct columns)
+	                async function exportAsExcel(filename, headers, data) {
+	                    var res = await fetch('/admin/instructions-v3/export-xlsx', {
+	                        method: 'POST',
+	                        headers: { 'Content-Type': 'application/json' },
+	                        body: JSON.stringify({
+	                            filename: filename,
+	                            headers: headers,
+	                            rows: data
+	                        })
+	                    });
+
+	                    if (!res.ok) {
+	                        var errData = await res.json().catch(function () { return {}; });
+	                        throw new Error(errData.error || 'ส่งออกไม่สำเร็จ');
+	                    }
+
+	                    var blob = await res.blob();
+	                    var url = window.URL.createObjectURL(blob);
+	                    var link = document.createElement('a');
+	                    link.href = url;
+	                    link.download = filename + '.xlsx';
+	                    document.body.appendChild(link);
+	                    link.click();
+	                    link.remove();
+	                    window.URL.revokeObjectURL(url);
+	                }
+
+                document.getElementById('undoBtn').onclick = function () { sheet.undo(); };
+                document.getElementById('redoBtn').onclick = function () { sheet.redo(); };
+                document.getElementById('addRowBtn').onclick = function () { sheet.insertRow(); };
+                document.getElementById('addColBtn').onclick = function () { sheet.insertColumn(); };
+
+	                document.getElementById('docTitle').oninput = function () { setDirty(true); };
+
+	                // Keyboard shortcuts
+	                document.addEventListener('keydown', function (e) {
+	                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+	                        e.preventDefault();
+	                        save();
+	                    }
+	                });
+
+                // Warn before leave
+                window.onbeforeunload = function (e) {
+                    if (dirty) {
+                        e.preventDefault();
+                        e.returnValue = '';
+                        return '';
+                    }
+                };
+
+                // Init
+                updateDimensions();
+
+                // ===== ROW RESIZE FUNCTIONALITY (Real-time like Column) =====
+                var MIN_ROW_HEIGHT = 28;
+                var resizingRow = null;
+                var startY = 0;
+                var startHeight = 0;
+                var resizeGuide = null;
+
+                function createRowResizeHandles() {
+                    // Remove existing handles first
+                    document.querySelectorAll('.row-resize-handle').forEach(function (h) { h.remove(); });
+
+                    var tbody = document.querySelector('.jexcel > tbody');
+                    if (!tbody) return;
+
+                    var rows = tbody.querySelectorAll('tr');
+                    rows.forEach(function (row, index) {
+                        var firstCell = row.querySelector('td:first-child');
+                        if (!firstCell) return;
+
+                        var handle = document.createElement('div');
+                        handle.className = 'row-resize-handle';
+                        handle.setAttribute('data-row-index', index);
+                        firstCell.appendChild(handle);
+
+                        handle.addEventListener('mousedown', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            startRowResize(row, index, e);
+                        });
+                    });
+                }
+
+                function startRowResize(row, rowIndex, e) {
+                    resizingRow = row;
+                    startY = e.clientY;
+                    startHeight = row.offsetHeight;
+
+                    // Add active class to handle
+                    var handle = row.querySelector('.row-resize-handle');
+                    if (handle) handle.classList.add('active');
+
+                    // Create resize guide line
+                    resizeGuide = document.createElement('div');
+                    resizeGuide.className = 'row-resize-guide';
+                    resizeGuide.style.top = (row.getBoundingClientRect().bottom) + 'px';
+                    document.body.appendChild(resizeGuide);
+
+                    // Add resizing class to body
+                    document.body.classList.add('resizing-row');
+
+                    document.addEventListener('mousemove', onRowResize);
+                    document.addEventListener('mouseup', stopRowResize);
+                }
+
+                function onRowResize(e) {
+                    if (!resizingRow) return;
+
+                    var deltaY = e.clientY - startY;
+                    var newHeight = Math.max(MIN_ROW_HEIGHT, startHeight + deltaY);
+
+                    // Update row height in real-time
+                    resizingRow.style.height = newHeight + 'px';
+
+                    // Update all cells in the row
+                    resizingRow.querySelectorAll('td').forEach(function (cell) {
+                        cell.style.height = newHeight + 'px';
+                        cell.style.minHeight = newHeight + 'px';
+                    });
+
+                    // Update guide position
+                    if (resizeGuide) {
+                        resizeGuide.style.top = (resizingRow.getBoundingClientRect().bottom) + 'px';
+                    }
+                }
+
+                function stopRowResize() {
+                    if (resizingRow) {
+                        // Remove active class from handle
+                        var handle = resizingRow.querySelector('.row-resize-handle');
+                        if (handle) handle.classList.remove('active');
+
+                        setDirty(true);
+                    }
+
+                    resizingRow = null;
+                    startY = 0;
+                    startHeight = 0;
+
+                    // Remove resize guide
+                    if (resizeGuide) {
+                        resizeGuide.remove();
+                        resizeGuide = null;
+                    }
+
+                    // Remove resizing class from body
+                    document.body.classList.remove('resizing-row');
+
+                    document.removeEventListener('mousemove', onRowResize);
+                    document.removeEventListener('mouseup', stopRowResize);
+                }
+
+                // Create handles after spreadsheet is ready
+                setTimeout(createRowResizeHandles, 100);
+
+                // Re-create handles when rows change
+                var originalInsertRow = sheet.insertRow;
+                sheet.insertRow = function () {
+                    var result = originalInsertRow.apply(sheet, arguments);
+                    setTimeout(createRowResizeHandles, 50);
+                    return result;
+                };
+
+                var originalDeleteRow = sheet.deleteRow;
+                sheet.deleteRow = function () {
+                    var result = originalDeleteRow.apply(sheet, arguments);
+                    setTimeout(createRowResizeHandles, 50);
+                    return result;
+                };
+
+                // Also observe DOM changes for any dynamic row additions
+                var tableObserver = new MutationObserver(function (mutations) {
+                    var shouldRecreate = mutations.some(function (m) {
+                        return m.type === 'childList' && m.target.tagName === 'TBODY';
+                    });
+                    if (shouldRecreate) {
+                        setTimeout(createRowResizeHandles, 50);
+                    }
+                });
+
+                var spreadsheetEl = document.getElementById('spreadsheet');
+                if (spreadsheetEl) {
+                    tableObserver.observe(spreadsheetEl, { childList: true, subtree: true });
+                }
+
+                // URL params
+                var params = new URLSearchParams(window.location.search);
+                if (params.get('success')) showToast(params.get('success'), 'success');
+                if (params.get('error')) showToast(params.get('error'), 'error');
+            });
+        </script>
+    </div><!-- /editor-container -->
+</body>
+
+</html>

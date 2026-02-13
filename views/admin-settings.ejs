@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตั้งค่าระบบ - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/admin-settings.css" rel="stylesheet">
+</head>
+<body class="app-shell">
+    <%- include('partials/admin-navbar', { activePage: 'settings' }) %>
+
+    <div class="app-content">
+    <div class="container-fluid" style="padding: 0.75rem;">
+        <!-- Header -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">
+                        <i class="fas fa-cogs text-primary me-2"></i>
+                        ตั้งค่าระบบ
+                    </h2>
+                    <a href="/admin/dashboard" class="back-button">
+                        <i class="fas fa-arrow-left"></i>
+                        กลับไปหน้าแอดมิน
+                    </a>
+                </div>
+                <hr class="my-2">
+                <div id="settingsRefreshIndicator" class="text-muted small d-flex align-items-center gap-2" style="display: none;">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <span>กำลังอัปเดตข้อมูลล่าสุด...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Messages -->
+        <!-- Settings Tabs -->
+        <ul class="nav nav-tabs mb-3" id="settingsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="line-ai-tab" data-bs-toggle="tab" data-bs-target="#line-ai-settings" type="button" role="tab">
+                    <i class="fas fa-robot me-2"></i>Bot & AI
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat-settings" type="button" role="tab">
+                    <i class="fas fa-comments me-2"></i>การแชท
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system-settings" type="button" role="tab">
+                    <i class="fas fa-cog me-2"></i>ระบบ
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="filter-tab" data-bs-toggle="tab" data-bs-target="#filter-settings" type="button" role="tab">
+                    <i class="fas fa-shield-alt me-2"></i>ความปลอดภัย
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="settingsTabContent">
+            <!-- Line Bot & AI Settings Tab -->
+            <%- include('partials/settings/bot-ai') %>
+
+            <!-- Chat Settings Tab -->
+            <%- include('partials/settings/chat') %>
+
+            <!-- System Settings Tab -->
+            <%- include('partials/settings/system') %>
+
+            <!-- Security Settings Tab -->
+            <%- include('partials/settings/security') %>
+        </div>
+    </div>
+    </div>
+
+    <!-- Modals -->
+    <%- include('partials/modals/line-bot-modal') %>
+    <%- include('partials/modals/facebook-bot-modal') %>
+    <%- include('partials/modals/instructions-modal') %>
+
+    <!-- Image Collection Modal -->
+    <div class="modal fade" id="imageCollectionModal" tabindex="-1" aria-labelledby="imageCollectionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageCollectionModalLabel">
+                        <i class="fas fa-images me-2"></i>จัดการคลังรูปภาพ
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="imageCollectionForm">
+                        <input type="hidden" id="imageCollectionId">
+                        <div class="mb-3">
+                            <label for="imageCollectionName" class="form-label">ชื่อคลังรูปภาพ <span class="text-danger">*</span></label>
+                            <input type="text" id="imageCollectionName" class="form-control" placeholder="เช่น: แคมเปญเปิดตัวสินค้า, เมนูอาหารเช้า" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="imageCollectionDescription" class="form-label">คำอธิบายเพิ่มเติม</label>
+                            <textarea id="imageCollectionDescription" class="form-control" rows="2" placeholder="ระบุรายละเอียดสั้น ๆ เพื่อให้ง่ายต่อการค้นหา"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0">เลือกรูปภาพในคลัง</label>
+                                <div class="text-muted small" id="collectionAssetCount">0 รูป</div>
+                            </div>
+                            <div class="input-group input-group-sm mb-3">
+                                <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                                <input type="text" id="imageCollectionAssetSearch" class="form-control" placeholder="ค้นหาตามชื่อหรือคำอธิบายรูปภาพ">
+                            </div>
+                            <div class="collection-asset-grid" id="imageCollectionAssetList">
+                                <div class="text-muted small">กำลังโหลดรายการรูปภาพ...</div>
+                            </div>
+                            <div class="form-text mt-2">รูปภาพดึงจาก Instruction Assets หากยังไม่มีสามารถอัปโหลดได้ในส่วน "คำสั่ง & โทเคนรูปภาพ"</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger me-auto" id="deleteImageCollectionBtn" style="display: none;">
+                        <i class="fas fa-trash me-1"></i>ลบคลังนี้
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" id="saveImageCollectionBtn">
+                        <i class="fas fa-save me-1"></i>บันทึก
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Collections to Bot Modal -->
+    <div class="modal fade" id="botImageCollectionsModal" tabindex="-1" aria-labelledby="botImageCollectionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="botImageCollectionsModalLabel">
+                        <i class="fas fa-layer-group me-2"></i>เลือกคลังรูปภาพ
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="bot-collection-summary mb-3" id="botImageCollectionsSummary"></div>
+                    <div class="input-group input-group-sm mb-3">
+                        <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                        <input type="text" id="botCollectionsSearch" class="form-control" placeholder="ค้นหาชื่อคลังรูปภาพ">
+                    </div>
+                    <div class="bot-collections-list" id="botImageCollectionsList">
+                        <div class="text-muted small">กำลังโหลดรายการคลังรูปภาพ...</div>
+                    </div>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="fas fa-info-circle me-2"></i>หากไม่เลือกคลังรูปภาพ ระบบจะใช้รูปทั้งหมดที่มีเป็นค่าเริ่มต้น
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                    <button type="button" class="btn btn-primary" id="saveBotImageCollectionsBtn">
+                        <i class="fas fa-save me-1"></i>บันทึกการเลือก
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div> <!-- /app-content -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/admin-settings.js"></script>
+    <script src="/js/bot-management.js"></script>
+    <script src="/js/instructions-management.js"></script>
+    <script src="/js/image-collections-management.js"></script>
+</body>
+</html>

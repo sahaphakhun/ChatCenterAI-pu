@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ออเดอร์ | จัดการ AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Mali:wght@200;300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+  <link href="/css/admin-orders-v2.css" rel="stylesheet">
+</head>
+
+<body class="app-shell">
+  <%- include('partials/admin-navbar', { activePage: 'orders' }) %>
+
+    <div class="app-content">
+      <!-- Summary Cards -->
+      <div class="orders-summary-grid" id="ordersSummaryCards" style="padding: 1.5rem 1.5rem 0;">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div class="orders-layout">
+        <!-- Sidebar Filters -->
+        <aside class="orders-sidebar">
+          <!-- Status Filter -->
+          <div class="orders-filter-section">
+            <div class="orders-filter-title">
+              <i class="fas fa-filter"></i> สถานะ
+            </div>
+            <div class="orders-status-pills" id="ordersStatusPills">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Date Filter -->
+          <div class="orders-filter-section">
+            <div class="orders-filter-title">
+              <i class="fas fa-calendar-alt"></i> ช่วงวันที่
+            </div>
+            <div class="orders-date-group">
+              <input type="date" class="orders-date-input" id="ordersStartDate" placeholder="วันที่เริ่ม">
+              <input type="date" class="orders-date-input" id="ordersEndDate" placeholder="วันที่สิ้นสุด">
+              <div class="orders-quick-dates">
+                <button type="button" class="orders-quick-date-btn" data-range="today">วันนี้</button>
+                <button type="button" class="orders-quick-date-btn" data-range="7days">7 วัน</button>
+                <button type="button" class="orders-quick-date-btn" data-range="30days">30 วัน</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search -->
+          <div class="orders-filter-section">
+            <div class="orders-filter-title">
+              <i class="fas fa-search"></i> ค้นหา
+            </div>
+            <div class="orders-search-wrapper">
+              <i class="fas fa-search orders-search-icon"></i>
+              <input type="text" class="orders-search-input" id="ordersSearchInput"
+                placeholder="ชื่อ, เบอร์โทร, หมายเหตุ...">
+            </div>
+          </div>
+
+        </aside>
+
+        <!-- Main Content -->
+        <main class="orders-main">
+          <!-- Toolbar -->
+          <div class="orders-toolbar">
+            <div class="orders-toolbar-left">
+              <select class="orders-page-select" id="ordersPageSelect" style="min-width: 180px;">
+                <option value="">ทุกเพจ/บอท</option>
+              </select>
+            </div>
+            <div class="orders-toolbar-actions">
+              <button class="orders-btn orders-btn-primary" id="ordersExportBtn">
+                <i class="fas fa-file-export"></i> ส่งออก Excel
+              </button>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="orders-table-card">
+            <div class="orders-table-wrapper">
+              <table class="orders-table">
+                <thead>
+                  <tr>
+                    <th style="width: 40px;">
+                      <input type="checkbox" class="orders-checkbox" id="ordersSelectAll">
+                    </th>
+                    <th class="sortable" data-sort="extractedAt">
+                      วันที่ <i class="fas fa-sort sort-icon"></i>
+                    </th>
+                    <th>ลูกค้า</th>
+                    <th>สินค้า</th>
+                    <th class="sortable" data-sort="totalAmount">
+                      ยอดรวม <i class="fas fa-sort sort-icon"></i>
+                    </th>
+                    <th class="sortable" data-sort="status">
+                      สถานะ <i class="fas fa-sort sort-icon"></i>
+                    </th>
+                    <th style="width: 120px;">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                  <!-- Rendered by JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="orders-pagination" id="ordersPagination">
+              <div class="orders-pagination-info" id="ordersPaginationInfo">-</div>
+              <div class="orders-pagination-controls">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div class="orders-bulk-bar" id="ordersBulkBar">
+      <span class="orders-bulk-count" id="ordersBulkCount">เลือก 0 รายการ</span>
+      <div class="orders-bulk-actions">
+        <div class="orders-status-dropdown" id="ordersBulkStatusDropdown">
+          <button class="orders-bulk-btn btn-status" id="ordersBulkStatusBtn">
+            <i class="fas fa-exchange-alt"></i> เปลี่ยนสถานะ
+          </button>
+          <div class="orders-status-dropdown-menu">
+            <div class="orders-status-option" onclick="window.OrdersV2.bulkUpdateStatus('pending')">
+              <span class="status-dot" style="background:#DFA94B;"></span> รอดำเนินการ
+            </div>
+            <div class="orders-status-option" onclick="window.OrdersV2.bulkUpdateStatus('confirmed')">
+              <span class="status-dot" style="background:#4A6FA5;"></span> ยืนยันแล้ว
+            </div>
+            <div class="orders-status-option" onclick="window.OrdersV2.bulkUpdateStatus('shipped')">
+              <span class="status-dot" style="background:#3D7FC1;"></span> จัดส่งแล้ว
+            </div>
+            <div class="orders-status-option" onclick="window.OrdersV2.bulkUpdateStatus('completed')">
+              <span class="status-dot" style="background:#2D8F6F;"></span> เสร็จสิ้น
+            </div>
+            <div class="orders-status-option" onclick="window.OrdersV2.bulkUpdateStatus('cancelled')">
+              <span class="status-dot" style="background:#D2555A;"></span> ยกเลิก
+            </div>
+          </div>
+        </div>
+        <button class="orders-bulk-btn btn-export" id="ordersBulkExport">
+          <i class="fas fa-file-export"></i> ส่งออก
+        </button>
+        <button class="orders-bulk-btn btn-cancel" id="ordersBulkCancel">
+          <i class="fas fa-times"></i> ยกเลิก
+        </button>
+      </div>
+    </div>
+
+    <!-- Order Detail Slide-over -->
+    <div class="orders-detail-overlay" id="ordersDetailOverlay">
+      <div class="orders-detail-panel" id="ordersDetailPanel">
+        <div class="orders-detail-header">
+          <h3 class="orders-detail-title" id="ordersDetailTitle">รายละเอียดออเดอร์</h3>
+          <button class="orders-detail-close" id="ordersDetailClose">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="orders-detail-body" id="ordersDetailBody">
+          <!-- Rendered by JS -->
+        </div>
+        <div class="orders-detail-footer">
+          <button class="orders-detail-btn btn-secondary" onclick="window.OrdersV2.closeDetail()">
+            <i class="fas fa-times"></i> ปิด
+          </button>
+          <button class="orders-detail-btn btn-primary" id="ordersDetailPrint">
+            <i class="fas fa-print"></i> พิมพ์ใบปะหน้า
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/admin-orders-v2.js"></script>
+    <script>
+      // Bulk Status Dropdown Toggle
+      document.getElementById('ordersBulkStatusBtn')?.addEventListener('click', function () {
+        document.getElementById('ordersBulkStatusDropdown')?.classList.toggle('open');
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function (e) {
+        const dropdown = document.getElementById('ordersBulkStatusDropdown');
+        if (dropdown && !dropdown.contains(e.target)) {
+          dropdown.classList.remove('open');
+        }
+      });
+
+    </script>
+</body>
+
+</html>

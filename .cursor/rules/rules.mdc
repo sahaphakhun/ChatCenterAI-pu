@@ -1,0 +1,65 @@
+---
+alwaysApply: true
+---
+## Core Rules
+- Always read and understand the full project before starting.  
+- No scope changes without approval.  
+- Plan briefly before each change or answer.  
+- Avoid duplication. Prefer reuse/refactor.  
+- Keep naming, data schemas, and API contracts consistent.  
+- Validate API endpoints, payloads, and responses.  
+- Base decisions on actual code review; ask targeted questions if missing info.
+
+## Workflow
+- Planning (objective, scope, files, impact, success criteria, test plan).  
+- Design for reuse first.  
+- Small, testable commits.  
+- Self-review with checklist.  
+- Summarize changes and results.  
+- Before finishing, **recheck “Penalties for Violations.”**
+
+## API Rules
+- Reuse or extend existing endpoints where possible.  
+- Follow routing/version/middleware conventions.  
+- Validate inputs with existing schemas.  
+- Keep response shape compatible; update shared types/DTOs.  
+- Standardize errors; avoid leaking sensitive details.  
+- Add unit/integration tests.  
+- Check authn/authz, rate limits, injections, SSRF, traversal.  
+- Update API docs/OpenAPI.
+
+## UI Rules
+- Prefer existing components.  
+- Follow design tokens and interaction patterns.  
+- Verify API contracts used by the UI.  
+- Handle loading/empty/error states.  
+- Ensure basic accessibility.  
+- Add suitable tests.
+
+## Naming & Data
+- Follow project casing rules.  
+- Use shared types/models.  
+- Avoid unannounced breaking changes; deprecate if needed.
+
+## Scope Control
+- Declare in/out of scope.  
+- Log out-of-scope items as proposals.  
+- Commit only in-scope work.
+
+## Documentation
+- Cite files and line ranges reviewed.  
+- Ask targeted questions when info is missing.  
+- Update README/CHANGELOG/docs.
+
+## Acceptance
+- Build/lint/test pass.  
+- Tests cover changes.  
+- Types/DTO/OpenAPI and docs updated.  
+- No duplicated code/utilities.  
+- Clear PR description and impacts.  
+- Confirm no rule violations; recheck penalties.
+
+## Penalties for Violations
+- Roll back to last good point and fix per rules.  
+- Repeated issues: block merge until prevention plan and tests provided.  
+- Broad impact: add a brief postmortem with root cause and prevention.

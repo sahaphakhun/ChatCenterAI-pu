@@ -1,0 +1,5 @@
+.message-meta {
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+  color: var(--chat-text-tertiary, #8B92A3);
+}

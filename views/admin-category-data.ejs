@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการข้อมูล - ChatCenter AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: "Mali", "Inter", sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .data-table th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .data-table td {
+            vertical-align: middle;
+        }
+
+        .cell-input {
+            border: 1px solid transparent;
+            background: transparent;
+            width: 100%;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .cell-input:focus {
+            border-color: #3b82f6;
+            background: white;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .cell-input:hover {
+            background-color: #f8fafc;
+        }
+
+        .cell-input.is-saving {
+            background-color: rgba(223, 169, 75, 0.12);
+            border-color: rgba(223, 169, 75, 0.55);
+        }
+
+        .cell-input.is-saved {
+            background-color: rgba(45, 143, 111, 0.12);
+            border-color: rgba(45, 143, 111, 0.55);
+        }
+
+        .cell-input.is-error {
+            background-color: rgba(210, 85, 90, 0.12);
+            border-color: rgba(210, 85, 90, 0.65);
+        }
+
+        .action-column {
+            width: 50px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <%- include('partials/admin-navbar', { activePage: 'categories' }) %>
+
+        <div class="container-fluid mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-1">
+                            <li class="breadcrumb-item"><a href="/admin/categories">หมวดหมู่</a></li>
+                            <li class="breadcrumb-item active" aria-current="page" id="categoryNameBreadcrumb">
+                                Loading...</li>
+                        </ol>
+                    </nav>
+                    <h4 class="mb-0" id="pageTitle">จัดการข้อมูล</h4>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-success" onclick="document.getElementById('importFile').click()">
+                        <i class="fas fa-file-excel me-2"></i>Import
+                    </button>
+                    <input type="file" id="importFile" hidden accept=".xlsx, .xls" onchange="importExcel(this)">
+
+                    <button class="btn btn-outline-primary" onclick="exportExcel()">
+                        <i class="fas fa-download me-2"></i>Export
+                    </button>
+
+                    <button class="btn btn-primary" onclick="addNewRow()">
+                        <i class="fas fa-plus me-2"></i>เพิ่มแถว
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="table table-hover data-table mb-0" id="dataTable">
+                        <thead>
+                            <tr id="tableHeaders">
+                                <!-- Headers will be loaded here -->
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="emptyState" class="text-center py-5 d-none">
+                <i class="fas fa-database fa-3x text-secondary opacity-25 mb-3"></i>
+                <p class="text-muted">ยังไม่มีข้อมูลในหมวดหมู่นี้</p>
+                <button class="btn btn-sm btn-outline-primary" onclick="addNewRow()">เพิ่มข้อมูลแรก</button>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <script>
+            const categoryId = '<%= categoryId %>';
+            let category = null;
+            let data = [];
+
+            document.addEventListener('DOMContentLoaded', init);
+
+            async function init() {
+                await loadCategoryInfo();
+                await loadData();
+            }
+
+	            async function loadCategoryInfo() {
+	                try {
+	                    // Reuse the list API and find local, or create a specific GET one. 
+	                    // For efficiency, let's just fetch all and find (since we didn't make a specific GET /api/categories/:id)
+	                    // Wait, we didn't make GET /api/categories/:id. We can use the list.
+	                    const res = await fetch('/admin/api/categories');
+	                    const resData = await res.json();
+	                    if (resData.success) {
+	                        category = resData.categories.find(c => c.categoryId === categoryId);
+	                        if (category) {
+	                            document.getElementById('categoryNameBreadcrumb').innerText = category.name;
+	                            const pageTitle = document.getElementById('pageTitle');
+	                            if (pageTitle) {
+	                                pageTitle.innerHTML = '';
+	                                const icon = document.createElement('i');
+	                                icon.className = 'fas fa-table me-2 text-primary';
+	                                pageTitle.appendChild(icon);
+	                                pageTitle.appendChild(document.createTextNode(category.name || ''));
+	                            }
+	                            renderHeaders();
+	                        }
+	                    }
+	                } catch (err) {
+	                    console.error(err);
+                }
+            }
+
+            async function loadData() {
+                try {
+                    const res = await fetch(`/admin/api/categories/${categoryId}/data`);
+                    const resData = await res.json();
+
+                    if (resData.success) {
+                        data = resData.data;
+                        renderTable();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลได้', 'error');
+                }
+            }
+
+	            function renderHeaders() {
+	                const tr = document.getElementById('tableHeaders');
+	                if (!tr) return;
+	                tr.innerHTML = '';
+
+	                const indexTh = document.createElement('th');
+	                indexTh.className = 'action-column';
+	                indexTh.textContent = '#';
+	                tr.appendChild(indexTh);
+
+	                (category.columns || []).forEach(col => {
+	                    const th = document.createElement('th');
+	                    th.textContent = col.name || '';
+	                    tr.appendChild(th);
+	                });
+
+	                const actionsTh = document.createElement('th');
+	                actionsTh.className = 'action-column';
+	                tr.appendChild(actionsTh);
+	            }
+
+	            function renderTable() {
+	                const tbody = document.getElementById('tableBody');
+	                const emptyState = document.getElementById('emptyState');
+	                if (!tbody || !emptyState) return;
+
+	                if (data.length === 0) {
+	                    tbody.innerHTML = '';
+	                    emptyState.classList.remove('d-none');
+	                    return;
+	                }
+
+	                emptyState.classList.add('d-none');
+	                tbody.innerHTML = '';
+
+	                const frag = document.createDocumentFragment();
+	                data.forEach((row, index) => {
+	                    const tr = document.createElement('tr');
+
+	                    const indexTd = document.createElement('td');
+	                    indexTd.className = 'text-muted small text-center';
+	                    indexTd.textContent = String(index + 1);
+	                    tr.appendChild(indexTd);
+
+	                    (category.columns || []).forEach(col => {
+	                        const td = document.createElement('td');
+	                        const input = document.createElement('input');
+	                        input.type = 'text';
+	                        input.className = 'cell-input';
+	                        const val = row && row.values ? (row.values[col.id] ?? '') : '';
+	                        input.value = val;
+	                        input.addEventListener('change', () => updateCell(row.rowId, col.id, input.value, input));
+	                        td.appendChild(input);
+	                        tr.appendChild(td);
+	                    });
+
+	                    const actionTd = document.createElement('td');
+	                    actionTd.className = 'text-center';
+
+	                    const deleteBtn = document.createElement('button');
+	                    deleteBtn.type = 'button';
+	                    deleteBtn.className = 'btn btn-link text-danger p-0';
+	                    deleteBtn.setAttribute('aria-label', 'ลบแถว');
+	                    deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+	                    deleteBtn.addEventListener('click', () => deleteRow(row.rowId));
+
+	                    actionTd.appendChild(deleteBtn);
+	                    tr.appendChild(actionTd);
+
+	                    frag.appendChild(tr);
+	                });
+
+	                tbody.appendChild(frag);
+	            }
+
+            async function addNewRow() {
+                try {
+                    const res = await fetch(`/admin/api/categories/${categoryId}/data`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ values: {} })
+                    });
+                    const resData = await res.json();
+
+                    if (resData.success) {
+                        data.push(resData.row);
+                        renderTable();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire('Error', 'ไม่สามารถเพิ่มแถวได้', 'error');
+                }
+            }
+
+	            async function updateCell(rowId, colId, value, inputEl) {
+	                const row = data.find(r => r.rowId === rowId);
+	                if (!row) return;
+
+	                const previous = row.values[colId] || '';
+	                row.values[colId] = value;
+
+	                try {
+	                    if (inputEl) {
+	                        inputEl.classList.remove('is-error', 'is-saved');
+	                        inputEl.classList.add('is-saving');
+	                    }
+
+	                    const res = await fetch(`/admin/api/categories/${categoryId}/data/${rowId}`, {
+	                        method: 'PUT',
+	                        headers: { 'Content-Type': 'application/json' },
+	                        body: JSON.stringify({ values: row.values })
+	                    });
+	                    const resData = await res.json().catch(() => ({}));
+	                    if (!res.ok || resData.success === false) {
+	                        throw new Error(resData.error || 'บันทึกไม่สำเร็จ');
+	                    }
+	                    if (inputEl) {
+	                        inputEl.classList.remove('is-saving');
+	                        inputEl.classList.add('is-saved');
+	                        setTimeout(() => inputEl.classList.remove('is-saved'), 900);
+	                    }
+	                } catch (err) {
+	                    console.error(err);
+	                    row.values[colId] = previous;
+	                    if (inputEl) {
+	                        inputEl.classList.remove('is-saving');
+	                        inputEl.classList.add('is-error');
+	                        inputEl.value = previous;
+	                        setTimeout(() => inputEl.classList.remove('is-error'), 2000);
+	                    }
+	                    Swal.fire('Error', err.message || 'บันทึกไม่สำเร็จ', 'error');
+	                }
+	            }
+
+	            async function deleteRow(rowId) {
+	                const confirmResult = await Swal.fire({
+	                    title: 'ลบแถวนี้ใช่หรือไม่?',
+	                    text: 'การลบจะไม่สามารถกู้คืนได้',
+	                    icon: 'warning',
+	                    showCancelButton: true,
+	                    confirmButtonText: 'ลบ',
+	                    cancelButtonText: 'ยกเลิก',
+	                    confirmButtonColor: '#d33'
+	                });
+	                if (!confirmResult.isConfirmed) return;
+
+	                try {
+	                    const res = await fetch(`/admin/api/categories/${categoryId}/data/${rowId}`, {
+	                        method: 'DELETE'
+	                    });
+                    const resData = await res.json();
+
+                    if (resData.success) {
+                        data = data.filter(r => r.rowId !== rowId);
+                        renderTable();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire('Error', 'ไม่สามารถลบแถวได้', 'error');
+                }
+            }
+
+            async function importExcel(input) {
+                if (!input.files || !input.files[0]) return;
+
+                const formData = new FormData();
+                formData.append('file', input.files[0]);
+
+                try {
+                    Swal.fire({
+                        title: 'Importing...',
+                        text: 'กรุณารอสักครู่',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    const res = await fetch(`/admin/api/categories/${categoryId}/import-excel`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const resData = await res.json();
+
+                    if (resData.success) {
+                        await loadData();
+                        Swal.fire('Success', `นำเข้าข้อมูลเรียบร้อย ${resData.importedCount} รายการ`, 'success');
+                    } else {
+                        Swal.fire('Error', resData.error, 'error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire('Error', 'เกิดข้อผิดพลาดในการนำเข้า', 'error');
+                }
+                input.value = '';
+            }
+
+            function exportExcel() {
+                window.location.href = `/admin/api/categories/${categoryId}/export-excel`;
+            }
+        </script>
+</body>
+
+</html>

@@ -1,0 +1,214 @@
+:root {
+  --broadcast-radius: 12px;
+}
+
+.broadcast-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border, #E1E5EF);
+  border-radius: var(--broadcast-radius);
+  background: var(--bg-card, #fff);
+  box-shadow: var(--shadow-soft, 0 1px 3px rgba(0, 0, 0, 0.06));
+  margin-bottom: 1rem;
+}
+
+.broadcast-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.15rem 0;
+}
+
+.broadcast-desc {
+  color: var(--text-sub, #5C6372);
+  margin: 0;
+}
+
+.broadcast-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.metric-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--border, #E1E5EF);
+  background: #f9fafc;
+  color: var(--text-sub, #5C6372);
+  font-size: 0.9rem;
+}
+
+.metric-chip strong {
+  color: var(--text-main, #1E2430);
+}
+
+.top-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-ghost {
+  border: 1px solid var(--border, #E1E5EF);
+  background: #fff;
+  color: var(--text-main, #1E2430);
+}
+
+.broadcast-card {
+  border-radius: var(--broadcast-radius);
+  border: 1px solid var(--border, #E1E5EF);
+  box-shadow: var(--shadow-soft, 0 1px 3px rgba(0, 0, 0, 0.06));
+}
+
+.audience-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.audience-card {
+  position: relative;
+  border: 1px solid var(--border, #E1E5EF);
+  border-radius: 12px;
+  padding: 0.85rem;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition-base, all 0.2s ease);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.audience-card:hover {
+  border-color: rgba(74, 111, 165, 0.35);
+  box-shadow: 0 10px 24px rgba(22, 34, 56, 0.08);
+}
+
+.audience-card.active {
+  border-color: var(--color-primary, #4A6FA5);
+  background: rgba(74, 111, 165, 0.05);
+  box-shadow: 0 10px 24px rgba(22, 34, 56, 0.08);
+}
+
+.audience-card .form-check-input {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.audience-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(74, 111, 165, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary, #4A6FA5);
+  font-size: 1rem;
+}
+
+.audience-title {
+  font-weight: 700;
+  color: var(--text-main, #1E2430);
+}
+
+.audience-desc {
+  color: var(--text-sub, #5C6372);
+  font-size: 0.9rem;
+}
+
+.channel-card {
+  border: 1px solid var(--border, #E1E5EF);
+  border-radius: 12px;
+  background: #f9fafc;
+  padding: 0.75rem 0.9rem;
+}
+
+.channel-header {
+  font-weight: 700;
+  color: var(--text-main, #1E2430);
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.channel-list .form-check {
+  margin-bottom: 0.35rem;
+}
+
+.channel-name {
+  font-weight: 600;
+  color: var(--text-main, #1E2430);
+  margin-right: 0.25rem;
+}
+
+.broadcast-preview-card {
+  border-radius: var(--broadcast-radius);
+  border: 1px solid var(--border, #E1E5EF);
+  box-shadow: var(--shadow-soft, 0 1px 3px rgba(0, 0, 0, 0.06));
+}
+
+.preview-message {
+  min-height: 160px;
+  border: 1px dashed var(--border, #E1E5EF);
+  border-radius: 12px;
+  padding: 0.85rem;
+  background: #fbfcff;
+  color: var(--text-main, #1E2430);
+  white-space: pre-wrap;
+}
+
+.preview-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+  color: var(--text-sub, #5C6372);
+}
+
+.broadcast-preview-card .card-header {
+  background: #f9fafc;
+}
+
+/* API Message Item Styles */
+.message-item {
+  border: 1px solid var(--border, #E1E5EF);
+  background-color: #fff;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.message-item:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.message-item.empty-state {
+  background-color: #f9fafc;
+  color: #9aa0ac;
+  border: 1px dashed #e1e5ef;
+}
+
+@media (max-width: 767.98px) {
+  .broadcast-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .top-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}

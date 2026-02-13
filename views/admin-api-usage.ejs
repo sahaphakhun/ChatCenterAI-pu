@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สถิติการใช้งาน API - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Mali:wght@200;300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/admin-api-usage.css" rel="stylesheet">
+</head>
+
+<body class="app-shell">
+    <%- include('partials/admin-navbar', { activePage: 'api-usage' }) %>
+
+        <div class="app-content">
+            <div class="container-fluid py-4">
+                <!-- Page Header -->
+                <div class="page-header-row">
+                    <div>
+                        <h1 class="page-title mb-1">
+                            <i class="fas fa-chart-line me-2 text-primary"></i>สถิติการใช้งาน API
+                        </h1>
+                        <p class="text-muted mb-0">วิเคราะห์การใช้งาน OpenAI API แบบ Real-time</p>
+                    </div>
+                    <div class="header-actions">
+                        <select class="form-select" id="dateRangeSelect">
+                            <option value="today">วันนี้</option>
+                            <option value="7days" selected>7 วันที่ผ่านมา</option>
+                            <option value="30days">30 วันที่ผ่านมา</option>
+                            <option value="all">ทั้งหมด</option>
+                        </select>
+                        <button class="btn btn-outline-secondary" id="refreshBtn" title="รีเฟรช">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="btn btn-outline-success" id="exportBtn" title="Export CSV">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-grid" id="summaryCards">
+                    <div class="summary-card">
+                        <div class="summary-icon bg-primary-soft text-primary">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-label">การเรียกใช้ API</div>
+                            <div class="summary-value" id="totalCalls">-</div>
+                            <div class="summary-sub" id="callsChange"></div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon bg-success-soft text-success">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-label">Token ทั้งหมด</div>
+                            <div class="summary-value" id="totalTokens">-</div>
+                            <div class="summary-sub text-muted">
+                                <span id="inputTokens">-</span> in / <span id="outputTokens">-</span> out
+                            </div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon bg-warning-soft text-warning">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-label">ค่าใช้จ่ายรวม</div>
+                            <div class="summary-value" id="totalCost">-</div>
+                            <div class="summary-sub text-muted" id="totalCostTHB">~฿0</div>
+                        </div>
+                    </div>
+                    <div class="summary-card highlight">
+                        <div class="summary-icon bg-info-soft text-info">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="summary-content">
+                            <div class="summary-label">ต้นทุนเฉลี่ย/ครั้ง</div>
+                            <div class="summary-value" id="avgCostPerCall">-</div>
+                            <div class="summary-sub text-muted" id="avgCostPerCallTHB">~฿0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-section">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h5 class="chart-title"><i class="fas fa-chart-area me-2"></i>แนวโน้มการใช้งานรายวัน</h5>
+                            <div class="chart-legend" id="dailyChartLegend"></div>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="dailyUsageChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h5 class="chart-title"><i class="fas fa-chart-pie me-2"></i>สัดส่วนค่าใช้จ่ายตาม Model</h5>
+                        </div>
+                        <div class="chart-body chart-body-pie">
+                            <canvas id="modelPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-robot me-1"></i>Bot/Page
+                        </label>
+                        <select class="form-select form-select-sm" id="filterBot">
+                            <option value="">ทั้งหมด</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-microchip me-1"></i>Model
+                        </label>
+                        <select class="form-select form-select-sm" id="filterModel">
+                            <option value="">ทั้งหมด</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-globe me-1"></i>Platform
+                        </label>
+                        <select class="form-select form-select-sm" id="filterPlatform">
+                            <option value="">ทั้งหมด</option>
+                            <option value="line">LINE</option>
+                            <option value="facebook">Facebook</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-key me-1"></i>API Key
+                        </label>
+                        <select class="form-select form-select-sm" id="filterKey">
+                            <option value="">ทั้งหมด</option>
+                        </select>
+                    </div>
+                    <div class="filter-group flex-grow-1">
+                        <label class="filter-label">
+                            <i class="fas fa-search me-1"></i>ค้นหา
+                        </label>
+                        <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="ค้นหา...">
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" id="clearFiltersBtn" title="ล้างตัวกรอง">
+                        <i class="fas fa-times"></i> ล้าง
+                    </button>
+                </div>
+
+                <!-- Aggregated View Toggle -->
+                <div class="view-toggle-section">
+                    <div class="btn-group btn-group-sm" role="group" id="viewModeToggle">
+                        <button type="button" class="btn btn-outline-primary active" data-view="grouped">
+                            <i class="fas fa-layer-group me-1"></i>จัดกลุ่ม
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" data-view="detailed">
+                            <i class="fas fa-list me-1"></i>รายละเอียด
+                        </button>
+                    </div>
+                    <div class="view-info text-muted">
+                        <span id="resultCount">0</span> รายการ
+                    </div>
+                </div>
+
+                <!-- Main Data Table -->
+                <div class="data-table-card">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="mainDataTable">
+                            <thead id="tableHeader">
+                                <!-- Dynamic headers -->
+                            </thead>
+                            <tbody id="tableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">กำลังโหลด...</span>
+                                        </div>
+                                        <p class="text-muted mt-2 mb-0">กำลังโหลดข้อมูล...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Note -->
+                <div class="info-note">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>หมายเหตุ:</strong> ค่าใช้จ่ายเป็นค่าประมาณ โดยใช้อัตราแลกเปลี่ยน 33 บาท/USD
+                    และราคาโมเดลอาจมีการเปลี่ยนแปลง
+                </div>
+            </div>
+        </div>
+
+        <!-- Expanded Details Panel (Inline) -->
+        <div class="expanded-panel" id="expandedPanel" style="display: none;">
+            <div class="expanded-header">
+                <h5 id="expandedTitle">รายละเอียด</h5>
+                <button class="btn btn-sm btn-close-panel" id="closeExpandedPanel">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="expanded-content" id="expandedContent">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="/js/admin-api-usage.js"></script>
+</body>
+
+</html>

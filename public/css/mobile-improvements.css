@@ -1,0 +1,303 @@
+/* ===================================
+   MOBILE RESPONSIVENESS IMPROVEMENTS
+   ChatCenter AI - Mobile Optimizations
+   =================================== */
+
+/* 1. Touch-Friendly Buttons */
+:root {
+    --touch-target-min: 44px;
+}
+
+@media (max-width: 767.98px) {
+    /* ปรับปุ่มทั้งหมดให้กดง่ายบนมือถือ */
+    .btn {
+        min-height: var(--touch-target-min);
+        padding: 0.75rem 1.25rem;
+        font-size: 1rem;
+    }
+    
+    .btn-sm {
+        min-height: 38px;
+        padding: 0.5rem 1rem;
+    }
+    
+    /* ปุ่มไอคอนต้องใหญ่พอ */
+    .btn-icon,
+    .sidebar-toggle-btn {
+        width: var(--touch-target-min);
+        height: var(--touch-target-min);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* 2. Improved Sidebar for Mobile */
+@media (max-width: 991.98px) {
+    .user-sidebar {
+        width: min(90%, 340px);
+        max-width: 360px;
+        height: calc(var(--app-height, 100vh) - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px));
+        top: var(--safe-area-top, 0px);
+        left: var(--safe-area-left, 0px);
+        bottom: var(--safe-area-bottom, 0px);
+        transform: translateX(-110%);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .user-sidebar.show {
+        transform: translateX(0);
+        box-shadow: 16px 0 32px rgba(0, 0, 0, 0.18);
+    }
+    
+    /* Backdrop ชัดขึ้น */
+    .sidebar-overlay {
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+    }
+}
+
+/* 3. Chat Input - Fixed Height & Auto-resize */
+@media (max-width: 767.98px) {
+    .message-input-container {
+        padding: 0.875rem;
+        /* รองรับ iPhone notch */
+        padding-bottom: calc(0.875rem + var(--safe-area-bottom, 0px));
+        background: var(--bg-primary);
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+    }
+    
+    #messageInput {
+        min-height: 44px;
+        max-height: 120px;
+        font-size: 16px; /* ป้องกัน iOS auto-zoom */
+        border-radius: 22px;
+        padding: 0.75rem 1rem;
+        line-height: 1.5;
+    }
+    
+    #sendButton {
+        width: var(--touch-target-min);
+        height: var(--touch-target-min);
+        border-radius: 50%;
+        padding: 0;
+        flex-shrink: 0;
+    }
+}
+
+/* 4. Message Bubbles - Better Spacing */
+@media (max-width: 575.98px) {
+    .messages-container {
+        padding: 1rem 0.75rem;
+        padding-bottom: calc(1rem + var(--safe-area-bottom, 0px));
+    }
+    
+    .message {
+        max-width: 85%;
+        margin-bottom: 0.75rem;
+    }
+    
+    .message-content {
+        padding: 0.875rem 1rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        word-break: break-word;
+    }
+    
+    /* ปรับรูปภาพในข้อความ */
+    .message img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+    }
+}
+
+/* 5. Chat Header - Sticky with Blur */
+@media (max-width: 767.98px) {
+    .chat-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.95);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 0.75rem 1rem;
+    }
+    
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .user-name {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+}
+
+/* 6. User List - Optimized */
+@media (max-width: 767.98px) {
+    .user-item {
+        padding: 0.875rem 1rem;
+        min-height: 72px;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 0.1s ease, background-color 0.2s ease;
+    }
+    
+    .user-item:active {
+        background: rgba(104, 185, 132, 0.1);
+        transform: scale(0.98);
+    }
+    
+    .user-item-content {
+        gap: 0.75rem;
+    }
+    
+    .user-last-message {
+        font-size: 0.875rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+}
+
+/* 7. Horizontal Scroll Protection */
+@media (max-width: 767.98px) {
+    body {
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    * {
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* ป้องกัน double-tap zoom */
+    input,
+    textarea,
+    button,
+    select {
+        touch-action: manipulation;
+    }
+}
+
+/* 8. Landscape Mode */
+@media (max-width: 926px) and (orientation: landscape) {
+    .chat-container {
+        min-height: var(--app-height, 100vh);
+    }
+    
+    .messages-container {
+        max-height: calc(var(--app-height, 100vh) - 120px);
+    }
+}
+
+/* 9. iPhone X/11/12/13/14/15 Notch Support */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    :root {
+        --safe-area-top: env(safe-area-inset-top);
+        --safe-area-right: env(safe-area-inset-right);
+        --safe-area-bottom: env(safe-area-inset-bottom);
+        --safe-area-left: env(safe-area-inset-left);
+    }
+}
+
+/* 10. Performance Optimizations */
+@media (max-width: 767.98px) {
+    /* ใช้ GPU acceleration */
+    .user-sidebar,
+    .sidebar-overlay,
+    .message,
+    .user-item {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+    }
+    
+    /* Reduce repaints */
+    .messages-container {
+        contain: layout style paint;
+    }
+    
+    /* Smooth scrolling */
+    .messages-container,
+    .user-list {
+        scroll-behavior: smooth;
+        overscroll-behavior: contain;
+    }
+}
+
+/* 11. Better Form Controls on Mobile */
+@media (max-width: 767.98px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="search"],
+    textarea,
+    select {
+        font-size: 16px; /* ป้องกัน iOS zoom */
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    
+    /* Search Input */
+    #userSearch {
+        font-size: 16px;
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* 12. Improved Filter Buttons */
+@media (max-width: 767.98px) {
+    .filter-options {
+        margin-top: 0.75rem;
+    }
+    
+    .filter-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        white-space: nowrap;
+    }
+}
+
+/* 13. Better Modal on Mobile */
+@media (max-width: 767.98px) {
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .modal-content {
+        border-radius: 16px;
+    }
+    
+    .modal-header,
+    .modal-footer {
+        padding: 1rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+}
+
+/* 14. Improve Navbar on Mobile */
+@media (max-width: 767.98px) {
+    .navbar {
+        padding: 0.5rem 1rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.125rem;
+    }
+    
+    .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9375rem;
+    }
+}

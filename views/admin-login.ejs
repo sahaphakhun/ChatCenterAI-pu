@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบผู้ดูแล - ChatCenter AI</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    >
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    >
+    <link href="/css/style.css" rel="stylesheet">
+  </head>
+  <body class="login-page app-shell">
+    <main class="login-wrapper">
+      <div class="login-card">
+        <div class="logo">
+          <i class="fas fa-lock icon-logo"></i>
+          <h1>เข้าสู่ระบบผู้ดูแล</h1>
+          <p>กรอกรหัสผ่านที่ได้รับจากแอดมินใหญ่เพื่อใช้งานระบบ</p>
+        </div>
+        <form id="adminLoginForm" autocomplete="off">
+          <div class="mb-3">
+            <label for="adminPasscode" class="form-label"
+              >รหัสผ่านสำหรับเข้าใช้งาน</label
+            >
+            <input
+              type="password"
+              id="adminPasscode"
+              name="passcode"
+              class="form-control"
+              placeholder="เช่น A8K9-TEAM หรือ 123456"
+              minlength="4"
+              required
+              autofocus
+            >
+            <div class="form-text">
+              ระบบจะจำสถานะล็อกอินไว้จนกว่าจะออกจากระบบหรือหมดเวลา
+            </div>
+          </div>
+          <div
+            class="alert alert-danger d-none"
+            role="alert"
+            id="loginErrorBox"
+          ></div>
+          <button
+            type="submit"
+            class="btn btn-primary w-100"
+            id="loginSubmitBtn"
+          >
+            <span class="default-label">
+              <i class="fas fa-sign-in-alt me-2"></i>เข้าสู่ระบบ
+            </span>
+            <span class="loading-label d-none">
+              <span
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              กำลังตรวจสอบ...
+            </span>
+          </button>
+        </form>
+        <div class="login-support mt-4">
+          <p class="text-muted small mb-0">
+            ต้องการความช่วยเหลือ? ติดต่อแอดมินใหญ่ของระบบเพื่อรีเซ็ตรหัสผ่าน
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+      defer
+    ></script>
+    <script src="/js/admin-login.js" defer></script>
+  </body>
+</html>

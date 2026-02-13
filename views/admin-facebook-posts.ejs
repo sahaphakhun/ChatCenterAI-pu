@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>โพสต์ FB & นโยบายคอมเมนต์ - ChatCenter AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+  <link href="/css/admin-facebook.css" rel="stylesheet">
+</head>
+
+<body class="app-shell">
+  <%- include('partials/admin-navbar', { activePage: 'facebook-posts' }) %>
+
+    <div class="app-content">
+      <div class="container mt-4 mb-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-11">
+          <div class="mb-4">
+            <h2 class="mb-2">
+              <i class="fab fa-facebook text-primary me-2"></i>จัดการโพสต์ FB & นโยบายตอบคอมเมนต์
+            </h2>
+            <p class="text-muted mb-0">
+              ระบบจะดึงโพสต์อัตโนมัติจาก webhook แล้วแยกรายเพจ ค่าเริ่มต้นต่อโพสต์ปิดไว้ก่อน
+              ให้เปิดทีละโพสต์หรือกำหนดนโยบายค่าเริ่มต้นของเพจ
+            </p>
+          </div>
+
+          <% if (typeof error !=='undefined' && error) { %>
+            <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>
+              <%= error %>
+            </div>
+            <% } %>
+
+              <!-- Help Section -->
+              <div class="alert alert-info shadow-sm mb-4">
+                <div class="d-flex">
+                  <div class="me-3">
+                    <i class="fas fa-info-circle fa-2x text-info"></i>
+                  </div>
+                  <div>
+                    <h5 class="alert-heading h6 fw-bold">ระบบตอบคอมเมนต์อัตโนมัติทำงานอย่างไร?</h5>
+                    <p class="mb-0 small">
+                      ระบบจะดึงโพสต์จาก Facebook Page ของคุณมาแสดงที่นี่ คุณสามารถตั้งค่าการตอบกลับได้ 2 ระดับ:
+                      <br>1. <strong>ระดับเพจ (Page Default):</strong> ใช้กับทุกโพสต์ที่ไม่ได้ตั้งค่าแยก
+                      <br>2. <strong>ระดับโพสต์ (Individual Post):</strong> ตั้งค่าเฉพาะเจาะจงสำหรับโพสต์นั้นๆ
+                      (จะทับค่าของระดับเพจ)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card shadow-sm mb-4 fb-page-card">
+                <div class="fb-card-header">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="fw-semibold text-body">
+                      <i class="fas fa-layer-group me-2 text-primary"></i>เลือกเพจ
+                    </div>
+                    <div class="d-flex gap-2">
+                      <button id="syncPostsBtn" class="btn btn-outline-success btn-sm"
+                        title="ดึงข้อมูลโพสต์ล่าสุดจาก Facebook API">
+                        <i class="fas fa-cloud-download-alt me-1"></i>ดึงโพสต์ล่าสุด
+                      </button>
+                      <button id="refreshPostsBtn" class="btn btn-outline-primary btn-sm" title="รีโหลดข้อมูลในหน้านี้">
+                        <i class="fas fa-rotate-right me-1"></i>รีเฟรช
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="fb-card-body">
+                  <div class="mb-3">
+                    <label class="form-label">Facebook Page</label>
+                    <select id="facebookBotSelect" class="form-select">
+                      <% (facebookBots || []).forEach(function(bot) { %>
+                        <option value="<%= bot._id %>" <%=selectedBotId && selectedBotId.toString()===bot._id.toString()
+                          ? 'selected' : '' %>>
+                          <%= bot.name || bot.pageName || 'Facebook Page' %> (Page ID: <%= bot.pageId || 'ไม่ระบุ' %>)
+                        </option>
+                        <% }) %>
+                    </select>
+                    <% if (!facebookBots || facebookBots.length===0) { %>
+                      <small class="text-danger d-block mt-2">ยังไม่มี Facebook Page ในระบบ</small>
+                      <% } %>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-lg-5">
+                  <div class="card shadow-sm h-100 fb-info-card">
+                    <div class="fb-card-header">
+                      <div class="fw-semibold text-body">
+                        <i class="fas fa-sliders-h me-2 text-primary"></i>นโยบายค่าเริ่มต้นระดับเพจ
+                        <i class="fas fa-question-circle text-muted ms-1" data-bs-toggle="tooltip"
+                          title="การตั้งค่านี้จะใช้กับทุกโพสต์ในเพจ เว้นแต่คุณจะไปตั้งค่าแยกในแต่ละโพสต์"></i>
+                      </div>
+                    </div>
+                    <div class="fb-card-body">
+                      <div class="mb-3">
+                        <label class="form-label">
+                          โหมดตอบ
+                          <i class="fas fa-question-circle text-muted ms-1 small" data-bs-toggle="tooltip"
+                            title="เลือกรูปแบบการตอบกลับ: ปิด (ไม่ตอบ), Template (ข้อความตายตัว), หรือ AI (ใช้ ChatGPT ตอบ)"></i>
+                        </label>
+                        <select id="defaultMode" class="form-select">
+                          <option value="off">ปิด (ไม่ตอบ)</option>
+                          <option value="template">Template (ข้อความเดียว)</option>
+                          <option value="ai">AI (ตอบด้วย ChatGPT)</option>
+                        </select>
+                      </div>
+                      <div class="mb-3" id="defaultTemplateGroup" style="display:none">
+                        <label class="form-label">Template Message</label>
+                        <textarea id="defaultTemplateMessage" class="form-control" rows="3"
+                          placeholder="ระบุข้อความตอบกลับ"></textarea>
+                      </div>
+                      <div class="mb-3" id="defaultAiGroup" style="display:none">
+                        <label class="form-label">AI Model</label>
+                        <input id="defaultAiModel" class="form-control" placeholder="เช่น gpt-4o-mini">
+                        <label class="form-label mt-2">
+                          System Prompt
+                          <i class="fas fa-question-circle text-muted ms-1 small" data-bs-toggle="tooltip"
+                            title="คำสั่งที่บอกให้ AI รู้ว่าต้องทำตัวอย่างไร เช่น 'คุณเป็นแอดมินเพจขายเสื้อผ้า ตอบลูกค้าอย่างสุภาพ'"></i>
+                        </label>
+                        <textarea id="defaultSystemPrompt" class="form-control" rows="3"
+                          placeholder="ระบุคำสั่งระบบ"></textarea>
+                      </div>
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="defaultPullToChat">
+                        <label class="form-check-label" for="defaultPullToChat">
+                          ดึงคอมเมนต์เข้า Inbox (Private Reply)
+                          <i class="fas fa-question-circle text-muted ms-1 small" data-bs-toggle="tooltip"
+                            title="เมื่อมีคนคอมเมนต์ ระบบจะทักแชทส่วนตัวไปหาลูกค้าด้วย (ต้องเปิดใช้งานใน Facebook Page Settings ด้วย)"></i>
+                        </label>
+                      </div>
+                      <div class="mb-3" id="defaultPrivateReplyGroup" style="display:none">
+                        <label class="form-label">ข้อความตอบกลับแบบส่วนตัว (Inbox)</label>
+                        <textarea id="defaultPrivateReplyMessage" class="form-control" rows="2"
+                          placeholder="ข้อความที่ส่งให้ลูกค้าทางแชท (รองรับ {{name}} สำหรับชื่อ)"></textarea>
+                        <small class="text-muted">หากเว้นว่างจะใช้ข้อความตอบคอมเมนต์หรือข้อความเริ่มต้นแทน</small>
+                      </div>
+                      <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="defaultIsActive">
+                        <label class="form-check-label" for="defaultIsActive">เปิดใช้งานนโยบายค่าเริ่มต้น</label>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <button id="saveDefaultPolicyBtn" class="btn btn-primary w-50">
+                          <i class="fas fa-save me-2"></i>บันทึก
+                        </button>
+                        <div id="defaultPolicyStatus" class="small text-muted flex-fill"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-lg-7">
+                  <div class="card shadow-sm h-100 fb-info-card">
+                    <div class="fb-card-header">
+                      <div class="fw-semibold text-body">
+                        <i class="fas fa-list me-2 text-primary"></i>โพสต์ที่ระบบจับอัตโนมัติ
+                        <span class="badge bg-secondary ms-2">ค่าเริ่มต้น: ปิด</span>
+                      </div>
+                    </div>
+                    <div class="fb-card-body">
+                      <div id="postListStatus" class="text-muted small mb-2"></div>
+                      <div id="postList" class="vstack gap-3"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+    </div> <!-- /app-content -->
+
+    <div id="facebookToastContainer" class="app-toast-container"></div>
+
+	    <script id="facebookBotData" type="application/json">
+	      <%- JSON.stringify({ facebookBots, selectedBotId }).replace(/</g, '\\u003c') %>
+	    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+      });
+    </script>
+    <script src="/js/admin-facebook-posts.js"></script>
+</body>
+
+</html>

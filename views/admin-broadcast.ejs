@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>บรอดแคสต์ข้อความถึงผู้ใช้</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+  <link href="/css/admin-broadcast.css" rel="stylesheet">
+</head>
+
+<body class="app-shell">
+  <%- include('partials/admin-navbar', { activePage: 'broadcast' }) %>
+
+    <div class="app-content">
+      <% const lineCount=(lineBots && lineBots.length) || 0; const fbCount=(facebookBots && facebookBots.length) || 0;
+        const totalBots=lineCount + fbCount; %>
+        <div class="container-fluid p-0">
+          <div class="broadcast-header">
+            <div>
+              <div class="broadcast-title">
+                <i class="fas fa-bullhorn text-primary"></i>
+                ส่งข้อความบรอดแคสต์
+              </div>
+              <p class="broadcast-desc">เลือกกลุ่มเป้าหมายและช่องทางที่ต้องการ แล้วส่งข้อความถึงลูกค้าพร้อมกัน</p>
+              <div class="broadcast-metrics">
+                <span class="metric-chip"><i class="fas fa-hashtag text-primary"></i> บอทรวม <strong>
+                    <%= totalBots %>
+                  </strong></span>
+                <span class="metric-chip"><i class="fab fa-line text-success"></i> LINE <strong>
+                    <%= lineCount %>
+                  </strong></span>
+                <span class="metric-chip"><i class="fab fa-facebook text-primary"></i> Facebook <strong>
+                    <%= fbCount %>
+                  </strong></span>
+                <span class="metric-chip" id="audienceCount"><i class="fas fa-users"></i> เลือกกลุ่มเป้าหมาย</span>
+              </div>
+            </div>
+            <div class="top-actions">
+              <a href="/admin/dashboard" class="btn btn-ghost">
+                <i class="fas fa-arrow-left me-1"></i> กลับแดชบอร์ด
+              </a>
+              <button type="button" class="btn btn-outline-primary" id="previewBtn">
+                <i class="fas fa-eye me-1"></i> ดูตัวอย่าง
+              </button>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-lg-7">
+              <div class="card broadcast-card">
+                <div class="card-body">
+                  <% if (typeof error !=='undefined' ) { %>
+                    <div class="alert alert-danger alert-dismissible fade show">
+                      <i class="fas fa-exclamation-circle me-2"></i>
+                      <%= error %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <% } %>
+                      <% if (typeof success !=='undefined' ) { %>
+                        <div class="alert alert-success alert-dismissible fade show">
+                          <i class="fas fa-check-circle me-2"></i>
+                          <%= success %>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        <% } %>
+
+                          <form method="POST" action="/admin/broadcast" id="broadcastForm" novalidate>
+                            <div class="mb-4">
+                              <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0">ข้อความที่ต้องการส่ง <span
+                                    class="text-danger">*</span></label>
+                                <small class="text-muted">ส่งได้สูงสุด 5 บอลลูน</small>
+                              </div>
+
+                              <div id="messageList" class="message-list mb-2">
+                                <!-- Message items will be added here dynamically -->
+                                <div
+                                  class="message-item empty-state text-center p-3 border rounded border-dashed bg-light text-muted">
+                                  ยังไม่มีข้อความ กดปุ่มด้านล่างเพื่อเพิ่ม
+                                </div>
+                              </div>
+
+                              <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="addTextBtn">
+                                  <i class="fas fa-comment-alt me-1"></i> เพิ่มข้อความ
+                                </button>
+                                <button type="button" class="btn btn-outline-success btn-sm" id="addImageBtn">
+                                  <i class="fas fa-image me-1"></i> เพิ่มรูปภาพ
+                                </button>
+                              </div>
+                              <input type="hidden" name="messages" id="messagesInput">
+                            </div>
+
+                            <div class="mb-4">
+                              <div class="card bg-light border-0">
+                                <div class="card-body py-3">
+                                  <h6 class="card-title mb-3 text-secondary" style="font-size: 0.9rem;">
+                                    <i class="fas fa-sliders-h me-1"></i> ตั้งค่าความเร็ว (Rate Limiting)
+                                  </h6>
+                                  <div class="row g-2">
+                                    <div class="col-4">
+                                      <label class="form-label small text-muted mb-1">ส่งครั้งละ (คน)</label>
+                                      <input type="number" name="settings_batchSize"
+                                        class="form-control form-control-sm" value="20" min="1" max="100">
+                                    </div>
+                                    <div class="col-4">
+                                      <label class="form-label small text-muted mb-1">เว้นช่วง (วินาที)</label>
+                                      <input type="number" name="settings_batchDelay"
+                                        class="form-control form-control-sm" value="30" min="5" max="300">
+                                    </div>
+                                    <div class="col-4">
+                                      <label class="form-label small text-muted mb-1">หน่วงเวลา/คน (วินาที)</label>
+                                      <input type="number" name="settings_messageDelay"
+                                        class="form-control form-control-sm" value="1" min="0.1" max="5" step="0.1">
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="mb-4">
+                              <label class="form-label">กลุ่มเป้าหมาย <span class="text-danger">*</span></label>
+                              <div class="audience-options">
+                                <button type="button" class="audience-card active" data-value="all" aria-pressed="true">
+                                  <input class="form-check-input" type="radio" name="audience" id="audAll" value="all"
+                                    checked>
+                                  <div class="audience-icon">
+                                    <i class="fas fa-users"></i>
+                                  </div>
+                                  <div class="audience-title">ผู้ใช้ทุกคน</div>
+                                  <div class="audience-desc">ส่งถึงผู้ใช้ทั้งหมดในระบบ</div>
+                                </button>
+                                <button type="button" class="audience-card" data-value="tagged" aria-pressed="false">
+                                  <input class="form-check-input" type="radio" name="audience" id="audTagged"
+                                    value="tagged">
+                                  <div class="audience-icon">
+                                    <i class="fas fa-star"></i>
+                                  </div>
+                                  <div class="audience-title">กลุ่มติดตาม</div>
+                                  <div class="audience-desc">เฉพาะผู้ใช้ที่ติดแท็ก follow_up</div>
+                                </button>
+                                <button type="button" class="audience-card" data-value="untagged" aria-pressed="false">
+                                  <input class="form-check-input" type="radio" name="audience" id="audUntagged"
+                                    value="untagged">
+                                  <div class="audience-icon">
+                                    <i class="fas fa-user-plus"></i>
+                                  </div>
+                                  <div class="audience-title">ผู้ใช้ทั่วไป</div>
+                                  <div class="audience-desc">ยกเว้นผู้ใช้ที่ติดแท็ก follow_up</div>
+                                </button>
+                              </div>
+
+                              <!-- Audience Preview Stats -->
+                              <div id="audienceStats" class="mt-2 text-muted small" style="display: none;">
+                                <i class="fas fa-info-circle me-1"></i>
+                                จะส่งถึงประมาณ <strong id="audienceTotal" class="text-primary">--</strong> คน
+                                (LINE: <span id="audienceLine">--</span>, Facebook: <span id="audienceFb">--</span>)
+                              </div>
+                            </div>
+
+                            <div class="mb-4">
+                              <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label mb-0">เลือกช่องทาง</label>
+                                <small class="text-muted">เลือกได้หลายช่องทาง</small>
+                              </div>
+                              <div class="channel-card">
+                                <% if (totalBots> 0) { %>
+                                  <% if (lineBots && lineBots.length) { %>
+                                    <div class="channel-header"><i class="fab fa-line text-success"></i> LINE Bots</div>
+                                    <div class="channel-list">
+                                      <% lineBots.forEach(bot=> { %>
+                                        <div class="form-check">
+                                          <input class="form-check-input" type="checkbox" name="channels"
+                                            id="line-<%= bot._id %>" value="line:<%= bot._id %>">
+                                          <label class="form-check-label" for="line-<%= bot._id %>">
+                                            <span class="channel-name">
+                                              <%= bot.name %>
+                                            </span>
+                                            <% if (bot.channelId) { %><span class="text-muted small">(<%= bot.channelId
+                                                  %>)</span>
+                                              <% } %>
+                                          </label>
+                                        </div>
+                                        <% }) %>
+                                    </div>
+                                    <% } %>
+                                      <% if (facebookBots && facebookBots.length) { %>
+                                        <div class="channel-header mt-3"><i class="fab fa-facebook text-primary"></i>
+                                          Facebook Pages</div>
+                                        <div class="channel-list">
+                                          <% facebookBots.forEach(bot=> { %>
+                                            <div class="form-check">
+                                              <input class="form-check-input" type="checkbox" name="channels"
+                                                id="fb-<%= bot._id %>" value="facebook:<%= bot._id %>">
+                                              <label class="form-check-label" for="fb-<%= bot._id %>">
+                                                <span class="channel-name">
+                                                  <%= bot.name %>
+                                                </span>
+                                                <% if (bot.pageId) { %><span class="text-muted small">(<%= bot.pageId %>
+                                                      )</span>
+                                                  <% } %>
+                                              </label>
+                                            </div>
+                                            <% }) %>
+                                        </div>
+                                        <% } %>
+                                          <% } else { %>
+                                            <div class="app-empty">
+                                              <div class="app-empty__icon"><i class="fas fa-robot"></i></div>
+                                              <div class="app-empty__title">ยังไม่มีบอทที่เพิ่มไว้</div>
+                                              <div class="app-empty__desc">ไปที่หน้า “ตั้งค่า” เพื่อเพิ่ม LINE/Facebook
+                                                Bot ก่อน</div>
+                                              <a href="/admin/settings2" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-plus me-1"></i> เพิ่มบอทใหม่
+                                              </a>
+                                            </div>
+                                            <% } %>
+                              </div>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-between align-items-center">
+                              <a href="/admin/dashboard" class="btn btn-ghost">
+                                <i class="fas fa-arrow-left me-1"></i> กลับ
+                              </a>
+                              <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary" id="previewBtnInline">
+                                  <i class="fas fa-eye me-1"></i> ดูตัวอย่าง
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="submitBroadcastBtn">
+                                  <i class="fas fa-paper-plane me-1"></i> ส่งข้อความ
+                                </button>
+                              </div>
+                            </div>
+                          </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-5">
+              <div class="card broadcast-preview-card" id="broadcastPreview">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <span><i class="fas fa-eye me-1"></i> ตัวอย่างข้อความ</span>
+                  <small class="text-muted" id="previewStatus">ยังไม่มีข้อความ</small>
+                </div>
+                <div class="card-body">
+                  <div class="preview-message" id="previewMessage">พิมพ์ข้อความเพื่อดูตัวอย่าง...</div>
+                  <div class="preview-meta">
+                    <span><i class="fas fa-bell text-primary"></i> จะส่งถึง: <span
+                        id="previewAudienceLabel">ผู้ใช้ทุกคน</span></span>
+                    <span><i class="fas fa-share-alt text-success"></i> ช่องทาง: <span
+                        id="previewChannelsLabel">ยังไม่เลือก</span></span>
+                  </div>
+                  <div class="alert alert-info mb-0 small">
+                    <i class="fas fa-info-circle me-1"></i> แสดงตัวอย่างข้อความแบบรวมทุกช่องทาง
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <div id="broadcastToastContainer" class="app-toast-container"></div>
+
+    <!-- Progress Modal -->
+    <div class="modal fade" id="progressModal" data-bs-backdrop="static" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-body text-center p-4">
+            <h5 class="mb-3">กำลังส่งข้อความ...</h5>
+            <div class="progress mb-3" style="height: 20px;">
+              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">
+              </div>
+            </div>
+            <p class="mb-3">ส่งแล้ว <span id="sentCount">0</span> จาก <span id="totalCount">0</span> คน</p>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="cancelBroadcastBtn">ยกเลิกการส่ง</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/admin-broadcast.js"></script>
+</body>
+
+</html>
