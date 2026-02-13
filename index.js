@@ -821,6 +821,26 @@ async function ensureOrderCodeIndex(db) {
   }
 }
 
+async function seedDefaultCarriers(db) {
+  try {
+    const coll = db.collection("shipping_carriers");
+    const defaultCarriers = [
+      { name: "Kerry Express", trackingUrl: "https://th.kerryexpress.com/th/track/?tracking={tracking}", sortOrder: 1 },
+      { name: "Flash Express", trackingUrl: "https://flashexpress.com/fle/tracking?se={tracking}", sortOrder: 2 },
+      { name: "Thailand Post", trackingUrl: "https://track.thailandpost.co.th/?trackNumber={tracking}", sortOrder: 3 },
+    ];
+    for (const carrier of defaultCarriers) {
+      const exists = await coll.findOne({ name: carrier.name });
+      if (!exists) {
+        await coll.insertOne({ ...carrier, createdAt: new Date() });
+        console.log(`[DB] เพิ่มขนส่งเริ่มต้น: ${carrier.name}`);
+      }
+    }
+  } catch (err) {
+    console.warn("[DB] ไม่สามารถ seed ขนส่งเริ่มต้นได้:", err?.message || err);
+  }
+}
+
 async function ensureTaxInvoiceIndexes(db) {
   try {
     const coll = db.collection("tax_invoices");
@@ -851,6 +871,7 @@ async function connectDB() {
       await ensureShortLinkIndexes(db);
       await ensureOrderCodeIndex(db);
       await ensureTaxInvoiceIndexes(db);
+      await seedDefaultCarriers(db);
     } catch (err) {
       console.warn(
         "[DB] ไม่สามารถตั้งค่า index ได้:",
@@ -22551,6 +22572,8 @@ app.get("/admin/orders/data", async (req, res) => {
         paymentReceiver,
         isManualExtraction: !!order.isManualExtraction,
         extractedFrom: order.extractedFrom || null,
+        trackingNumber: order.trackingNumber || null,
+        trackingCarrier: order.trackingCarrier || null,
       };
     });
 
@@ -23193,6 +23216,248 @@ app.patch("/admin/orders/:orderId/notes", async (req, res) => {
     res.json({ success: true, orderId, notes: sanitizedNotes });
   } catch (error) {
     console.error("[Orders] ไม่สามารถอัปเดต notes ได้:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ========================================
+// Shipping Carriers API
+// ========================================
+
+// API: รายชื่อขนส่ง
+app.get("/admin/shipping-carriers", async (req, res) => {
+  try {
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const carriers = await db
+      .collection("shipping_carriers")
+      .find({})
+      .sort({ sortOrder: 1, name: 1 })
+      .toArray();
+    res.json({ success: true, carriers });
+  } catch (error) {
+    console.error("[Carriers] ดึงรายชื่อขนส่งไม่สำเร็จ:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: เพิ่มขนส่งใหม่
+app.post("/admin/shipping-carriers", async (req, res) => {
+  try {
+    const { name, trackingUrl } = req.body || {};
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ success: false, error: "กรุณาระบุชื่อขนส่ง" });
+    }
+
+    const sanitizedName = name.trim().slice(0, 100);
+    const sanitizedUrl = typeof trackingUrl === "string" ? trackingUrl.trim().slice(0, 500) : "";
+
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const coll = db.collection("shipping_carriers");
+
+    // ตรวจสอบชื่อซ้ำ
+    const existing = await coll.findOne({ name: { $regex: new RegExp(`^${sanitizedName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") } });
+    if (existing) {
+      return res.status(400).json({ success: false, error: "ชื่อขนส่งนี้มีอยู่แล้ว" });
+    }
+
+    const count = await coll.countDocuments();
+    const result = await coll.insertOne({
+      name: sanitizedName,
+      trackingUrl: sanitizedUrl,
+      sortOrder: count + 1,
+      createdAt: new Date(),
+    });
+
+    console.log(`[Carriers] เพิ่มขนส่ง: ${sanitizedName}`);
+    res.json({
+      success: true,
+      carrier: {
+        _id: result.insertedId,
+        name: sanitizedName,
+        trackingUrl: sanitizedUrl,
+      },
+    });
+  } catch (error) {
+    console.error("[Carriers] เพิ่มขนส่งไม่สำเร็จ:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: ลบขนส่ง
+app.delete("/admin/shipping-carriers/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: "ID ไม่ถูกต้อง" });
+    }
+
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const result = await db.collection("shipping_carriers").deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, error: "ไม่พบขนส่งที่ต้องการลบ" });
+    }
+
+    console.log(`[Carriers] ลบขนส่ง ID: ${id}`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("[Carriers] ลบขนส่งไม่สำเร็จ:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// API: บันทึกเลขพัสดุ + แจ้งลูกค้า
+app.post("/admin/orders/:orderId/tracking", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { trackingNumber, carrier, notifyCustomer } = req.body || {};
+
+    if (!trackingNumber || typeof trackingNumber !== "string" || !trackingNumber.trim()) {
+      return res.status(400).json({ success: false, error: "กรุณาระบุเลขพัสดุ" });
+    }
+
+    if (!ObjectId.isValid(orderId)) {
+      return res.status(400).json({ success: false, error: "รหัสออเดอร์ไม่ถูกต้อง" });
+    }
+
+    const sanitizedTracking = trackingNumber.trim().slice(0, 100);
+    const sanitizedCarrier = typeof carrier === "string" ? carrier.trim().slice(0, 100) : "";
+
+    const client = await connectDB();
+    const db = client.db("chatbot");
+    const coll = db.collection("orders");
+
+    const order = await coll.findOne({ _id: new ObjectId(orderId) });
+    if (!order) {
+      return res.status(404).json({ success: false, error: "ไม่พบออเดอร์" });
+    }
+
+    // บันทึกเลขพัสดุ + เปลี่ยนสถานะเป็น shipped
+    await coll.updateOne(
+      { _id: new ObjectId(orderId) },
+      {
+        $set: {
+          trackingNumber: sanitizedTracking,
+          trackingCarrier: sanitizedCarrier,
+          trackingUpdatedAt: new Date(),
+          status: "shipped",
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    console.log(`[Orders] บันทึกเลขพัสดุ ${sanitizedTracking} (${sanitizedCarrier}) สำหรับออเดอร์ ${orderId}`);
+
+    // แจ้งลูกค้า
+    let notificationSent = false;
+    if (notifyCustomer !== false && order.userId) {
+      try {
+        // ดึง tracking URL จาก carrier
+        let trackingUrl = "";
+        if (sanitizedCarrier) {
+          const carrierDoc = await db.collection("shipping_carriers").findOne({
+            name: { $regex: new RegExp(`^${sanitizedCarrier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") },
+          });
+          if (carrierDoc?.trackingUrl) {
+            trackingUrl = carrierDoc.trackingUrl.replace("{tracking}", encodeURIComponent(sanitizedTracking));
+          }
+        }
+
+        const orderCode = order.orderCode || orderId.slice(-8).toUpperCase();
+        const recipientName = order.orderData?.recipientName || order.orderData?.customerName || "";
+
+        // สร้างข้อความแจ้งลูกค้า
+        const lines = [
+          "📦 แจ้งเลขพัสดุ",
+          `🔖 ออเดอร์: ${orderCode}`,
+        ];
+        if (recipientName) lines.push(`👤 ผู้รับ: ${recipientName}`);
+        if (sanitizedCarrier) lines.push(`🚚 ขนส่ง: ${sanitizedCarrier}`);
+        lines.push(`📋 เลขพัสดุ: ${sanitizedTracking}`);
+        if (trackingUrl) lines.push(`🔍 ตรวจสอบสถานะ: ${trackingUrl}`);
+        lines.push("", "ขอบคุณที่ใช้บริการค่ะ 🙏");
+
+        const trackingMessage = lines.join("\n");
+
+        // หา platform + botId จาก last chat
+        const lastChat = await db.collection("chat_history").findOne(
+          buildChatHistoryUserMatch(order.userId),
+          { sort: { timestamp: -1 } }
+        );
+        const platform = order.platform || lastChat?.platform || "line";
+        const botId = order.botId || lastChat?.botId || null;
+
+        // บันทึกข้อความลง chat history
+        const messageDoc = {
+          senderId: order.userId,
+          role: "assistant",
+          content: trackingMessage,
+          timestamp: new Date(),
+          source: "tracking_notification",
+          platform,
+          botId,
+        };
+
+        const chatColl = db.collection("chat_history");
+        const insertResult = await chatColl.insertOne(messageDoc);
+        if (insertResult?.insertedId) {
+          messageDoc._id = insertResult.insertedId;
+        }
+
+        // ส่งข้อความไปยังลูกค้า
+        if (platform === "facebook") {
+          if (botId) {
+            const fbBot = await db.collection("facebook_bots").findOne({ _id: new ObjectId(botId) });
+            if (fbBot?.accessToken) {
+              await sendFacebookMessage(order.userId, trackingMessage, fbBot.accessToken, {
+                metadata: "tracking_notification",
+              });
+              notificationSent = true;
+            }
+          }
+        } else {
+          // LINE
+          const lineClientForSend = await getLineClientForContext(botId);
+          if (lineClientForSend) {
+            const normalizedMsg = normalizeOutgoingText(trackingMessage);
+            await lineClientForSend.pushMessage(order.userId, {
+              type: "text",
+              text: normalizedMsg,
+            });
+            notificationSent = true;
+          }
+        }
+
+        // Emit to socket for admin UI update
+        if (io) {
+          io.emit("newMessage", {
+            userId: order.userId,
+            message: messageDoc,
+            sender: "assistant",
+            timestamp: messageDoc.timestamp,
+          });
+        }
+
+        if (notificationSent) {
+          console.log(`[Orders] ส่งเลขพัสดุให้ลูกค้า ${order.userId} สำเร็จ (${platform})`);
+        }
+      } catch (notifyErr) {
+        console.warn(`[Orders] ส่งเลขพัสดุให้ลูกค้าไม่สำเร็จ:`, notifyErr.message);
+        // ไม่ return error เพราะเลขพัสดุบันทึกแล้ว
+      }
+    }
+
+    res.json({
+      success: true,
+      trackingNumber: sanitizedTracking,
+      carrier: sanitizedCarrier,
+      notificationSent,
+    });
+  } catch (error) {
+    console.error("[Orders] บันทึกเลขพัสดุไม่สำเร็จ:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

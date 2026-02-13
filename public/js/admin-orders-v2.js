@@ -325,6 +325,7 @@
           </td>
           <td>
             <span class="orders-status-badge status-${order.status}">${statusConfig.label}</span>
+            ${order.trackingNumber ? `<span title="${escapeHtml(order.trackingNumber)}" style="margin-left:4px;font-size:0.7rem;color:#2D8F6F;"><i class="fas fa-truck"></i></span>` : ''}
           </td>
           <td>
             <div class="orders-actions">
@@ -651,6 +652,7 @@
 
     state.detailOrderId = orderId;
     renderDetailPanel(order);
+    loadCarriersForDropdown(order.trackingCarrier);
 
     if (els.detailOverlay) {
       els.detailOverlay.classList.add('open');
@@ -763,6 +765,52 @@
         </div>
       </div>
 
+      <div class="orders-detail-section" id="trackingSection">
+        <div class="orders-detail-section-title"><i class="fas fa-shipping-fast"></i> เลขพัสดุ / Tracking</div>
+        ${order.trackingNumber ? `
+          <div class="orders-detail-row" style="background:#f0fdf4;border-radius:8px;padding:0.75rem;margin-bottom:0.75rem;">
+            <div style="flex:1;">
+              <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">เลขพัสดุปัจจุบัน</div>
+              <div style="font-family:monospace;font-size:1rem;font-weight:600;color:#166534;letter-spacing:0.5px;">${escapeHtml(order.trackingNumber)}</div>
+              ${order.trackingCarrier ? `<div style="font-size:0.8rem;color:#666;margin-top:4px;">🚚 ${escapeHtml(order.trackingCarrier)}</div>` : ''}
+            </div>
+          </div>
+        ` : ''}
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <div style="display:flex;gap:0.5rem;align-items:center;">
+            <select id="trackingCarrierSelect" style="flex:0 0 auto;min-width:140px;padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;background:#fff;">
+              <option value="">-- เลือกขนส่ง --</option>
+            </select>
+            <button class="orders-btn orders-btn-outline" style="padding:0.4rem 0.6rem;font-size:0.8rem;white-space:nowrap;" onclick="window.OrdersV2.toggleAddCarrier()" title="เพิ่มขนส่งใหม่">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <div id="addCarrierForm" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:0.75rem;margin-bottom:0.25rem;">
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:0.5rem;color:#475569;">เพิ่มขนส่งใหม่</div>
+            <div style="display:flex;flex-direction:column;gap:0.4rem;">
+              <input type="text" id="newCarrierName" placeholder="ชื่อขนส่ง เช่น Kerry Express" style="padding:0.4rem 0.6rem;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;">
+              <input type="text" id="newCarrierUrl" placeholder="URL ตรวจสอบ เช่น https://track.Kerry.co.th/?tracking={tracking}" style="padding:0.4rem 0.6rem;border:1px solid #ddd;border-radius:6px;font-size:0.8rem;color:#666;">
+              <div style="font-size:0.7rem;color:#94a3b8;">ใช้ {tracking} แทนตำแหน่งเลขพัสดุใน URL</div>
+              <div style="display:flex;gap:0.4rem;">
+                <button class="orders-btn orders-btn-primary" style="padding:0.35rem 0.75rem;font-size:0.8rem;" onclick="window.OrdersV2.addCarrier()">
+                  <i class="fas fa-check"></i> เพิ่ม
+                </button>
+                <button class="orders-btn orders-btn-outline" style="padding:0.35rem 0.75rem;font-size:0.8rem;" onclick="window.OrdersV2.toggleAddCarrier()">
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          </div>
+          <input type="text" id="trackingNumberInput" placeholder="กรอกเลขพัสดุ..." value="${escapeHtml(order.trackingNumber || '')}" style="padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;font-family:monospace;letter-spacing:0.5px;">
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;color:#555;cursor:pointer;">
+            <input type="checkbox" id="trackingNotifyCustomer" checked> แจ้งลูกค้าทันที
+          </label>
+          <button class="orders-btn orders-btn-primary" style="align-self:flex-start;" onclick="window.OrdersV2.submitTracking('${order.id}')">
+            <i class="fas fa-paper-plane"></i> ${order.trackingNumber ? 'อัปเดตเลขพัสดุ' : 'บันทึกและแจ้งลูกค้า'}
+          </button>
+        </div>
+      </div>
+
       <div class="orders-detail-section">
         <div class="orders-detail-section-title"><i class="fas fa-sticky-note"></i> หมายเหตุ</div>
         <textarea class="orders-notes-textarea" id="ordersDetailNotes" placeholder="เพิ่มหมายเหตุ...">${escapeHtml(order.notes || '')}</textarea>
@@ -818,6 +866,120 @@
     } catch (error) {
       console.error('[Orders] Save notes error:', error);
       showToast('ไม่สามารถบันทึกหมายเหตุได้', 'error');
+    }
+  }
+
+  // ============ Tracking ============
+  async function loadCarriersForDropdown(selectedCarrier) {
+    const select = document.getElementById('trackingCarrierSelect');
+    if (!select) return;
+
+    try {
+      const response = await fetch('/admin/shipping-carriers');
+      const data = await response.json();
+      if (!data.success) return;
+
+      select.innerHTML = '<option value="">-- เลือกขนส่ง --</option>';
+      (data.carriers || []).forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.name;
+        if (selectedCarrier && c.name === selectedCarrier) opt.selected = true;
+        select.appendChild(opt);
+      });
+    } catch (err) {
+      console.error('[Orders] Load carriers error:', err);
+    }
+  }
+
+  function toggleAddCarrier() {
+    const form = document.getElementById('addCarrierForm');
+    if (!form) return;
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function addCarrier() {
+    const nameInput = document.getElementById('newCarrierName');
+    const urlInput = document.getElementById('newCarrierUrl');
+    const name = nameInput?.value?.trim();
+    if (!name) {
+      showToast('กรุณาระบุชื่อขนส่ง', 'error');
+      return;
+    }
+
+    try {
+      const response = await fetch('/admin/shipping-carriers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, trackingUrl: urlInput?.value || '' })
+      });
+      const data = await response.json();
+      if (data.success) {
+        showToast(`เพิ่มขนส่ง "${name}" เรียบร้อย`, 'success');
+        if (nameInput) nameInput.value = '';
+        if (urlInput) urlInput.value = '';
+        toggleAddCarrier();
+        // Reload dropdown and select the new carrier
+        await loadCarriersForDropdown(name);
+      } else {
+        showToast(data.error || 'เพิ่มขนส่งไม่สำเร็จ', 'error');
+      }
+    } catch (err) {
+      console.error('[Orders] Add carrier error:', err);
+      showToast('เพิ่มขนส่งไม่สำเร็จ', 'error');
+    }
+  }
+
+  async function submitTracking(orderId) {
+    const trackingInput = document.getElementById('trackingNumberInput');
+    const carrierSelect = document.getElementById('trackingCarrierSelect');
+    const notifyCheckbox = document.getElementById('trackingNotifyCustomer');
+
+    const trackingNumber = trackingInput?.value?.trim();
+    if (!trackingNumber) {
+      showToast('กรุณากรอกเลขพัสดุ', 'error');
+      return;
+    }
+
+    const carrier = carrierSelect?.value || '';
+    const notifyCustomer = notifyCheckbox?.checked !== false;
+
+    try {
+      const submitBtn = document.querySelector('#trackingSection .orders-btn-primary:last-of-type');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
+      }
+
+      const response = await fetch(`/admin/orders/${orderId}/tracking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackingNumber, carrier, notifyCustomer })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const notifyText = data.notificationSent ? ' + แจ้งลูกค้าแล้ว' : '';
+        showToast(`บันทึกเลขพัสดุเรียบร้อย${notifyText}`, 'success');
+        // Reload orders to reflect changes
+        await loadOrders();
+        // Reopen detail with refreshed data
+        const refreshedOrder = state.orders.find(o => o.id === orderId);
+        if (refreshedOrder) {
+          renderDetailPanel(refreshedOrder);
+          loadCarriersForDropdown(refreshedOrder.trackingCarrier);
+        }
+      } else {
+        showToast(data.error || 'บันทึกเลขพัสดุไม่สำเร็จ', 'error');
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> บันทึกและแจ้งลูกค้า';
+      }
+    } catch (err) {
+      console.error('[Orders] Submit tracking error:', err);
+      showToast('บันทึกเลขพัสดุไม่สำเร็จ', 'error');
     }
   }
 
@@ -968,6 +1130,9 @@
     goToChat,
     goToPage,
     saveNotes,
+    submitTracking,
+    toggleAddCarrier,
+    addCarrier,
     showToast,
     showError
   };
