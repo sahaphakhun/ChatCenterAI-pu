@@ -141,7 +141,7 @@
       // Auth Logic
       window.adminAuth = window.adminAuth || {};
       window.adminAuth.requirePasscode = <%= isPasscodeRequired ? 'true' : 'false' %>;
-      window.adminAuth.user = <% - JSON.stringify(signedInUser || null).replace(/</g, '\\u003c') %>;
+      window.adminAuth.user = <%- JSON.stringify(signedInUser || null).replace(/</g, '\\u003c') %>;
 
       const logoutBtn = document.getElementById('adminLogoutBtn');
       if (logoutBtn) {
