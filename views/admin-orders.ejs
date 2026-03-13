@@ -72,12 +72,36 @@
         <main class="orders-main">
           <!-- Toolbar -->
           <div class="orders-toolbar">
-            <div class="orders-toolbar-left">
-              <select class="orders-page-select" id="ordersPageSelect" style="min-width: 180px;">
-                <option value="">ทุกเพจ/บอท</option>
-              </select>
+            <div class="orders-page-dropdown" id="ordersPageDropdown">
+              <button type="button" class="orders-page-btn-toggle" id="ordersPageBtnToggle" title="เลือกเพจ">
+                <span class="orders-page-btn-text" id="ordersPageBtnText">ทุกเพจ/บอท</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <div class="orders-page-menu" id="ordersPageMenu">
+                <div class="orders-page-menu-search">
+                  <input type="text" id="ordersPageSearch" placeholder="ค้นหาเพจ...">
+                </div>
+                <div class="orders-page-list-wrap">
+                  <label class="orders-page-item select-all">
+                    <input type="checkbox" id="ordersPageSelectAll" value="all">
+                    <span>เลือกทั้งหมด</span>
+                  </label>
+                  <div id="ordersPageList">
+                    <!-- Rendered by JS -->
+                  </div>
+                </div>
+                <div class="orders-page-menu-footer">
+                  <span id="ordersPageSelectedCount">เลือก 0 เพจ</span>
+                  <button type="button" class="btn btn-sm btn-primary" id="ordersPageApplyBtn">ตกลง</button>
+                </div>
+              </div>
             </div>
             <div class="orders-toolbar-actions">
+              <select class="orders-page-select orders-export-format-select" id="ordersExportFormat"
+                aria-label="เลือกรูปแบบไฟล์ส่งออก">
+                <option value="myorder" selected>MyOrder</option>
+                <option value="kex">KEX</option>
+              </select>
               <button class="orders-btn orders-btn-primary" id="ordersExportBtn">
                 <i class="fas fa-file-export"></i> ส่งออก Excel
               </button>
@@ -104,7 +128,7 @@
                     <th class="sortable" data-sort="status">
                       สถานะ <i class="fas fa-sort sort-icon"></i>
                     </th>
-                    <th style="width: 120px;">จัดการ</th>
+                    <th style="width: 160px;">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="ordersTableBody">
@@ -153,6 +177,9 @@
         </div>
         <button class="orders-bulk-btn btn-export" id="ordersBulkExport">
           <i class="fas fa-file-export"></i> ส่งออก
+        </button>
+        <button class="orders-bulk-btn btn-delete" id="ordersBulkDelete">
+          <i class="fas fa-trash-alt"></i> ลบ
         </button>
         <button class="orders-bulk-btn btn-cancel" id="ordersBulkCancel">
           <i class="fas fa-times"></i> ยกเลิก

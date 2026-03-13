@@ -1,0 +1,249 @@
+<section id="image-collections" class="settings-section d-none">
+    <div class="content-section" id="imageCollectionsSection">
+
+        <!-- Section Header -->
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">คลังรูปภาพ</h2>
+                <p class="section-desc">อัปโหลดรูป จัดเป็นชุด และกำหนดให้บอทใช้งาน</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn-action btn-tertiary btn-sm" id="refreshImageCollectionsBtn">
+                    <i class="fas fa-sync-alt"></i>
+                    <span class="d-none d-sm-inline">รีเฟรช</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3-Tab Navigation -->
+        <div class="imglib-nav">
+            <div class="imglib-tabs" role="tablist">
+                <button class="imglib-tab active" data-imglib-tab="assets" role="tab" aria-selected="true">
+                    <i class="fas fa-images"></i>
+                    <span>รูปภาพ</span>
+                    <span class="imglib-tab-badge" id="imageAssetsCount">0</span>
+                </button>
+                <button class="imglib-tab" data-imglib-tab="collections" role="tab" aria-selected="false">
+                    <i class="fas fa-layer-group"></i>
+                    <span>คลังภาพ</span>
+                    <span class="imglib-tab-badge" id="imageCollectionsCount">0</span>
+                </button>
+                <button class="imglib-tab" data-imglib-tab="bots" role="tab" aria-selected="false">
+                    <i class="fas fa-robot"></i>
+                    <span>กำหนดให้บอท</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Overall Upload Progress Bar -->
+        <div class="imglib-progress-bar" id="galleryOverallProgress">
+            <div class="imglib-progress-inner">
+                <div class="imglib-progress-label">
+                    <i class="fas fa-upload"></i>
+                    <span>กำลังอัปโหลด...</span>
+                    <span id="overallProgressCount" class="imglib-progress-count">0/0</span>
+                </div>
+                <div class="imglib-progress-track">
+                    <div class="imglib-progress-fill" id="overallProgressBar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Tab 1: Assets ───────────────────────────── -->
+        <div class="imglib-panel active" id="imglibPanelAssets" role="tabpanel">
+
+            <!-- Upload Zone -->
+            <div class="imglib-dropzone" id="imageAssetDropzone">
+                <input type="file" id="imageAssetFile" accept="image/*" multiple hidden>
+                <div class="imglib-dropzone-inner">
+                    <div class="imglib-dropzone-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="imglib-dropzone-text">ลากไฟล์รูปภาพมาวางที่นี่</div>
+                    <div class="imglib-dropzone-sub">JPEG, PNG, WebP · เลือกหลายไฟล์พร้อมกันได้</div>
+                    <button type="button" class="imglib-dropzone-btn" id="triggerImageAssetSelect">
+                        <i class="fas fa-folder-open"></i> เลือกจากเครื่อง
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upload Queue Area (shown when files pending) -->
+            <div class="imglib-queue-area" id="imglibQueueArea">
+                <div class="imglib-queue-layout">
+                    <!-- Files list (main area ~75%) -->
+                    <div class="imglib-queue-files">
+                        <div class="imglib-queue-header">
+                            <span class="imglib-queue-summary" id="uploadQueueSummary">ยังไม่มีไฟล์ในคิว</span>
+                            <div class="imglib-queue-btns">
+                                <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                                    <input class="form-check-input" type="checkbox" id="globalOverwriteCheckbox" role="switch">
+                                    <label class="form-check-label small text-muted" for="globalOverwriteCheckbox">แทนที่ถ้ามีอยู่แล้ว</label>
+                                </div>
+                                <button type="button" class="imglib-btn imglib-btn-ghost imglib-btn-sm" id="clearUploadQueueBtn" disabled>
+                                    <i class="fas fa-times"></i> ล้างคิว
+                                </button>
+                                <button type="button" class="imglib-btn imglib-btn-primary imglib-btn-sm" id="startUploadQueueBtn" disabled>
+                                    <i class="fas fa-upload"></i> อัปโหลดทั้งหมด
+                                </button>
+                            </div>
+                        </div>
+                        <div class="imglib-queue-list" id="imageAssetQueue"></div>
+                    </div>
+                    <!-- Collection Picker (compact sidebar ~25%) -->
+                    <div class="imglib-queue-collector">
+                        <div class="imglib-qcol-title">
+                            <i class="fas fa-layer-group"></i> เพิ่มเข้าคลัง
+                        </div>
+                        <div class="imglib-qcol-hint">เลือกคลังที่ต้องการ (ถ้าไม่เลือกจะเก็บเป็นรูปทั่วไป)</div>
+                        <div class="imglib-qcol-list" id="imglibUploadCollectionPicker">
+                            <div class="imglib-qcol-empty">ยังไม่มีคลัง</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assets Toolbar -->
+            <div class="imglib-assets-toolbar">
+                <div class="imglib-search-wrap">
+                    <i class="fas fa-search imglib-search-icon"></i>
+                    <input type="text" class="imglib-search-input" id="imageAssetsSearch" placeholder="ค้นหารูปภาพ...">
+                </div>
+                <div class="imglib-toolbar-right">
+                    <div class="imglib-selection-bar" id="assetSelectionToolbar" style="display:none">
+                        <span class="asset-selection-count imglib-sel-count"></span>
+                        <button type="button" class="imglib-btn imglib-btn-danger imglib-btn-sm" id="bulkDeleteAssetsBtn">
+                            <i class="fas fa-trash"></i> ลบที่เลือก
+                        </button>
+                    </div>
+                    <div class="imglib-view-toggle" id="viewToggleGroup">
+                        <button type="button" class="view-toggle-btn active" data-view="list" title="แสดงแบบรายการ">
+                            <i class="fas fa-list"></i>
+                        </button>
+                        <button type="button" class="view-toggle-btn" data-view="grid" title="แสดงแบบตาราง">
+                            <i class="fas fa-th"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assets Grid/List -->
+            <div class="imglib-assets-list" id="imageAssetsList">
+                <!-- Skeleton Loading -->
+                <div class="imglib-asset-card skeleton-item">
+                    <div class="imglib-asset-thumb skeleton"></div>
+                    <div class="imglib-asset-info">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text short"></div>
+                    </div>
+                </div>
+                <div class="imglib-asset-card skeleton-item">
+                    <div class="imglib-asset-thumb skeleton"></div>
+                    <div class="imglib-asset-info">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text short"></div>
+                    </div>
+                </div>
+                <div class="imglib-asset-card skeleton-item">
+                    <div class="imglib-asset-thumb skeleton"></div>
+                    <div class="imglib-asset-info">
+                        <div class="skeleton skeleton-text"></div>
+                        <div class="skeleton skeleton-text short"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Tab 2: Collections ──────────────────────── -->
+        <div class="imglib-panel" id="imglibPanelCollections" role="tabpanel">
+
+            <!-- Collections Toolbar -->
+            <div class="imglib-coll-toolbar">
+                <div class="imglib-search-wrap">
+                    <i class="fas fa-search imglib-search-icon"></i>
+                    <input type="text" class="imglib-search-input" id="imageCollectionsSearch" placeholder="ค้นหาคลัง...">
+                </div>
+                <div class="imglib-filter-pills" id="collectionFilterControl">
+                    <button type="button" class="imglib-pill active" data-usage-filter="all">ทั้งหมด</button>
+                    <button type="button" class="imglib-pill" data-usage-filter="assigned">ใช้งานอยู่</button>
+                    <button type="button" class="imglib-pill" data-usage-filter="unassigned">ยังไม่ใช้</button>
+                </div>
+                <button type="button" class="imglib-btn imglib-btn-primary imglib-btn-sm" id="createImageCollectionBtn">
+                    <i class="fas fa-plus"></i> สร้างคลัง
+                </button>
+            </div>
+
+            <!-- Collections Grid -->
+            <div class="imglib-collections-grid" id="imageCollectionsList">
+                <!-- Skeleton Loading -->
+                <div class="imglib-coll-card skeleton-item">
+                    <div class="imglib-coll-preview">
+                        <div class="skeleton" style="width:64px;height:64px;border-radius:8px;"></div>
+                        <div class="skeleton" style="width:64px;height:64px;border-radius:8px;margin-left:-16px;"></div>
+                        <div class="skeleton" style="width:64px;height:64px;border-radius:8px;margin-left:-16px;"></div>
+                    </div>
+                    <div class="imglib-coll-info">
+                        <div class="skeleton skeleton-text" style="width:140px;"></div>
+                        <div class="skeleton skeleton-text short"></div>
+                    </div>
+                </div>
+                <div class="imglib-coll-card skeleton-item">
+                    <div class="imglib-coll-preview">
+                        <div class="skeleton" style="width:64px;height:64px;border-radius:8px;"></div>
+                    </div>
+                    <div class="imglib-coll-info">
+                        <div class="skeleton skeleton-text" style="width:120px;"></div>
+                        <div class="skeleton skeleton-text short"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Tab 3: Bot Assignment ───────────────────── -->
+        <div class="imglib-panel" id="imglibPanelBots" role="tabpanel">
+
+            <!-- Platform Tabs -->
+            <div class="imglib-platform-tabs" id="assignmentChannelTabs" role="tablist">
+                <button type="button" class="imglib-platform-tab active" data-assignment-channel="line" role="tab" aria-selected="true">
+                    <i class="fab fa-line"></i> LINE
+                </button>
+                <button type="button" class="imglib-platform-tab" data-assignment-channel="facebook" role="tab" aria-selected="false">
+                    <i class="fab fa-facebook-f"></i> Facebook
+                </button>
+                <button type="button" class="imglib-platform-tab" data-assignment-channel="instagram" role="tab" aria-selected="false">
+                    <i class="fab fa-instagram"></i> Instagram
+                </button>
+                <button type="button" class="imglib-platform-tab" data-assignment-channel="whatsapp" role="tab" aria-selected="false">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+            </div>
+
+            <!-- Assignment Panels -->
+            <div class="assignment-channel-panels">
+                <div class="assignment-channel-panel is-active" data-assignment-channel-panel="line">
+                    <div class="assignment-list" id="lineBotCollectionsList">
+                        <div class="imglib-loading-text">กำลังโหลด LINE Bots...</div>
+                    </div>
+                </div>
+                <div class="assignment-channel-panel" data-assignment-channel-panel="facebook">
+                    <div class="assignment-list" id="facebookBotCollectionsList">
+                        <div class="imglib-loading-text">กำลังโหลด Facebook Bots...</div>
+                    </div>
+                </div>
+                <div class="assignment-channel-panel" data-assignment-channel-panel="instagram">
+                    <div class="assignment-list" id="instagramBotCollectionsList">
+                        <div class="imglib-loading-text">กำลังโหลด Instagram Bots...</div>
+                    </div>
+                </div>
+                <div class="assignment-channel-panel" data-assignment-channel-panel="whatsapp">
+                    <div class="assignment-list" id="whatsappBotCollectionsList">
+                        <div class="imglib-loading-text">กำลังโหลด WhatsApp Bots...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden utility elements (kept for JS compatibility) -->
+        <button id="secretFixBtn" style="display:none" title="คลิก 3 ครั้งเพื่อซ่อมแซมข้อมูล" aria-hidden="true"></button>
+
+    </div>
+</section>

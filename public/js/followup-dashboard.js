@@ -99,10 +99,7 @@
         const previewUrl = typeof image.previewUrl === 'string' && image.previewUrl
             ? image.previewUrl
             : (typeof image.thumbUrl === 'string' && image.thumbUrl ? image.thumbUrl : url);
-        const cloned = {
-            url,
-            previewUrl
-        };
+        const cloned = { url, previewUrl };
         if (image.thumbUrl) cloned.thumbUrl = image.thumbUrl;
         if (image.assetId) cloned.assetId = image.assetId;
         if (image.id) cloned.id = image.id;
@@ -113,6 +110,21 @@
         if (Number.isFinite(Number(image.height))) cloned.height = Number(image.height);
         if (Number.isFinite(Number(image.size))) cloned.size = Number(image.size);
         return cloned;
+    };
+
+    // Convert legacy { message, images[] } round to items array
+    const roundLegacyToItems = (round) => {
+        const items = [];
+        if (typeof round.message === 'string' && round.message.trim()) {
+            items.push({ type: 'text', content: round.message.trim() });
+        }
+        if (Array.isArray(round.images)) {
+            round.images.forEach(img => {
+                const cloned = cloneRoundImage(img);
+                if (cloned) items.push({ type: 'image', ...cloned });
+            });
+        }
+        return items;
     };
 
     const sanitizeRoundImages = (images) => {
@@ -147,13 +159,33 @@
             .filter(Boolean);
     };
 
+    const sanitizeRoundItem = (item) => {
+        if (!item || typeof item !== 'object') return null;
+        if (item.type === 'text') {
+            const content = typeof item.content === 'string' ? item.content.trim() : '';
+            if (!content) return null;
+            return { type: 'text', content };
+        }
+        if (item.type === 'image') {
+            const imgs = sanitizeRoundImages([item]);
+            if (!imgs.length) return null;
+            return { type: 'image', ...imgs[0] };
+        }
+        return null;
+    };
+
+    const sanitizeRoundItems = (items) => {
+        if (!Array.isArray(items)) return [];
+        return items.map(sanitizeRoundItem).filter(Boolean);
+    };
+
     const formatRoundPreview = (round) => {
         if (!round) return '';
-        const message = typeof round.message === 'string' ? round.message.trim() : '';
-        const imageCount = Array.isArray(round.images) ? round.images.length : 0;
-        if (message && imageCount > 0) {
-            return `${message} • รูปภาพ ${imageCount} รูป`;
-        }
+        const items = Array.isArray(round.items) ? round.items : roundLegacyToItems(round);
+        const texts = items.filter(i => i.type === 'text').map(i => i.content).filter(Boolean);
+        const imageCount = items.filter(i => i.type === 'image').length;
+        const message = texts[0] || '';
+        if (message && imageCount > 0) return `${message} • รูปภาพ ${imageCount} รูป`;
         if (message) return message;
         if (imageCount > 0) return `ส่งรูปภาพ ${imageCount} รูป`;
         return '';
@@ -242,8 +274,8 @@
         if (!Array.isArray(state.modalRounds)) return;
         const round = state.modalRounds[roundIndex];
         if (!round) return;
-        if (!Array.isArray(round.images)) {
-            round.images = [];
+        if (!Array.isArray(round.items)) {
+            round.items = [];
         }
 
         round.isUploading = true;
@@ -281,7 +313,7 @@
                         fileName: asset.fileName
                     });
                     if (cloned) {
-                        round.images.push(cloned);
+                        round.items.push({ type: 'image', ...cloned });
                     }
                 });
             }
@@ -301,79 +333,116 @@
         }
 
         if (state.modalRounds.length === 0) {
-            el.modalRounds.innerHTML = '<div class="text-muted small py-2">ยังไม่มีรอบการติดตาม กดปุ่ม "เพิ่มข้อความ" เพื่อเริ่มต้น</div>';
+            el.modalRounds.innerHTML = '<div class="text-muted small py-2">ยังไม่มีรอบการติดตาม กดปุ่ม "เพิ่มรอบ" เพื่อเริ่มต้น</div>';
             return;
         }
 
+        const renderItem = (item, roundIndex, itemIndex, itemCount) => {
+            const isFirst = itemIndex === 0;
+            const isLast = itemIndex === itemCount - 1;
+            const moveUpDisabled = isFirst ? 'disabled' : '';
+            const moveDownDisabled = isLast ? 'disabled' : '';
+
+            if (item.type === 'text') {
+                const safeContent = escapeHtml(item.content || '');
+                return `
+                    <div class="followup-item-row d-flex gap-2 mb-2 align-items-start" data-round="${roundIndex}" data-item="${itemIndex}">
+                        <div class="followup-item-handle d-flex flex-column gap-1">
+                            <button type="button" class="btn btn-xs btn-outline-secondary followup-item-up px-1 py-0" data-round="${roundIndex}" data-item="${itemIndex}" title="เลื่อนขึ้น" ${moveUpDisabled}>
+                                <i class="fas fa-chevron-up" style="font-size:0.65rem"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary followup-item-down px-1 py-0" data-round="${roundIndex}" data-item="${itemIndex}" title="เลื่อนลง" ${moveDownDisabled}>
+                                <i class="fas fa-chevron-down" style="font-size:0.65rem"></i>
+                            </button>
+                        </div>
+                        <div class="followup-item-icon text-muted" style="padding-top:0.3rem"><i class="fas fa-font"></i></div>
+                        <div class="flex-grow-1">
+                            <textarea class="form-control form-control-sm followup-item-text" rows="2" placeholder="กรอกข้อความ" data-round="${roundIndex}" data-item="${itemIndex}">${safeContent}</textarea>
+                        </div>
+                        <button type="button" class="btn btn-xs btn-outline-danger followup-item-remove" data-round="${roundIndex}" data-item="${itemIndex}" title="ลบรายการนี้">
+                            <i class="fas fa-times" style="font-size:0.65rem"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            if (item.type === 'image') {
+                const preview = escapeAttr(item.previewUrl || item.thumbUrl || item.url || '');
+                const full = escapeAttr(item.url || '');
+                const caption = escapeHtml(item.caption || item.alt || '');
+                return `
+                    <div class="followup-item-row d-flex gap-2 mb-2 align-items-center" data-round="${roundIndex}" data-item="${itemIndex}">
+                        <div class="followup-item-handle d-flex flex-column gap-1">
+                            <button type="button" class="btn btn-xs btn-outline-secondary followup-item-up px-1 py-0" data-round="${roundIndex}" data-item="${itemIndex}" title="เลื่อนขึ้น" ${moveUpDisabled}>
+                                <i class="fas fa-chevron-up" style="font-size:0.65rem"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary followup-item-down px-1 py-0" data-round="${roundIndex}" data-item="${itemIndex}" title="เลื่อนลง" ${moveDownDisabled}>
+                                <i class="fas fa-chevron-down" style="font-size:0.65rem"></i>
+                            </button>
+                        </div>
+                        <div class="followup-item-icon text-muted"><i class="fas fa-image"></i></div>
+                        <a href="${full}" target="_blank" rel="noopener" class="followup-round-image-link">
+                            <img src="${preview}" alt="${caption || 'รูปภาพ'}" class="followup-round-image-thumb">
+                        </a>
+                        ${caption ? `<small class="text-muted flex-grow-1">${caption}</small>` : '<span class="flex-grow-1"></span>'}
+                        <button type="button" class="btn btn-xs btn-outline-danger followup-item-remove" data-round="${roundIndex}" data-item="${itemIndex}" title="ลบรูปนี้">
+                            <i class="fas fa-times" style="font-size:0.65rem"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            return '';
+        };
+
         el.modalRounds.innerHTML = state.modalRounds.map((round, index) => {
             if (!round || typeof round !== 'object') {
-                state.modalRounds[index] = { delayMinutes: 10, message: '', images: [] };
+                state.modalRounds[index] = { delayMinutes: 10, items: [{ type: 'text', content: '' }] };
             }
-            if (!Array.isArray(state.modalRounds[index].images)) {
-                state.modalRounds[index].images = [];
+            if (!Array.isArray(state.modalRounds[index].items)) {
+                state.modalRounds[index].items = roundLegacyToItems(state.modalRounds[index]);
             }
-            const delayValue = Number(state.modalRounds[index].delayMinutes);
-            const safeMessage = escapeHtml(state.modalRounds[index].message || '');
-            const images = state.modalRounds[index].images;
-            const imageItems = images.length
-                ? images.map((img, imgIndex) => {
-                    const preview = escapeAttr(img.previewUrl || img.thumbUrl || img.url || '');
-                    const full = escapeAttr(img.url || '');
-                    const caption = escapeHtml(img.caption || img.alt || '');
-                    return `
-                        <div class="col-auto">
-                            <div class="followup-round-image-card">
-                                <a href="${full}" target="_blank" rel="noopener" class="followup-round-image-link">
-                                    <img src="${preview}" alt="${caption || 'รูปภาพ'}" class="followup-round-image-thumb">
-                                </a>
-                                <button type="button" class="btn btn-sm btn-outline-danger followup-round-remove-image" data-index="${index}" data-image-index="${imgIndex}" title="ลบรูปภาพนี้">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('')
-                : '<div class="col-12 text-muted small">ยังไม่มีรูปภาพ</div>';
-            const uploading = round?.isUploading
-                ? '<div class="text-muted small mt-2"><i class="fas fa-spinner fa-spin me-1"></i>กำลังอัพโหลด...</div>'
+            const r = state.modalRounds[index];
+            const delayValue = Number(r.delayMinutes);
+            const uploading = r.isUploading
+                ? '<div class="text-muted small mt-1"><i class="fas fa-spinner fa-spin me-1"></i>กำลังอัพโหลด...</div>'
                 : '';
+
+            const itemsHtml = r.items.length
+                ? r.items.map((item, itemIndex) => renderItem(item, index, itemIndex, r.items.length)).join('')
+                : '<div class="text-muted small mb-2">ยังไม่มีเนื้อหา — กดเพิ่มข้อความหรือรูปภาพด้านล่าง</div>';
 
             return `
                 <div class="followup-round-item border rounded p-3 mb-3 bg-white" data-index="${index}">
-                    <div class="row g-3 align-items-start">
-                        <div class="col-md-3">
-                            <label class="form-label form-label-sm text-muted mb-1">เวลาหลังคุยล่าสุด</label>
-                            <div class="input-group input-group-sm">
-                                <input type="number" class="form-control followup-round-delay" min="1" step="1" value="${Number.isFinite(delayValue) ? delayValue : ''}">
-                                <span class="input-group-text">นาที</span>
-                            </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-secondary">${index + 1}</span>
+                        <div class="input-group input-group-sm" style="max-width:180px">
+                            <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                            <input type="number" class="form-control followup-round-delay" min="1" step="1" value="${Number.isFinite(delayValue) ? delayValue : ''}" placeholder="นาที">
+                            <span class="input-group-text">นาที</span>
                         </div>
-                        <div class="col-md-8 col-lg-7">
-                            <label class="form-label form-label-sm text-muted mb-1">ข้อความ (ไม่บังคับ)</label>
-                            <textarea class="form-control form-control-sm followup-round-message" rows="2" placeholder="กรอกข้อความติดตาม (เว้นว่างได้ หากต้องการส่งเฉพาะรูปภาพ)">${safeMessage}</textarea>
-                        </div>
-                        <div class="col-md-1 d-flex justify-content-end">
+                        <span class="text-muted small">หลังจากคุยล่าสุด</span>
+                        <div class="ms-auto">
                             <button type="button" class="btn btn-sm btn-outline-danger followup-round-remove" title="ลบรอบนี้">
-                                <i class="fas fa-times"></i>
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label form-label-sm text-muted mb-1">รูปภาพแนบ (ไม่บังคับ)</label>
-                            <div class="followup-round-images" data-index="${index}">
-                                <div class="row g-2 align-items-center">
-                                    ${imageItems}
-                                </div>
-                                ${uploading}
-                                <button type="button" class="btn btn-sm btn-outline-primary followup-round-add-image mt-2" data-index="${index}" ${round?.isUploading ? 'disabled' : ''}>
-                                    <i class="fas fa-image me-1"></i>เพิ่มรูป
-                                </button>
-                            </div>
-                        </div>
+                    </div>
+                    <div class="followup-round-items-list mb-2">
+                        ${itemsHtml}
+                    </div>
+                    ${uploading}
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-secondary followup-round-add-text" data-index="${index}">
+                            <i class="fas fa-font me-1"></i>เพิ่มข้อความ
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary followup-round-add-image" data-index="${index}" ${r.isUploading ? 'disabled' : ''}>
+                            <i class="fas fa-image me-1"></i>เพิ่มรูปภาพ
+                        </button>
                     </div>
                 </div>
             `;
         }).join('');
 
+        // --- Delay input ---
         el.modalRounds.querySelectorAll('.followup-round-delay').forEach(input => {
             const container = input.closest('.followup-round-item');
             if (!container) return;
@@ -384,15 +453,19 @@
             });
         });
 
-        el.modalRounds.querySelectorAll('.followup-round-message').forEach(textarea => {
-            const container = textarea.closest('.followup-round-item');
-            if (!container) return;
-            const index = Number(container.dataset.index);
+        // --- Text item change ---
+        el.modalRounds.querySelectorAll('.followup-item-text').forEach(textarea => {
             textarea.addEventListener('input', (event) => {
-                state.modalRounds[index].message = event.target.value;
+                const rIdx = Number(event.target.dataset.round);
+                const iIdx = Number(event.target.dataset.item);
+                if (!Number.isFinite(rIdx) || !Number.isFinite(iIdx)) return;
+                if (state.modalRounds[rIdx]?.items[iIdx]) {
+                    state.modalRounds[rIdx].items[iIdx].content = event.target.value;
+                }
             });
         });
 
+        // --- Remove round ---
         el.modalRounds.querySelectorAll('.followup-round-remove').forEach(btn => {
             const container = btn.closest('.followup-round-item');
             if (!container) return;
@@ -403,6 +476,54 @@
             });
         });
 
+        // --- Remove item ---
+        el.modalRounds.querySelectorAll('.followup-item-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const rIdx = Number(btn.dataset.round);
+                const iIdx = Number(btn.dataset.item);
+                if (!Number.isFinite(rIdx) || !Number.isFinite(iIdx)) return;
+                state.modalRounds[rIdx]?.items.splice(iIdx, 1);
+                renderModalRounds();
+            });
+        });
+
+        // --- Move item up ---
+        el.modalRounds.querySelectorAll('.followup-item-up').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const rIdx = Number(btn.dataset.round);
+                const iIdx = Number(btn.dataset.item);
+                if (!Number.isFinite(rIdx) || !Number.isFinite(iIdx) || iIdx === 0) return;
+                const items = state.modalRounds[rIdx]?.items;
+                if (!items) return;
+                [items[iIdx - 1], items[iIdx]] = [items[iIdx], items[iIdx - 1]];
+                renderModalRounds();
+            });
+        });
+
+        // --- Move item down ---
+        el.modalRounds.querySelectorAll('.followup-item-down').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const rIdx = Number(btn.dataset.round);
+                const iIdx = Number(btn.dataset.item);
+                const items = state.modalRounds[rIdx]?.items;
+                if (!items || !Number.isFinite(rIdx) || !Number.isFinite(iIdx) || iIdx >= items.length - 1) return;
+                [items[iIdx], items[iIdx + 1]] = [items[iIdx + 1], items[iIdx]];
+                renderModalRounds();
+            });
+        });
+
+        // --- Add text item ---
+        el.modalRounds.querySelectorAll('.followup-round-add-text').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const index = Number(btn.getAttribute('data-index'));
+                if (!Number.isFinite(index)) return;
+                if (!Array.isArray(state.modalRounds[index]?.items)) return;
+                state.modalRounds[index].items.push({ type: 'text', content: '' });
+                renderModalRounds();
+            });
+        });
+
+        // --- Add image item ---
         el.modalRounds.querySelectorAll('.followup-round-add-image').forEach(btn => {
             btn.addEventListener('click', () => {
                 const index = Number(btn.getAttribute('data-index'));
@@ -419,18 +540,6 @@
                 input.click();
             });
         });
-
-        el.modalRounds.querySelectorAll('.followup-round-remove-image').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const roundIndex = Number(btn.getAttribute('data-index'));
-                const imageIndex = Number(btn.getAttribute('data-image-index'));
-                if (!Number.isFinite(roundIndex) || !Number.isFinite(imageIndex)) return;
-                const round = state.modalRounds[roundIndex];
-                if (!round || !Array.isArray(round.images)) return;
-                round.images.splice(imageIndex, 1);
-                renderModalRounds();
-            });
-        });
     };
 
     const addModalRound = (round) => {
@@ -440,12 +549,27 @@
         const fallbackDelay = state.modalRounds.length > 0
             ? Number(state.modalRounds[state.modalRounds.length - 1].delayMinutes) || 10
             : 10;
+
+        let items;
+        if (Array.isArray(round?.items)) {
+            items = round.items.map(item => {
+                if (item.type === 'text') return { type: 'text', content: item.content || '' };
+                if (item.type === 'image') {
+                    const cloned = cloneRoundImage(item);
+                    return cloned ? { type: 'image', ...cloned } : null;
+                }
+                return null;
+            }).filter(Boolean);
+        } else {
+            items = roundLegacyToItems(round || {});
+        }
+        if (!items.length) {
+            items = [{ type: 'text', content: '' }];
+        }
+
         const nextRound = {
             delayMinutes: Number(round?.delayMinutes) || fallbackDelay,
-            message: round?.message || '',
-            images: Array.isArray(round?.images)
-                ? round.images.map(cloneRoundImage).filter(Boolean)
-                : []
+            items
         };
         state.modalRounds.push(nextRound);
         renderModalRounds();
@@ -457,13 +581,13 @@
             .map(round => {
                 const delay = Number(round?.delayMinutes);
                 if (!Number.isFinite(delay) || delay < 1) return null;
-                const message = typeof round?.message === 'string' ? round.message.trim() : '';
-                const images = sanitizeRoundImages(round?.images);
-                if (!message && images.length === 0) return null;
+                const items = sanitizeRoundItems(
+                    Array.isArray(round?.items) ? round.items : roundLegacyToItems(round || {})
+                );
+                if (items.length === 0) return null;
                 return {
                     delayMinutes: Math.round(delay),
-                    message,
-                    images
+                    items
                 };
             })
             .filter(Boolean);
@@ -492,8 +616,10 @@
         const html = rounds.map((round, index) => {
             const delay = Number(round.delayMinutes);
             const label = formatDelayMinutes(delay);
-            const message = typeof round.message === 'string' ? round.message.trim() : '';
-            const imageCount = Array.isArray(round.images) ? round.images.length : 0;
+            const items = Array.isArray(round.items) ? round.items : roundLegacyToItems(round);
+            const texts = items.filter(i => i.type === 'text').map(i => i.content).filter(Boolean);
+            const imageCount = items.filter(i => i.type === 'image').length;
+            const message = texts[0] || '';
             const messageHtml = message ? `<div class="schedule-message">${escapeHtml(message)}</div>` : '';
             const mediaHtml = imageCount > 0
                 ? `<div class="schedule-media text-muted small"><i class="fas fa-image me-1"></i>${imageCount} รูป</div>`
@@ -1388,13 +1514,25 @@
         }
         if (el.modalAutoSend) el.modalAutoSend.checked = cfg.autoFollowUpEnabled !== false;
         state.modalRounds = Array.isArray(cfg.rounds)
-            ? cfg.rounds.map(round => ({
-                delayMinutes: Number(round.delayMinutes) || '',
-                message: typeof round.message === 'string' ? round.message : '',
-                images: Array.isArray(round.images)
-                    ? round.images.map(cloneRoundImage).filter(Boolean)
-                    : []
-            }))
+            ? cfg.rounds.map(round => {
+                let items;
+                if (Array.isArray(round.items)) {
+                    items = round.items.map(item => {
+                        if (item.type === 'text') return { type: 'text', content: item.content || '' };
+                        if (item.type === 'image') {
+                            const cloned = cloneRoundImage(item);
+                            return cloned ? { type: 'image', ...cloned } : null;
+                        }
+                        return null;
+                    }).filter(Boolean);
+                } else {
+                    items = roundLegacyToItems(round);
+                }
+                return {
+                    delayMinutes: Number(round.delayMinutes) || '',
+                    items
+                };
+            })
             : [];
         renderModalRounds();
         handleAutoSendToggle();
@@ -1559,7 +1697,7 @@
         }
         if (el.modalAddRound) {
             el.modalAddRound.addEventListener('click', () => {
-                addModalRound({ delayMinutes: 10, message: '' });
+                addModalRound({ delayMinutes: 10 });
             });
         }
     };

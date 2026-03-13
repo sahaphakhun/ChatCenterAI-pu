@@ -1,0 +1,238 @@
+<!-- Add/Edit Instagram Bot Modal -->
+<div class="modal fade" id="addInstagramBotModal" tabindex="-1" aria-labelledby="addInstagramBotModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addInstagramBotModalLabel">
+                    <i class="fab fa-instagram me-2"></i>เพิ่ม Instagram Bot ใหม่
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="instagramBotForm">
+                    <input type="hidden" id="instagramBotId" name="id">
+
+                    <div class="mb-3">
+                        <label for="instagramBotName" class="form-label">ชื่อ Instagram Bot <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="instagramBotName" name="name"
+                            placeholder="เช่น: ทีมขาย Instagram" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="instagramBotDescription" class="form-label">คำอธิบาย</label>
+                        <textarea class="form-control" id="instagramBotDescription" name="description" rows="2"
+                            placeholder="อธิบายหน้าที่หรือวัตถุประสงค์ของ Instagram Bot นี้"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="instagramUserId" class="form-label">Instagram User ID <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="instagramUserId" name="instagramUserId"
+                                    placeholder="1784xxxxxxxxxxxx" required>
+                                <div class="form-text">Instagram Business Account ID / IG User ID</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="instagramUsername" class="form-label">Instagram Username</label>
+                                <input type="text" class="form-control" id="instagramUsername" name="instagramUsername"
+                                    placeholder="@your_brand">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="instagramAccessToken" class="form-label">Access Token <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="instagramAccessToken" name="accessToken"
+                                    placeholder="EAAB..." required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="instagramBotStatus" class="form-label">สถานะการตอบแชท</label>
+                                <select class="form-select" id="instagramBotStatus" name="status">
+                                    <option value="active">เปิดใช้งาน</option>
+                                    <option value="inactive">ปิดใช้งาน</option>
+                                    <option value="maintenance">บำรุงรักษา</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="instagramWebhookUrl" class="form-label">Webhook URL</label>
+                                <input type="text" class="form-control" id="instagramWebhookUrl" name="webhookUrl"
+                                    placeholder="https://yourdomain.com/webhook/instagram/xxxx" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="instagramVerifyToken" class="form-label">Verify Token</label>
+                                <input type="text" class="form-control" id="instagramVerifyToken" name="verifyToken"
+                                    placeholder="your_verify_token">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="instagramBotApiKeyId" class="form-label">AI Provider Key</label>
+                        <select class="form-select" id="instagramBotApiKeyId" name="openaiApiKeyId">
+                            <option value="">ใช้ Key หลัก (Default)</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <label for="instagramBotAiModel" class="form-label mb-0">AI Model <span
+                                            class="text-danger">*</span></label>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm ms-2"
+                                        data-bs-toggle="collapse" data-bs-target="#instagramBotAiParams"
+                                        aria-expanded="false" aria-controls="instagramBotAiParams">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </div>
+                                <input type="text" class="form-control mt-1" id="instagramBotAiModel" name="aiModel"
+                                    list="instagramBotAiModelPresets" placeholder="เช่น gpt-5 หรือ openai/gpt-4.1" required>
+                                <datalist id="instagramBotAiModelPresets">
+                                    <option value="gpt-5.2"></option>
+                                    <option value="gpt-5.1"></option>
+                                    <option value="gpt-5"></option>
+                                    <option value="gpt-5-mini"></option>
+                                    <option value="gpt-5-nano"></option>
+                                    <option value="gpt-5-pro"></option>
+                                    <option value="gpt-4.1"></option>
+                                    <option value="gpt-4.1-mini"></option>
+                                    <option value="gpt-4.1-nano"></option>
+                                    <option value="gpt-4o"></option>
+                                    <option value="gpt-4o-mini"></option>
+                                </datalist>
+                                <div class="collapse mt-2" id="instagramBotAiParams">
+                                    <div class="p-3 border rounded bg-light">
+                                        <div class="mb-3">
+                                            <label for="instagramBotApiMode" class="form-label mb-1">API Mode</label>
+                                            <select class="form-select form-select-sm" id="instagramBotApiMode"
+                                                name="apiMode">
+                                                <option value="responses">Responses API</option>
+                                                <option value="chat">Chat Completions API</option>
+                                            </select>
+                                        </div>
+                                        <div id="instagramBotResponsesParams">
+                                            <div class="row g-2">
+                                                <div class="col-md-6" id="instagramBotReasoningGroup">
+                                                    <label class="form-label mb-1"
+                                                        for="instagramBotReasoningEffort">reasoning_effort</label>
+                                                    <select class="form-select form-select-sm"
+                                                        id="instagramBotReasoningEffort">
+                                                        <option value="">ตามค่า default ของโมเดล</option>
+                                                        <option value="none">none</option>
+                                                        <option value="minimal">minimal</option>
+                                                        <option value="low">low</option>
+                                                        <option value="medium">medium</option>
+                                                        <option value="high">high</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6 d-none" id="instagramBotReasoningNote">
+                                                    <div class="alert alert-info py-2 px-3 small mb-0">
+                                                        โมเดลนี้ไม่รองรับ reasoning_effort
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="instagramBotChatParams" class="d-none">
+                                            <div class="row g-2" id="instagramBotChatControls">
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1"
+                                                        for="instagramBotTemperature">temperature</label>
+                                                    <input type="range" step="0.1" min="0" max="2"
+                                                        class="form-range form-range-primary" id="instagramBotTemperature">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">0</small>
+                                                        <small id="instagramBotTemperatureValue"
+                                                            class="fw-semibold">—</small>
+                                                        <small class="text-muted">2</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1" for="instagramBotTopP">top_p</label>
+                                                    <input type="range" step="0.05" min="0" max="1"
+                                                        class="form-range form-range-primary" id="instagramBotTopP">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">0</small>
+                                                        <small id="instagramBotTopPValue" class="fw-semibold">—</small>
+                                                        <small class="text-muted">1</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1"
+                                                        for="instagramBotPresencePenalty">presence_penalty</label>
+                                                    <input type="range" step="0.1" min="-2" max="2"
+                                                        class="form-range form-range-primary"
+                                                        id="instagramBotPresencePenalty">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">-2</small>
+                                                        <small id="instagramBotPresencePenaltyValue"
+                                                            class="fw-semibold">—</small>
+                                                        <small class="text-muted">2</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1"
+                                                        for="instagramBotFrequencyPenalty">frequency_penalty</label>
+                                                    <input type="range" step="0.1" min="-2" max="2"
+                                                        class="form-range form-range-primary"
+                                                        id="instagramBotFrequencyPenalty">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">-2</small>
+                                                        <small id="instagramBotFrequencyPenaltyValue"
+                                                            class="fw-semibold">—</small>
+                                                        <small class="text-muted">2</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="alert alert-info mt-2 mb-0 py-2 px-3 small d-none"
+                                                id="instagramBotChatNote">
+                                                โมเดล reasoning ไม่รองรับ temperature/top_p/penalties
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="instagramBotDefault"
+                                        name="isDefault">
+                                    <label class="form-check-label" for="instagramBotDefault">
+                                        ตั้งเป็น Instagram Bot หลัก (Default)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" id="deleteInstagramBotBtn"
+                    style="display: none;">
+                    <i class="fas fa-trash me-2"></i>ลบ
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-primary" id="saveInstagramBotBtn">
+                    <i class="fas fa-save me-2"></i>บันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

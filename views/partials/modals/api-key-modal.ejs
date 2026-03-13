@@ -21,6 +21,15 @@
                     </div>
 
                     <div class="mb-3">
+                        <label for="apiKeyProvider" class="form-label">Provider <span class="text-danger">*</span></label>
+                        <select id="apiKeyProvider" class="form-select">
+                            <option value="openai">OpenAI</option>
+                            <option value="openrouter">OpenRouter</option>
+                        </select>
+                        <div class="form-text">เลือกผู้ให้บริการของ API Key นี้</div>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="apiKeyValue" class="form-label">API Key <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="password" id="apiKeyValue" class="form-control" placeholder="sk-..." required>
@@ -28,7 +37,7 @@
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
-                        <div class="form-text">API Key จาก OpenAI (ขึ้นต้นด้วย sk-)</div>
+                        <div class="form-text" id="apiKeyFormatHint">API Key จาก OpenAI (ขึ้นต้นด้วย sk-)</div>
                     </div>
 
                     <div class="mb-3">

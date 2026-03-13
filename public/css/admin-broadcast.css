@@ -200,6 +200,146 @@
   border: 1px dashed #e1e5ef;
 }
 
+/* ============================================
+   Progress Modal — Time & Per-Channel
+   ============================================ */
+
+/* Time badges */
+.broadcast-time-info {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.broadcast-time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(74, 111, 165, 0.08);
+  color: var(--color-primary, #4A6FA5);
+}
+
+.broadcast-time-badge--remaining {
+  background: rgba(223, 169, 75, 0.1);
+  color: #b08930;
+}
+
+/* Time Estimate (pre-send) */
+#timeEstimate .time-value {
+  font-weight: 700;
+  color: var(--color-primary, #4A6FA5);
+}
+
+/* Overall progress section */
+.broadcast-progress-overall .progress {
+  border-radius: 8px;
+}
+
+.broadcast-progress-overall .progress-bar {
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+/* Per-channel progress list */
+.broadcast-channel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* Individual channel card */
+.broadcast-channel-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border, #E1E5EF);
+  border-radius: 10px;
+  background: #f9fafc;
+  transition: all 0.25s ease;
+}
+
+.broadcast-channel-card.is-running {
+  border-color: rgba(74, 111, 165, 0.3);
+  background: rgba(74, 111, 165, 0.03);
+}
+
+.broadcast-channel-card.is-completed {
+  border-color: rgba(45, 143, 111, 0.3);
+  background: rgba(45, 143, 111, 0.03);
+}
+
+.broadcast-channel-card.is-failed,
+.broadcast-channel-card.is-cancelled {
+  border-color: rgba(210, 85, 90, 0.3);
+  background: rgba(210, 85, 90, 0.03);
+}
+
+/* Platform icon */
+.channel-progress-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.channel-progress-icon.platform-line { background: rgba(6, 199, 85, 0.1); color: #06C755; }
+.channel-progress-icon.platform-facebook { background: rgba(24, 119, 242, 0.1); color: #1877F2; }
+.channel-progress-icon.platform-instagram { background: rgba(225, 48, 108, 0.1); color: #E1306C; }
+.channel-progress-icon.platform-whatsapp { background: rgba(37, 211, 102, 0.1); color: #25D366; }
+
+/* Channel info */
+.channel-progress-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.channel-progress-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-main, #1E2430);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.channel-progress-meta {
+  font-size: 0.75rem;
+  color: var(--text-sub, #5C6372);
+}
+
+/* Mini progress bar */
+.channel-progress-bar-wrap {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.channel-progress-bar-wrap .progress {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* Channel stat number */
+.channel-progress-stat {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main, #1E2430);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 @media (max-width: 767.98px) {
   .broadcast-header {
     flex-direction: column;
@@ -210,5 +350,14 @@
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .broadcast-time-info {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .broadcast-channel-list {
+    max-height: 240px;
   }
 }

@@ -70,6 +70,40 @@
     line-height: 1.2;
 }
 
+.stats-summary-value-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.stats-summary-value-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    line-height: 1.2;
+}
+
+.stats-summary-value-row strong {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.stats-summary-inline-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.stats-summary-value-row.is-draft {
+    color: #DFA94B;
+}
+
+.stats-summary-value-row.is-confirmed {
+    color: #2D8F6F;
+}
+
 .stats-summary-label {
     font-size: 0.75rem;
     color: var(--text-light, #5C6372);
@@ -316,6 +350,87 @@
     justify-content: space-between;
     gap: 4px;
     height: 200px;
+}
+
+/* Closing Rate Chart */
+.stats-closing-rate-chart {
+    padding: 1.25rem;
+}
+
+.stats-closing-rate-scroll {
+    overflow-x: auto;
+}
+
+.stats-closing-rate-inner {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 210px;
+}
+
+.stats-close-bar-wrapper {
+    flex: 1;
+    min-width: 24px;
+    max-width: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+}
+
+.stats-close-bar {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.stats-close-bar-fill {
+    width: 100%;
+    background: linear-gradient(180deg, #2D8F6F 0%, #64C6A5 100%);
+    border-radius: 4px 4px 0 0;
+    min-height: 2px;
+    transition: height 0.3s ease;
+    position: relative;
+}
+
+.stats-close-bar-fill.is-peak {
+    background: linear-gradient(180deg, #4A6FA5 0%, #6B8FC5 100%);
+}
+
+.stats-close-bar-fill:hover {
+    opacity: 0.9;
+}
+
+.stats-close-bar-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text-dark, #1E2430);
+    color: #fff;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.15s ease;
+    margin-bottom: 4px;
+    z-index: 10;
+}
+
+.stats-close-bar-fill:hover .stats-close-bar-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.stats-close-bar-label {
+    font-size: 0.68rem;
+    color: var(--text-light);
+    margin-top: 0.45rem;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .chart-bar-wrapper {

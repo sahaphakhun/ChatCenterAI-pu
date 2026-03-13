@@ -5,10 +5,37 @@
 
 const INSTRUCTION_SOURCE = { V2: 'v2', LEGACY: 'legacy' };
 let instructionLibraries = [];
+let imageCollections = [];
+const BOT_CHANNELS = ['line', 'facebook', 'instagram', 'whatsapp'];
+const BOT_LABELS = {
+    line: 'LINE',
+    facebook: 'Facebook',
+    instagram: 'Instagram',
+    whatsapp: 'WhatsApp'
+};
+const BOT_MODEL_PRESETS = [
+    'gpt-5.2',
+    'gpt-5.1',
+    'gpt-5',
+    'gpt-5-mini',
+    'gpt-5-nano',
+    'gpt-5-pro',
+    'gpt-4.1',
+    'gpt-4.1-mini',
+    'gpt-4.1-nano',
+    'gpt-4o',
+    'gpt-4o-mini'
+];
+let activeBotChannel = 'line';
+const botKeywordModalState = {
+    botType: '',
+    botId: ''
+};
 
 document.addEventListener('DOMContentLoaded', function () {
     initMobileMenu();
     initNavigation();
+    initBotChannelTabs();
     loadAllSettings();
     setupEventListeners();
     showLegacySettingsNotice();
@@ -20,6 +47,56 @@ function showAlert(message, type = 'info') {
     showToast(message, type);
 }
 window.showAlert = showAlert;
+
+function setActiveBotChannel(channel, options = {}) {
+    const nextChannel = BOT_CHANNELS.includes(channel) ? channel : 'line';
+    const { persist = true } = options;
+    activeBotChannel = nextChannel;
+
+    const tabs = document.querySelectorAll('[data-bot-channel]');
+    tabs.forEach((tab) => {
+        const isActive = tab.dataset.botChannel === nextChannel;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    const panels = document.querySelectorAll('[data-bot-channel-panel]');
+    panels.forEach((panel) => {
+        const isActive = panel.dataset.botChannelPanel === nextChannel;
+        panel.classList.toggle('is-active', isActive);
+    });
+
+    if (persist) {
+        try {
+            localStorage.setItem('adminSettingsV2.activeBotChannel', nextChannel);
+        } catch (error) {
+            // Ignore storage errors (private mode, quota, etc.)
+        }
+    }
+}
+
+function initBotChannelTabs() {
+    const tabsContainer = document.getElementById('botChannelTabs');
+    if (!tabsContainer) return;
+
+    tabsContainer.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-bot-channel]');
+        if (!button) return;
+        setActiveBotChannel(button.dataset.botChannel);
+    });
+
+    let initialChannel = 'line';
+    try {
+        const savedChannel = localStorage.getItem('adminSettingsV2.activeBotChannel');
+        if (BOT_CHANNELS.includes(savedChannel)) {
+            initialChannel = savedChannel;
+        }
+    } catch (error) {
+        // Ignore storage errors
+    }
+
+    setActiveBotChannel(initialChannel, { persist: false });
+}
 
 // --- Mobile Menu ---
 function initMobileMenu() {
@@ -123,7 +200,10 @@ function initNavigation() {
 // --- Data Loading ---
 async function loadAllSettings() {
     try {
-        await loadInstructionLibraries();
+        await Promise.all([
+            loadInstructionLibraries(),
+            loadImageCollections()
+        ]);
         await Promise.all([
             loadBotSettings(),
             loadChatSettings(),
@@ -141,29 +221,44 @@ async function loadAllSettings() {
 async function loadBotSettings() {
     const lineContainer = document.getElementById('line-bots-list');
     const fbContainer = document.getElementById('facebook-bots-list');
+    const igContainer = document.getElementById('instagram-bots-list');
+    const waContainer = document.getElementById('whatsapp-bots-list');
 
     if (lineContainer) lineContainer.innerHTML = '<div class="text-center p-3 text-muted-v2">กำลังโหลด Line Bots...</div>';
     if (fbContainer) fbContainer.innerHTML = '<div class="text-center p-3 text-muted-v2">กำลังโหลด Facebook Bots...</div>';
+    if (igContainer) igContainer.innerHTML = '<div class="text-center p-3 text-muted-v2">กำลังโหลด Instagram Bots...</div>';
+    if (waContainer) waContainer.innerHTML = '<div class="text-center p-3 text-muted-v2">กำลังโหลด WhatsApp Bots...</div>';
 
     try {
         if (instructionLibraries.length === 0) {
             await loadInstructionLibraries();
         }
+        if (imageCollections.length === 0) {
+            await loadImageCollections();
+        }
 
-        const [lineRes, fbRes] = await Promise.all([
+        const [lineRes, fbRes, igRes, waRes] = await Promise.all([
             fetch('/api/line-bots'),
-            fetch('/api/facebook-bots')
+            fetch('/api/facebook-bots'),
+            fetch('/api/instagram-bots'),
+            fetch('/api/whatsapp-bots')
         ]);
 
         const lineBots = await lineRes.json();
         const fbBots = await fbRes.json();
+        const igBots = await igRes.json();
+        const waBots = await waRes.json();
 
         renderLineBots(lineBots);
         renderFacebookBots(fbBots);
+        renderInstagramBots(igBots);
+        renderWhatsAppBots(waBots);
     } catch (error) {
         console.error('Error loading bots:', error);
         if (lineContainer) lineContainer.innerHTML = '<div class="text-danger p-3">โหลดข้อมูลไม่สำเร็จ</div>';
         if (fbContainer) fbContainer.innerHTML = '<div class="text-danger p-3">โหลดข้อมูลไม่สำเร็จ</div>';
+        if (igContainer) igContainer.innerHTML = '<div class="text-danger p-3">โหลดข้อมูลไม่สำเร็จ</div>';
+        if (waContainer) waContainer.innerHTML = '<div class="text-danger p-3">โหลดข้อมูลไม่สำเร็จ</div>';
     }
 }
 
@@ -213,6 +308,7 @@ function renderLineBots(bots) {
                     </div>
                 </div>
                 <div class="actions-stack">
+                    <button class="btn-ghost-sm" title="คีย์เวิร์ด" onclick="openBotKeywordModal('line', '${bot._id}')"><i class="fas fa-key"></i></button>
                     <button class="btn-ghost-sm" title="แก้ไข" onclick="openEditLineBotModal('${bot._id}')"><i class="fas fa-edit"></i></button>
                 </div>
             </div>
@@ -253,6 +349,7 @@ function renderFacebookBots(bots) {
                     <span class="toggle-slider"></span>
                 </label>
                 <div class="actions-stack">
+                    <button class="btn-ghost-sm" title="คีย์เวิร์ด" onclick="openBotKeywordModal('facebook', '${bot._id}')"><i class="fas fa-key"></i></button>
                     <button class="btn-ghost-sm" title="แก้ไข" onclick="openEditFacebookBotModal('${bot._id}')"><i class="fas fa-edit"></i></button>
                 </div>
             </div>
@@ -260,8 +357,98 @@ function renderFacebookBots(bots) {
     `).join('');
 }
 
+function renderInstagramBots(bots) {
+    const container = document.getElementById('instagram-bots-list');
+    if (!container) return;
+
+    if (!Array.isArray(bots) || bots.length === 0) {
+        container.innerHTML = '<div class="text-center p-4 text-muted-v2">ยังไม่มีการตั้งค่า Instagram Bot</div>';
+        return;
+    }
+
+    container.innerHTML = bots.map(bot => `
+        <div class="bot-item-compact">
+            <div class="bot-channel instagram"><i class="fab fa-instagram"></i></div>
+            <div class="bot-main">
+                <div class="bot-header">
+                    <div class="bot-title">
+                        <span class="bot-name">${escapeHtml(bot.name || bot.instagramUsername || 'Instagram Bot')}</span>
+                        ${bot.isDefault ? '<span class="badge badge-default">ค่าเริ่มต้น</span>' : ''}
+                    </div>
+                </div>
+                <div class="bot-subtext">
+                    Model: ${escapeHtml(bot.aiModel || 'gpt-5')}
+                    • API: ${bot.aiConfig?.apiMode === 'chat' ? 'Chat' : 'Responses'}
+                    • IG ID: ${escapeHtml(bot.instagramUserId || bot.igUserId || bot.instagramBusinessAccountId || 'N/A')}
+                </div>
+                ${buildBotInlineControls(bot, 'instagram')}
+            </div>
+            <div class="bot-actions-compact">
+                <label class="toggle-switch mb-0">
+                    <input type="checkbox" ${bot.status === 'active' ? 'checked' : ''} onchange="toggleBotStatus('instagram', '${bot._id}', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <div class="actions-stack">
+                    <button class="btn-ghost-sm" title="คีย์เวิร์ด" onclick="openBotKeywordModal('instagram', '${bot._id}')"><i class="fas fa-key"></i></button>
+                    <button class="btn-ghost-sm" title="แก้ไข" onclick="openEditInstagramBotModal('${bot._id}')"><i class="fas fa-edit"></i></button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderWhatsAppBots(bots) {
+    const container = document.getElementById('whatsapp-bots-list');
+    if (!container) return;
+
+    if (!Array.isArray(bots) || bots.length === 0) {
+        container.innerHTML = '<div class="text-center p-4 text-muted-v2">ยังไม่มีการตั้งค่า WhatsApp Bot</div>';
+        return;
+    }
+
+    container.innerHTML = bots.map(bot => `
+        <div class="bot-item-compact">
+            <div class="bot-channel whatsapp"><i class="fab fa-whatsapp"></i></div>
+            <div class="bot-main">
+                <div class="bot-header">
+                    <div class="bot-title">
+                        <span class="bot-name">${escapeHtml(bot.name || bot.phoneNumber || 'WhatsApp Bot')}</span>
+                        ${bot.isDefault ? '<span class="badge badge-default">ค่าเริ่มต้น</span>' : ''}
+                    </div>
+                </div>
+                <div class="bot-subtext">
+                    Model: ${escapeHtml(bot.aiModel || 'gpt-5')}
+                    • API: ${bot.aiConfig?.apiMode === 'chat' ? 'Chat' : 'Responses'}
+                    • Phone ID: ${escapeHtml(bot.phoneNumberId || bot.whatsappPhoneNumberId || 'N/A')}
+                </div>
+                ${buildBotInlineControls(bot, 'whatsapp')}
+            </div>
+            <div class="bot-actions-compact">
+                <label class="toggle-switch mb-0">
+                    <input type="checkbox" ${bot.status === 'active' ? 'checked' : ''} onchange="toggleBotStatus('whatsapp', '${bot._id}', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <div class="actions-stack">
+                    <button class="btn-ghost-sm" title="คีย์เวิร์ด" onclick="openBotKeywordModal('whatsapp', '${bot._id}')"><i class="fas fa-key"></i></button>
+                    <button class="btn-ghost-sm" title="แก้ไข" onclick="openEditWhatsAppBotModal('${bot._id}')"><i class="fas fa-edit"></i></button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
 async function toggleBotStatus(type, id, isActive) {
-    const endpoint = type === 'line' ? `/api/line-bots/${id}` : `/api/facebook-bots/${id}`;
+    const endpointMap = {
+        line: `/api/line-bots/${id}`,
+        facebook: `/api/facebook-bots/${id}`,
+        instagram: `/api/instagram-bots/${id}`,
+        whatsapp: `/api/whatsapp-bots/${id}`,
+    };
+    const endpoint = endpointMap[type];
+    if (!endpoint) {
+        showToast('ประเภทบอทไม่รองรับ', 'danger');
+        return;
+    }
 
     try {
         const getRes = await fetch(endpoint);
@@ -277,7 +464,13 @@ async function toggleBotStatus(type, id, isActive) {
         });
 
         if (updateRes.ok) {
-            showToast(`${type === 'line' ? 'Line' : 'Facebook'} Bot ${isActive ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว'}`, 'success');
+            const labelMap = {
+                line: 'Line',
+                facebook: 'Facebook',
+                instagram: 'Instagram',
+                whatsapp: 'WhatsApp',
+            };
+            showToast(`${labelMap[type] || 'Bot'} ${isActive ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว'}`, 'success');
             loadBotSettings();
         } else {
             throw new Error('Update failed');
@@ -339,7 +532,8 @@ async function populateApiKeyDropdowns(selectId, selectedValue = '') {
         keys.filter(k => k.isActive).forEach(key => {
             const option = document.createElement('option');
             option.value = key.id;
-            option.textContent = key.name + (key.isDefault ? ' (หลัก)' : '');
+            const provider = normalizeApiProvider(key.provider);
+            option.textContent = `[${provider.toUpperCase()}] ${key.name}${key.isDefault ? ' (หลัก)' : ''}`;
             if (selectedValue === key.id) option.selected = true;
             select.appendChild(option);
         });
@@ -664,6 +858,296 @@ async function autoFetchFacebookDataset() {
     }
 }
 
+// Instagram Bot
+window.openAddInstagramBotModal = async function () {
+    const form = document.getElementById('instagramBotForm');
+    if (form) form.reset();
+    const idInput = document.getElementById('instagramBotId');
+    if (idInput) idInput.value = '';
+
+    setAiConfigUI('instagram', defaultAiConfig);
+    const collapseEl = document.getElementById('instagramBotAiParams');
+    if (collapseEl && collapseEl.classList.contains('show')) {
+        const collapseInstance = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+        collapseInstance.hide();
+    }
+
+    await populateApiKeyDropdowns('instagramBotApiKeyId');
+
+    const deleteBtn = document.getElementById('deleteInstagramBotBtn');
+    if (deleteBtn) deleteBtn.style.display = 'none';
+
+    const title = document.getElementById('addInstagramBotModalLabel');
+    if (title) title.innerHTML = '<i class="fab fa-instagram me-2"></i>เพิ่ม Instagram Bot ใหม่';
+
+    const modalEl = document.getElementById('addInstagramBotModal');
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+};
+
+window.openEditInstagramBotModal = async function (id) {
+    await populateApiKeyDropdowns('instagramBotApiKeyId');
+    try {
+        const res = await fetch(`/api/instagram-bots/${id}`);
+        const bot = await res.json();
+
+        document.getElementById('instagramBotId').value = bot._id;
+        document.getElementById('instagramBotName').value = bot.name || '';
+        document.getElementById('instagramBotDescription').value = bot.description || '';
+        document.getElementById('instagramUserId').value =
+            bot.instagramBusinessAccountId || bot.instagramUserId || bot.igUserId || '';
+        document.getElementById('instagramUsername').value = bot.instagramUsername || '';
+        document.getElementById('instagramAccessToken').value = bot.accessToken || '';
+        document.getElementById('instagramVerifyToken').value = bot.verifyToken || '';
+        document.getElementById('instagramWebhookUrl').value = bot.webhookUrl || '';
+
+        const statusSelect = document.getElementById('instagramBotStatus');
+        if (statusSelect) statusSelect.value = bot.status || 'active';
+
+        const aiModelSelect = document.getElementById('instagramBotAiModel');
+        if (aiModelSelect) aiModelSelect.value = bot.aiModel || 'gpt-5';
+
+        const defaultCheck = document.getElementById('instagramBotDefault');
+        if (defaultCheck) defaultCheck.checked = !!bot.isDefault;
+
+        setAiConfigUI('instagram', bot.aiConfig || defaultAiConfig);
+
+        const apiKeySelect = document.getElementById('instagramBotApiKeyId');
+        if (apiKeySelect) apiKeySelect.value = bot.openaiApiKeyId || '';
+
+        const title = document.getElementById('addInstagramBotModalLabel');
+        if (title) title.innerHTML = '<i class="fab fa-instagram me-2"></i>แก้ไข Instagram Bot';
+
+        const deleteBtn = document.getElementById('deleteInstagramBotBtn');
+        if (deleteBtn) deleteBtn.style.display = 'inline-block';
+
+        const modalEl = document.getElementById('addInstagramBotModal');
+        if (modalEl) {
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+    } catch (error) {
+        console.error('Error fetching instagram bot details:', error);
+        showToast('ไม่สามารถโหลดข้อมูลบอทได้', 'danger');
+    }
+};
+
+async function saveInstagramBot() {
+    const botId = document.getElementById('instagramBotId').value;
+    const botData = {
+        name: document.getElementById('instagramBotName').value,
+        description: document.getElementById('instagramBotDescription').value,
+        instagramUserId: document.getElementById('instagramUserId').value,
+        instagramUsername: document.getElementById('instagramUsername').value,
+        accessToken: document.getElementById('instagramAccessToken').value,
+        verifyToken: document.getElementById('instagramVerifyToken').value,
+        webhookUrl: document.getElementById('instagramWebhookUrl').value,
+        status: document.getElementById('instagramBotStatus').value,
+        aiModel: document.getElementById('instagramBotAiModel').value,
+        isDefault: document.getElementById('instagramBotDefault').checked,
+        aiConfig: readAiConfigFromUI('instagram'),
+        openaiApiKeyId: document.getElementById('instagramBotApiKeyId')?.value || ''
+    };
+
+    const url = botId ? `/api/instagram-bots/${botId}` : '/api/instagram-bots';
+    const method = botId ? 'PUT' : 'POST';
+
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(botData)
+        });
+        if (res.ok) {
+            showToast('บันทึกข้อมูล Instagram Bot เรียบร้อยแล้ว', 'success');
+            const modalEl = document.getElementById('addInstagramBotModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+            loadBotSettings();
+        } else {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Save failed');
+        }
+    } catch (error) {
+        console.error('Error saving instagram bot:', error);
+        showToast(error.message || 'บันทึกข้อมูลไม่สำเร็จ', 'danger');
+    }
+}
+
+async function deleteInstagramBot(botId) {
+    if (!confirm('ต้องการลบ Instagram Bot นี้หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้')) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/instagram-bots/${botId}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            showToast('ลบ Instagram Bot เรียบร้อยแล้ว', 'success');
+            const modalEl = document.getElementById('addInstagramBotModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+            loadBotSettings();
+        } else {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'ลบไม่สำเร็จ');
+        }
+    } catch (error) {
+        console.error('Error deleting Instagram Bot:', error);
+        showToast(error.message || 'ไม่สามารถลบ Instagram Bot ได้', 'danger');
+    }
+}
+
+// WhatsApp Bot
+window.openAddWhatsAppBotModal = async function () {
+    const form = document.getElementById('whatsappBotForm');
+    if (form) form.reset();
+    const idInput = document.getElementById('whatsappBotId');
+    if (idInput) idInput.value = '';
+
+    setAiConfigUI('whatsapp', defaultAiConfig);
+    const collapseEl = document.getElementById('whatsappBotAiParams');
+    if (collapseEl && collapseEl.classList.contains('show')) {
+        const collapseInstance = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+        collapseInstance.hide();
+    }
+
+    await populateApiKeyDropdowns('whatsappBotApiKeyId');
+
+    const deleteBtn = document.getElementById('deleteWhatsAppBotBtn');
+    if (deleteBtn) deleteBtn.style.display = 'none';
+
+    const title = document.getElementById('addWhatsAppBotModalLabel');
+    if (title) title.innerHTML = '<i class="fab fa-whatsapp me-2"></i>เพิ่ม WhatsApp Bot ใหม่';
+
+    const modalEl = document.getElementById('addWhatsAppBotModal');
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+};
+
+window.openEditWhatsAppBotModal = async function (id) {
+    await populateApiKeyDropdowns('whatsappBotApiKeyId');
+    try {
+        const res = await fetch(`/api/whatsapp-bots/${id}`);
+        const bot = await res.json();
+
+        document.getElementById('whatsappBotId').value = bot._id;
+        document.getElementById('whatsappBotName').value = bot.name || '';
+        document.getElementById('whatsappBotDescription').value = bot.description || '';
+        document.getElementById('whatsappPhoneNumberId').value =
+            bot.phoneNumberId || bot.whatsappPhoneNumberId || '';
+        document.getElementById('whatsappPhoneNumber').value = bot.phoneNumber || '';
+        document.getElementById('whatsappBusinessAccountId').value = bot.businessAccountId || '';
+        document.getElementById('whatsappAccessToken').value = bot.accessToken || '';
+        document.getElementById('whatsappVerifyToken').value = bot.verifyToken || '';
+        document.getElementById('whatsappWebhookUrl').value = bot.webhookUrl || '';
+
+        const statusSelect = document.getElementById('whatsappBotStatus');
+        if (statusSelect) statusSelect.value = bot.status || 'active';
+
+        const aiModelSelect = document.getElementById('whatsappBotAiModel');
+        if (aiModelSelect) aiModelSelect.value = bot.aiModel || 'gpt-5';
+
+        const defaultCheck = document.getElementById('whatsappBotDefault');
+        if (defaultCheck) defaultCheck.checked = !!bot.isDefault;
+
+        setAiConfigUI('whatsapp', bot.aiConfig || defaultAiConfig);
+
+        const apiKeySelect = document.getElementById('whatsappBotApiKeyId');
+        if (apiKeySelect) apiKeySelect.value = bot.openaiApiKeyId || '';
+
+        const title = document.getElementById('addWhatsAppBotModalLabel');
+        if (title) title.innerHTML = '<i class="fab fa-whatsapp me-2"></i>แก้ไข WhatsApp Bot';
+
+        const deleteBtn = document.getElementById('deleteWhatsAppBotBtn');
+        if (deleteBtn) deleteBtn.style.display = 'inline-block';
+
+        const modalEl = document.getElementById('addWhatsAppBotModal');
+        if (modalEl) {
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+    } catch (error) {
+        console.error('Error fetching whatsapp bot details:', error);
+        showToast('ไม่สามารถโหลดข้อมูลบอทได้', 'danger');
+    }
+};
+
+async function saveWhatsAppBot() {
+    const botId = document.getElementById('whatsappBotId').value;
+    const botData = {
+        name: document.getElementById('whatsappBotName').value,
+        description: document.getElementById('whatsappBotDescription').value,
+        phoneNumberId: document.getElementById('whatsappPhoneNumberId').value,
+        phoneNumber: document.getElementById('whatsappPhoneNumber').value,
+        businessAccountId: document.getElementById('whatsappBusinessAccountId').value,
+        accessToken: document.getElementById('whatsappAccessToken').value,
+        verifyToken: document.getElementById('whatsappVerifyToken').value,
+        webhookUrl: document.getElementById('whatsappWebhookUrl').value,
+        status: document.getElementById('whatsappBotStatus').value,
+        aiModel: document.getElementById('whatsappBotAiModel').value,
+        isDefault: document.getElementById('whatsappBotDefault').checked,
+        aiConfig: readAiConfigFromUI('whatsapp'),
+        openaiApiKeyId: document.getElementById('whatsappBotApiKeyId')?.value || ''
+    };
+
+    const url = botId ? `/api/whatsapp-bots/${botId}` : '/api/whatsapp-bots';
+    const method = botId ? 'PUT' : 'POST';
+
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(botData)
+        });
+        if (res.ok) {
+            showToast('บันทึกข้อมูล WhatsApp Bot เรียบร้อยแล้ว', 'success');
+            const modalEl = document.getElementById('addWhatsAppBotModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+            loadBotSettings();
+        } else {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Save failed');
+        }
+    } catch (error) {
+        console.error('Error saving whatsapp bot:', error);
+        showToast(error.message || 'บันทึกข้อมูลไม่สำเร็จ', 'danger');
+    }
+}
+
+async function deleteWhatsAppBot(botId) {
+    if (!confirm('ต้องการลบ WhatsApp Bot นี้หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้')) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/whatsapp-bots/${botId}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            showToast('ลบ WhatsApp Bot เรียบร้อยแล้ว', 'success');
+            const modalEl = document.getElementById('addWhatsAppBotModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+            loadBotSettings();
+        } else {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'ลบไม่สำเร็จ');
+        }
+    } catch (error) {
+        console.error('Error deleting WhatsApp Bot:', error);
+        showToast(error.message || 'ไม่สามารถลบ WhatsApp Bot ได้', 'danger');
+    }
+}
+
 // Delete Line Bot
 async function deleteLineBot(botId) {
     if (!confirm('ต้องการลบ Line Bot นี้หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้')) {
@@ -889,7 +1373,10 @@ function setupEventListeners() {
     const refreshBtn = document.getElementById('refreshSettingsBtn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
-            loadInstructionLibraries()
+            Promise.all([
+                loadInstructionLibraries(),
+                loadImageCollections()
+            ])
                 .then(() => loadBotSettings());
             loadChatSettings();
             loadSystemSettings();
@@ -925,12 +1412,46 @@ function setupEventListeners() {
         });
     }
 
+    const instagramBotForm = document.getElementById('instagramBotForm');
+    if (instagramBotForm) {
+        instagramBotForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveInstagramBot();
+        });
+    }
+
+    const whatsappBotForm = document.getElementById('whatsappBotForm');
+    if (whatsappBotForm) {
+        whatsappBotForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveWhatsAppBot();
+        });
+    }
+
     // Modal Save Buttons
     const saveLineBtn = document.getElementById('saveLineBotBtn');
     if (saveLineBtn) saveLineBtn.addEventListener('click', saveLineBot);
 
     const saveFbBtn = document.getElementById('saveFacebookBotBtn');
     if (saveFbBtn) saveFbBtn.addEventListener('click', saveFacebookBot);
+
+    const saveIgBtn = document.getElementById('saveInstagramBotBtn');
+    if (saveIgBtn) saveIgBtn.addEventListener('click', saveInstagramBot);
+
+    const saveWaBtn = document.getElementById('saveWhatsAppBotBtn');
+    if (saveWaBtn) saveWaBtn.addEventListener('click', saveWhatsAppBot);
+
+    const saveBotKeywordBtn = document.getElementById('saveBotKeywordBtn');
+    if (saveBotKeywordBtn) saveBotKeywordBtn.addEventListener('click', saveBotKeywordSettings);
+    const botKeywordModal = document.getElementById('botKeywordModal');
+    if (botKeywordModal) {
+        botKeywordModal.addEventListener('hidden.bs.modal', () => {
+            botKeywordModalState.botType = '';
+            botKeywordModalState.botId = '';
+            setBotKeywordModalFormValues({});
+            setBotKeywordModalLoading(false);
+        });
+    }
 
     const autoDatasetBtn = document.getElementById('facebookDatasetAutoBtn');
     if (autoDatasetBtn) autoDatasetBtn.addEventListener('click', autoFetchFacebookDataset);
@@ -949,6 +1470,22 @@ function setupEventListeners() {
         deleteFbBtn.addEventListener('click', () => {
             const botId = document.getElementById('facebookBotId').value;
             if (botId) deleteFacebookBot(botId);
+        });
+    }
+
+    const deleteIgBtn = document.getElementById('deleteInstagramBotBtn');
+    if (deleteIgBtn) {
+        deleteIgBtn.addEventListener('click', () => {
+            const botId = document.getElementById('instagramBotId').value;
+            if (botId) deleteInstagramBot(botId);
+        });
+    }
+
+    const deleteWaBtn = document.getElementById('deleteWhatsAppBotBtn');
+    if (deleteWaBtn) {
+        deleteWaBtn.addEventListener('click', () => {
+            const botId = document.getElementById('whatsappBotId').value;
+            if (botId) deleteWhatsAppBot(botId);
         });
     }
 
@@ -1014,7 +1551,8 @@ const defaultAiConfig = {
 
 function isReasoningModel(modelId) {
     if (!modelId || typeof modelId !== 'string') return false;
-    const id = modelId.toLowerCase();
+    const rawId = modelId.toLowerCase();
+    const id = rawId.includes('/') ? rawId.split('/').pop() : rawId;
     // Models that support reasoning_effort:
     // - o1, o1-mini, o1-preview (OpenAI reasoning models)
     // - o3, o3-mini (OpenAI reasoning models)
@@ -1108,7 +1646,7 @@ function readAiConfigFromUI(prefix) {
 }
 
 function initAiModeListeners() {
-    ['line', 'facebook'].forEach(prefix => {
+    ['line', 'facebook', 'instagram', 'whatsapp'].forEach(prefix => {
         const select = document.getElementById(`${prefix}BotApiMode`);
         if (select) {
             select.addEventListener('change', (e) => {
@@ -1174,6 +1712,11 @@ function showLegacySettingsNotice() {
     setTimeout(() => {
         toast.classList.add('show');
     }, 300);
+
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+        hideLegacySettingsNotice();
+    }, 10000);
 }
 
 function hideLegacySettingsNotice() {
@@ -1235,6 +1778,20 @@ async function loadInstructionLibraries() {
     }
 }
 
+async function loadImageCollections() {
+    try {
+        const response = await fetch('/api/image-collections');
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result?.success === false) {
+            throw new Error(result?.error || 'ไม่สามารถโหลดคลังรูปภาพได้');
+        }
+        imageCollections = Array.isArray(result.collections) ? result.collections : [];
+    } catch (error) {
+        console.error('Error loading image collections:', error);
+        imageCollections = [];
+    }
+}
+
 function getInstructionLibraryKey(lib) {
     if (!lib) return '';
     if (lib.source === INSTRUCTION_SOURCE.V2 && lib.instructionId) {
@@ -1255,10 +1812,12 @@ function getInstructionLibraryLabel(lib) {
 
 function buildInstructionInlineRow(bot, botType) {
     const selectedKey = getSelectedInstructionKey(bot);
-    const instructionLabel = getInstructionLabelByKey(selectedKey) || 'ไม่เลือก';
     const options = buildInstructionOptions(selectedKey);
     const collectionCount = Array.isArray(bot.selectedImageCollections) ? bot.selectedImageCollections.length : 0;
-    const summary = collectionCount > 0 ? `${collectionCount} ชุด` : 'ทุกภาพ';
+    const selectedCollectionValue = getSelectedImageCollectionValue(bot);
+    const collectionOptions = buildImageCollectionOptions(selectedCollectionValue, collectionCount);
+    const selectedModel = String(bot.aiModel || 'gpt-5');
+    const modelOptions = buildModelOptions(selectedModel);
 
     return `
         <div class="bot-inline-row compact">
@@ -1274,10 +1833,24 @@ function buildInstructionInlineRow(bot, botType) {
             </div>
             <div class="inline-control">
                 <span class="inline-label"><i class="fas fa-images"></i> ภาพ</span>
-                <span class="instruction-chip chip-muted slim">ใช้: ${escapeHtml(summary)}</span>
-                <button class="btn-ghost-sm btn-ghost-xs" type="button" onclick="window.imageCollectionsManager && window.imageCollectionsManager.openBotImageCollectionsModal && window.imageCollectionsManager.openBotImageCollectionsModal('${botType}', '${bot._id}')">เปลี่ยน</button>
+                <select class="form-select form-select-sm image-collection-select"
+                    data-bot-type="${botType}"
+                    data-bot-id="${bot._id}"
+                    data-previous-value="${escapeHtml(selectedCollectionValue)}"
+                    aria-label="เลือกคลังรูปภาพสำหรับบอท">
+                    ${collectionOptions}
+                </select>
             </div>
-            <span class="instruction-chip ${selectedKey ? '' : 'chip-muted'} slim">ใช้: ${escapeHtml(instructionLabel)}</span>
+            <div class="inline-control model-control">
+                <span class="inline-label"><i class="fas fa-microchip"></i> Model</span>
+                <select class="form-select form-select-sm bot-model-select"
+                    data-bot-type="${botType}"
+                    data-bot-id="${bot._id}"
+                    data-previous-value="${escapeHtml(selectedModel)}"
+                    aria-label="เลือกโมเดล AI สำหรับบอท">
+                    ${modelOptions}
+                </select>
+            </div>
         </div>
     `;
 }
@@ -1294,6 +1867,52 @@ function buildInstructionOptions(selectedKey) {
         const isSelected = selectedKey === key ? 'selected' : '';
         options.push(`<option value="${key}" ${isSelected}>${escapeHtml(label)}</option>`);
     });
+    return options.join('');
+}
+
+function getSelectedImageCollectionValue(bot) {
+    const selections = Array.isArray(bot?.selectedImageCollections)
+        ? bot.selectedImageCollections.filter(Boolean).map(String)
+        : [];
+    if (selections.length === 0) return '';
+    if (selections.length === 1) return selections[0];
+    return '__multiple__';
+}
+
+function buildImageCollectionOptions(selectedValue, selectedCount = 0) {
+    const options = [
+        `<option value="" ${selectedValue === '' ? 'selected' : ''}>— ทุกภาพ —</option>`
+    ];
+
+    if (selectedValue === '__multiple__') {
+        options.push(`<option value="__multiple__" selected>หลายชุด (${selectedCount} ชุด)</option>`);
+    }
+
+    imageCollections.forEach((collection) => {
+        const id = collection?._id ? String(collection._id) : '';
+        if (!id) return;
+        const label = collection.name || id;
+        const selected = selectedValue === id ? 'selected' : '';
+        options.push(`<option value="${escapeHtml(id)}" ${selected}>${escapeHtml(label)}</option>`);
+    });
+
+    return options.join('');
+}
+
+function buildModelOptions(selectedValue) {
+    const options = [];
+    const normalizedSelectedValue = selectedValue || 'gpt-5';
+    const hasSelectedInPreset = BOT_MODEL_PRESETS.includes(normalizedSelectedValue);
+
+    if (!hasSelectedInPreset && normalizedSelectedValue) {
+        options.push(`<option value="${escapeHtml(normalizedSelectedValue)}" selected>${escapeHtml(normalizedSelectedValue)} (กำหนดเอง)</option>`);
+    }
+
+    BOT_MODEL_PRESETS.forEach((modelId) => {
+        const selected = normalizedSelectedValue === modelId ? 'selected' : '';
+        options.push(`<option value="${escapeHtml(modelId)}" ${selected}>${escapeHtml(modelId)}</option>`);
+    });
+
     return options.join('');
 }
 
@@ -1322,12 +1941,31 @@ function getInstructionLabelByKey(key) {
 
 function handleInstructionSelectChange(event) {
     const select = event.target;
-    if (!select.classList.contains('instruction-select')) return;
-    const botType = select.dataset.botType;
-    const botId = select.dataset.botId;
-    const previousValue = select.dataset.previousValue || '';
-    const key = select.value;
-    saveInstructionSelection(botType, botId, key, select, previousValue);
+    if (select.classList.contains('instruction-select')) {
+        const botType = select.dataset.botType;
+        const botId = select.dataset.botId;
+        const previousValue = select.dataset.previousValue || '';
+        const key = select.value;
+        saveInstructionSelection(botType, botId, key, select, previousValue);
+        return;
+    }
+
+    if (select.classList.contains('image-collection-select')) {
+        const botType = select.dataset.botType;
+        const botId = select.dataset.botId;
+        const previousValue = select.dataset.previousValue || '';
+        const collectionId = select.value;
+        saveImageCollectionSelection(botType, botId, collectionId, select, previousValue);
+        return;
+    }
+
+    if (select.classList.contains('bot-model-select')) {
+        const botType = select.dataset.botType;
+        const botId = select.dataset.botId;
+        const previousValue = select.dataset.previousValue || '';
+        const modelId = select.value;
+        saveBotModelSelection(botType, botId, modelId, select, previousValue);
+    }
 }
 
 function buildInstructionPayloadFromKey(key) {
@@ -1346,10 +1984,19 @@ function buildInstructionPayloadFromKey(key) {
 
 async function saveInstructionSelection(botType, botId, key, select, previousValue) {
     const payload = buildInstructionPayloadFromKey(key);
-    const url =
-        botType === 'facebook'
-            ? `/api/facebook-bots/${botId}/instructions`
-            : `/api/line-bots/${botId}/instructions`;
+    const instructionUrlMap = {
+        line: `/api/line-bots/${botId}/instructions`,
+        facebook: `/api/facebook-bots/${botId}/instructions`,
+        instagram: `/api/instagram-bots/${botId}/instructions`,
+        whatsapp: `/api/whatsapp-bots/${botId}/instructions`
+    };
+    const url = instructionUrlMap[botType];
+    if (!url) {
+        showToast('ประเภทบอทไม่รองรับการตั้งค่า Instruction', 'danger');
+        select.value = previousValue;
+        updateInstructionChip(select, previousValue);
+        return;
+    }
 
     select.disabled = true;
     try {
@@ -1370,6 +2017,279 @@ async function saveInstructionSelection(botType, botId, key, select, previousVal
         select.value = previousValue;
         updateInstructionChip(select, previousValue);
         showToast('ไม่สามารถบันทึก Instruction ได้', 'danger');
+    } finally {
+        select.disabled = false;
+    }
+}
+
+async function saveImageCollectionSelection(botType, botId, collectionId, select, previousValue) {
+    if (collectionId === '__multiple__') {
+        select.value = previousValue;
+        return;
+    }
+
+    const payload = {
+        selectedImageCollections: collectionId ? [collectionId] : []
+    };
+    const collectionUrlMap = {
+        line: `/api/line-bots/${botId}/image-collections`,
+        facebook: `/api/facebook-bots/${botId}/image-collections`,
+        instagram: `/api/instagram-bots/${botId}/image-collections`,
+        whatsapp: `/api/whatsapp-bots/${botId}/image-collections`
+    };
+    const url = collectionUrlMap[botType];
+    if (!url) {
+        showToast('ประเภทบอทไม่รองรับการตั้งค่าคลังรูปภาพ', 'danger');
+        select.value = previousValue;
+        return;
+    }
+
+    select.disabled = true;
+    try {
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data?.error || 'บันทึกไม่สำเร็จ');
+        }
+
+        select.dataset.previousValue = collectionId;
+        showToast('อัปเดตคลังรูปภาพของบอทแล้ว', 'success');
+
+        const imageCollectionsSection = document.getElementById('image-collections');
+        if (imageCollectionsSection && !imageCollectionsSection.classList.contains('d-none')) {
+            window.imageCollectionsManager?.refreshAll?.();
+        }
+    } catch (error) {
+        console.error('Error saving image collection selection:', error);
+        select.value = previousValue;
+        showToast('ไม่สามารถบันทึกคลังรูปภาพได้', 'danger');
+    } finally {
+        select.disabled = false;
+    }
+}
+
+function getBotApiEndpoint(botType, botId) {
+    const endpointMap = {
+        line: `/api/line-bots/${botId}`,
+        facebook: `/api/facebook-bots/${botId}`,
+        instagram: `/api/instagram-bots/${botId}`,
+        whatsapp: `/api/whatsapp-bots/${botId}`
+    };
+    return endpointMap[botType] || '';
+}
+
+function getBotKeywordsEndpoint(botType, botId) {
+    const endpointMap = {
+        line: `/api/line-bots/${botId}/keywords`,
+        facebook: `/api/facebook-bots/${botId}/keywords`,
+        instagram: `/api/instagram-bots/${botId}/keywords`,
+        whatsapp: `/api/whatsapp-bots/${botId}/keywords`
+    };
+    return endpointMap[botType] || '';
+}
+
+function normalizeKeywordSetting(setting) {
+    if (!setting) return { keyword: '', response: '', sendResponse: false };
+    if (typeof setting === 'string') {
+        return {
+            keyword: setting.trim(),
+            response: '',
+            sendResponse: false
+        };
+    }
+    const response = String(setting.response || '').trim();
+    const sendResponseRaw = setting.sendResponse;
+    let sendResponse = undefined;
+    if (typeof sendResponseRaw === 'boolean') {
+        sendResponse = sendResponseRaw;
+    } else if (typeof sendResponseRaw === 'string') {
+        const normalized = sendResponseRaw.trim().toLowerCase();
+        if (normalized === 'true') sendResponse = true;
+        if (normalized === 'false') sendResponse = false;
+    }
+    return {
+        keyword: String(setting.keyword || '').trim(),
+        response,
+        // Backward compatible: ถ้า schema เก่ายังไม่มี sendResponse แต่มีข้อความ ให้ถือว่าเปิดส่ง
+        sendResponse: typeof sendResponse === 'boolean' ? sendResponse : response.length > 0
+    };
+}
+
+function setBotKeywordModalFormValues(keywordSettings = {}) {
+    const enableAI = normalizeKeywordSetting(keywordSettings.enableAI);
+    const disableAI = normalizeKeywordSetting(keywordSettings.disableAI);
+    const disableFollowUp = normalizeKeywordSetting(keywordSettings.disableFollowUp);
+
+    setInputValue('botKeywordEnableAI', enableAI.keyword);
+    setInputValue('botKeywordEnableAIResponse', enableAI.response);
+    setCheckboxValue('botKeywordEnableAISendResponse', enableAI.sendResponse === true);
+    setInputValue('botKeywordDisableAI', disableAI.keyword);
+    setInputValue('botKeywordDisableAIResponse', disableAI.response);
+    setCheckboxValue('botKeywordDisableAISendResponse', disableAI.sendResponse === true);
+    // alsoDisableFollowUp: default true (backward compat)
+    const rawAlso = keywordSettings.disableAI?.alsoDisableFollowUp;
+    setCheckboxValue('botKeywordDisableAIAlsoDisableFollowUp', rawAlso !== false);
+    setInputValue('botKeywordDisableFollowUp', disableFollowUp.keyword);
+    setInputValue('botKeywordDisableFollowUpResponse', disableFollowUp.response);
+    setCheckboxValue('botKeywordDisableFollowUpSendResponse', disableFollowUp.sendResponse === true);
+}
+
+function readBotKeywordFormValues() {
+    return {
+        enableAI: {
+            keyword: getInputValue('botKeywordEnableAI').trim(),
+            response: getInputValue('botKeywordEnableAIResponse').trim(),
+            sendResponse: getCheckboxValue('botKeywordEnableAISendResponse')
+        },
+        disableAI: {
+            keyword: getInputValue('botKeywordDisableAI').trim(),
+            response: getInputValue('botKeywordDisableAIResponse').trim(),
+            sendResponse: getCheckboxValue('botKeywordDisableAISendResponse'),
+            alsoDisableFollowUp: getCheckboxValue('botKeywordDisableAIAlsoDisableFollowUp')
+        },
+        disableFollowUp: {
+            keyword: getInputValue('botKeywordDisableFollowUp').trim(),
+            response: getInputValue('botKeywordDisableFollowUpResponse').trim(),
+            sendResponse: getCheckboxValue('botKeywordDisableFollowUpSendResponse')
+        }
+    };
+}
+
+function setBotKeywordModalLoading(isLoading) {
+    const saveBtn = document.getElementById('saveBotKeywordBtn');
+    if (saveBtn) {
+        saveBtn.disabled = isLoading;
+        saveBtn.innerHTML = isLoading
+            ? '<i class="fas fa-spinner fa-spin me-1"></i>กำลังบันทึก...'
+            : '<i class="fas fa-save me-1"></i>บันทึกคีย์เวิร์ด';
+    }
+
+    const form = document.getElementById('botKeywordForm');
+    if (!form) return;
+    form.querySelectorAll('input, textarea').forEach((el) => {
+        if (el.id !== 'botKeywordType' && el.id !== 'botKeywordBotId') {
+            el.disabled = isLoading;
+        }
+    });
+}
+
+window.openBotKeywordModal = async function (botType, botId) {
+    const modalEl = document.getElementById('botKeywordModal');
+    if (!modalEl || !botType || !botId) return;
+
+    const endpoint = getBotApiEndpoint(botType, botId);
+    if (!endpoint) {
+        showToast('ประเภทบอทไม่รองรับการตั้งค่าคีย์เวิร์ด', 'danger');
+        return;
+    }
+
+    botKeywordModalState.botType = botType;
+    botKeywordModalState.botId = botId;
+    setInputValue('botKeywordType', botType);
+    setInputValue('botKeywordBotId', botId);
+
+    const label = BOT_LABELS[botType] || 'Bot';
+    const titleEl = document.getElementById('botKeywordModalLabel');
+    if (titleEl) {
+        titleEl.innerHTML = `<i class="fas fa-key me-2"></i>คีย์เวิร์ดควบคุม AI (${escapeHtml(label)})`;
+    }
+
+    setBotKeywordModalFormValues({});
+    setBotKeywordModalLoading(true);
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    try {
+        const response = await fetch(endpoint);
+        const bot = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(bot?.error || 'โหลดข้อมูลบอทไม่สำเร็จ');
+        }
+        setBotKeywordModalFormValues(bot.keywordSettings || {});
+    } catch (error) {
+        console.error('Error loading keyword settings:', error);
+        showToast('ไม่สามารถโหลดคีย์เวิร์ดของบอทได้', 'danger');
+    } finally {
+        setBotKeywordModalLoading(false);
+    }
+};
+
+async function saveBotKeywordSettings() {
+    const botType = getInputValue('botKeywordType') || botKeywordModalState.botType;
+    const botId = getInputValue('botKeywordBotId') || botKeywordModalState.botId;
+    const endpoint = getBotKeywordsEndpoint(botType, botId);
+    if (!endpoint) {
+        showToast('ไม่สามารถบันทึกคีย์เวิร์ดได้', 'danger');
+        return;
+    }
+
+    setBotKeywordModalLoading(true);
+    try {
+        const response = await fetch(endpoint, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                keywordSettings: readBotKeywordFormValues()
+            })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload?.error || 'บันทึกไม่สำเร็จ');
+        }
+
+        showToast(`บันทึกคีย์เวิร์ด ${BOT_LABELS[botType] || 'Bot'} เรียบร้อยแล้ว`, 'success');
+        const modalEl = document.getElementById('botKeywordModal');
+        const modal = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+        if (modal) modal.hide();
+    } catch (error) {
+        console.error('Error saving keyword settings:', error);
+        showToast('ไม่สามารถบันทึกคีย์เวิร์ดได้', 'danger');
+    } finally {
+        setBotKeywordModalLoading(false);
+    }
+}
+
+async function saveBotModelSelection(botType, botId, modelId, select, previousValue) {
+    const endpoint = getBotApiEndpoint(botType, botId);
+    if (!endpoint) {
+        showToast('ประเภทบอทไม่รองรับการตั้งค่าโมเดล', 'danger');
+        select.value = previousValue;
+        return;
+    }
+
+    select.disabled = true;
+    try {
+        const getRes = await fetch(endpoint);
+        const botData = await getRes.json().catch(() => ({}));
+        if (!getRes.ok) {
+            throw new Error(botData?.error || 'โหลดข้อมูลบอทไม่สำเร็จ');
+        }
+
+        botData.aiModel = modelId || 'gpt-5';
+        delete botData._id;
+
+        const updateRes = await fetch(endpoint, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(botData)
+        });
+        const updateData = await updateRes.json().catch(() => ({}));
+        if (!updateRes.ok) {
+            throw new Error(updateData?.error || 'บันทึกไม่สำเร็จ');
+        }
+
+        select.dataset.previousValue = botData.aiModel;
+        showToast('อัปเดตโมเดลของบอทแล้ว', 'success');
+        loadBotSettings();
+    } catch (error) {
+        console.error('Error saving bot model:', error);
+        select.value = previousValue;
+        showToast('ไม่สามารถบันทึกโมเดลได้', 'danger');
     } finally {
         select.disabled = false;
     }
@@ -1690,6 +2610,50 @@ function setPasscodeMessage(type, message) {
 
 // --- API Keys Management ---
 let apiKeysCache = [];
+const API_PROVIDER_OPENAI = 'openai';
+const API_PROVIDER_OPENROUTER = 'openrouter';
+
+function normalizeApiProvider(provider) {
+    if (typeof provider !== 'string') return API_PROVIDER_OPENAI;
+    return provider.trim().toLowerCase() === API_PROVIDER_OPENROUTER
+        ? API_PROVIDER_OPENROUTER
+        : API_PROVIDER_OPENAI;
+}
+
+function isMaskedApiKeyValue(value) {
+    return typeof value === 'string' && value.includes('...');
+}
+
+function getApiKeyHintByProvider(provider) {
+    return normalizeApiProvider(provider) === API_PROVIDER_OPENROUTER
+        ? 'API Key จาก OpenRouter (ขึ้นต้นด้วย sk-or-v1-)'
+        : 'API Key จาก OpenAI (ขึ้นต้นด้วย sk-)';
+}
+
+function isApiKeyValidForProvider(apiKey, provider) {
+    const normalizedProvider = normalizeApiProvider(provider);
+    const key = typeof apiKey === 'string' ? apiKey.trim() : '';
+    if (!key) return false;
+    if (normalizedProvider === API_PROVIDER_OPENROUTER) {
+        return key.startsWith('sk-or-v1-');
+    }
+    if (key.startsWith('sk-or-v1-')) {
+        return false;
+    }
+    return key.startsWith('sk-');
+}
+
+function updateApiKeyProviderHint() {
+    const providerSelect = document.getElementById('apiKeyProvider');
+    const input = document.getElementById('apiKeyValue');
+    const hint = document.getElementById('apiKeyFormatHint');
+    const provider = normalizeApiProvider(providerSelect?.value);
+
+    if (hint) hint.textContent = getApiKeyHintByProvider(provider);
+    if (input && !isMaskedApiKeyValue(input.value || '')) {
+        input.placeholder = provider === API_PROVIDER_OPENROUTER ? 'sk-or-v1-...' : 'sk-...';
+    }
+}
 
 async function loadApiKeys() {
     const tbody = document.getElementById('apiKeysTableBody');
@@ -1742,6 +2706,8 @@ function renderApiKeys() {
         const statusClass = key.isActive ? 'success' : 'secondary';
         const statusText = key.isActive ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
         const defaultBadge = key.isDefault ? '<span class="badge bg-primary ms-1">หลัก</span>' : '';
+        const provider = normalizeApiProvider(key.provider);
+        const providerBadge = `<span class="badge bg-dark ms-1">${escapeHtml(provider.toUpperCase())}</span>`;
         const lastUsed = key.lastUsedAt ? formatBotUpdatedAt(key.lastUsedAt) : 'ยังไม่มี';
         const usage = key.usageCount || 0;
 
@@ -1750,6 +2716,7 @@ function renderApiKeys() {
                 <td>
                     <strong>${escapeHtml(key.name)}</strong>
                     ${defaultBadge}
+                    ${providerBadge}
                 </td>
                 <td>
                     <code class="text-muted">${escapeHtml(key.maskedKey)}</code>
@@ -1787,10 +2754,13 @@ function renderApiKeys() {
 function openAddApiKeyModal() {
     document.getElementById('apiKeyId').value = '';
     document.getElementById('apiKeyName').value = '';
+    document.getElementById('apiKeyProvider').value = API_PROVIDER_OPENAI;
     document.getElementById('apiKeyValue').value = '';
+    document.getElementById('apiKeyValue').placeholder = 'sk-...';
     document.getElementById('apiKeyIsDefault').checked = false;
     document.getElementById('apiKeyModalLabel').innerHTML = '<i class="fas fa-key me-2"></i>เพิ่ม API Key';
     document.getElementById('apiKeyTestResult').classList.add('d-none');
+    updateApiKeyProviderHint();
 
     const modal = new bootstrap.Modal(document.getElementById('apiKeyModal'));
     modal.show();
@@ -1805,11 +2775,13 @@ function openEditApiKeyModal(id) {
 
     document.getElementById('apiKeyId').value = key.id;
     document.getElementById('apiKeyName').value = key.name;
+    document.getElementById('apiKeyProvider').value = normalizeApiProvider(key.provider);
     document.getElementById('apiKeyValue').value = key.maskedKey; // Show masked key
     document.getElementById('apiKeyValue').placeholder = 'ใส่ใหม่เพื่อเปลี่ยน หรือปล่อยว่าง';
     document.getElementById('apiKeyIsDefault').checked = key.isDefault;
     document.getElementById('apiKeyModalLabel').innerHTML = '<i class="fas fa-edit me-2"></i>แก้ไข API Key';
     document.getElementById('apiKeyTestResult').classList.add('d-none');
+    updateApiKeyProviderHint();
 
     const modal = new bootstrap.Modal(document.getElementById('apiKeyModal'));
     modal.show();
@@ -1818,6 +2790,7 @@ function openEditApiKeyModal(id) {
 async function saveApiKey() {
     const id = document.getElementById('apiKeyId').value;
     const name = document.getElementById('apiKeyName').value.trim();
+    const provider = normalizeApiProvider(document.getElementById('apiKeyProvider')?.value);
     const apiKey = document.getElementById('apiKeyValue').value.trim();
     const isDefault = document.getElementById('apiKeyIsDefault').checked;
     const saveBtn = document.getElementById('saveApiKeyBtn');
@@ -1828,20 +2801,22 @@ async function saveApiKey() {
     }
 
     const isEdit = Boolean(id);
-    const existingKey = isEdit ? apiKeysCache.find(k => k.id === id) : null;
-    const isNewKey = !isEdit || (apiKey && !apiKey.startsWith('sk-...'));
+    const isNewKey = !isEdit || (apiKey && !isMaskedApiKeyValue(apiKey));
 
-    if (!isEdit && (!apiKey || !apiKey.startsWith('sk-'))) {
-        showToast('กรุณาระบุ API Key ที่ถูกต้อง (ขึ้นต้นด้วย sk-)', 'warning');
+    if (!isEdit && (!apiKey || !isApiKeyValidForProvider(apiKey, provider))) {
+        showToast(`กรุณาระบุ API Key ที่ถูกต้อง (${getApiKeyHintByProvider(provider)})`, 'warning');
         return;
     }
 
     setLoading(saveBtn, true);
 
     try {
-        const payload = { name, isDefault };
+        const payload = { name, isDefault, provider };
         // Only send apiKey if it's a new key or if it's been changed (not the masked value)
-        if (isNewKey && apiKey && !apiKey.startsWith('sk-...')) {
+        if (isNewKey && apiKey && !isMaskedApiKeyValue(apiKey)) {
+            if (!isApiKeyValidForProvider(apiKey, provider)) {
+                throw new Error(getApiKeyHintByProvider(provider));
+            }
             payload.apiKey = apiKey;
         }
 
@@ -1922,18 +2897,25 @@ async function testApiKey(id) {
 
 async function testApiKeyFromModal() {
     const apiKey = document.getElementById('apiKeyValue').value.trim();
+    const provider = normalizeApiProvider(document.getElementById('apiKeyProvider')?.value);
     const resultDiv = document.getElementById('apiKeyTestResult');
     const testBtn = document.getElementById('testApiKeyBtn');
 
-    if (!apiKey || apiKey.startsWith('sk-...')) {
+    if (!apiKey || isMaskedApiKeyValue(apiKey)) {
         resultDiv.classList.remove('d-none', 'alert-success', 'alert-danger');
         resultDiv.classList.add('alert-warning');
         resultDiv.textContent = 'กรุณาใส่ API Key ใหม่เพื่อทดสอบ';
         return;
     }
+    if (!isApiKeyValidForProvider(apiKey, provider)) {
+        resultDiv.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-info');
+        resultDiv.classList.add('alert-warning');
+        resultDiv.textContent = getApiKeyHintByProvider(provider);
+        return;
+    }
 
     const id = document.getElementById('apiKeyId').value;
-    if (id) {
+    if (id && isMaskedApiKeyValue(apiKey)) {
         // Existing key - test via API
         await testApiKey(id);
         return;
@@ -1952,7 +2934,7 @@ async function testApiKeyFromModal() {
         const response = await fetch('/api/openai-keys/test', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ apiKey })
+            body: JSON.stringify({ apiKey, provider })
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.success) {
@@ -1997,6 +2979,7 @@ async function toggleApiKeyStatus(id, isActive) {
 // Toggle API key visibility
 document.addEventListener('DOMContentLoaded', function () {
     const toggleBtn = document.getElementById('toggleApiKeyVisibility');
+    const providerSelect = document.getElementById('apiKeyProvider');
     if (toggleBtn) {
         toggleBtn.addEventListener('click', function () {
             const input = document.getElementById('apiKeyValue');
@@ -2009,6 +2992,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+    if (providerSelect) {
+        providerSelect.addEventListener('change', updateApiKeyProviderHint);
+    }
+    updateApiKeyProviderHint();
 });
 
 // Auto-load API keys when section becomes visible

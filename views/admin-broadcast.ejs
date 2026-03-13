@@ -16,7 +16,8 @@
 
     <div class="app-content">
       <% const lineCount=(lineBots && lineBots.length) || 0; const fbCount=(facebookBots && facebookBots.length) || 0;
-        const totalBots=lineCount + fbCount; %>
+        const igCount=(instagramBots && instagramBots.length) || 0; const waCount=(whatsappBots && whatsappBots.length) || 0;
+        const totalBots=lineCount + fbCount + igCount + waCount; %>
         <div class="container-fluid p-0">
           <div class="broadcast-header">
             <div>
@@ -35,6 +36,16 @@
                 <span class="metric-chip"><i class="fab fa-facebook text-primary"></i> Facebook <strong>
                     <%= fbCount %>
                   </strong></span>
+                <% if (igCount > 0) { %>
+                <span class="metric-chip"><i class="fab fa-instagram text-danger"></i> Instagram <strong>
+                    <%= igCount %>
+                  </strong></span>
+                <% } %>
+                <% if (waCount > 0) { %>
+                <span class="metric-chip"><i class="fab fa-whatsapp text-success"></i> WhatsApp <strong>
+                    <%= waCount %>
+                  </strong></span>
+                <% } %>
                 <span class="metric-chip" id="audienceCount"><i class="fas fa-users"></i> เลือกกลุ่มเป้าหมาย</span>
               </div>
             </div>
@@ -159,6 +170,11 @@
                                 จะส่งถึงประมาณ <strong id="audienceTotal" class="text-primary">--</strong> คน
                                 (LINE: <span id="audienceLine">--</span>, Facebook: <span id="audienceFb">--</span>)
                               </div>
+                              <!-- Time Estimate -->
+                              <div id="timeEstimate" class="mt-2 small" style="display: none;">
+                                <i class="fas fa-clock me-1 text-info"></i>
+                                <span id="timeEstimateText"></span>
+                              </div>
                             </div>
 
                             <div class="mb-4">
@@ -207,11 +223,46 @@
                                             <% }) %>
                                         </div>
                                         <% } %>
+                                          <% if (instagramBots && instagramBots.length) { %>
+                                            <div class=”channel-header mt-3”><i class=”fab fa-instagram text-danger”></i>
+                                              Instagram Accounts</div>
+                                            <div class=”channel-list”>
+                                              <% instagramBots.forEach(bot=> { %>
+                                                <div class=”form-check”>
+                                                  <input class=”form-check-input” type=”checkbox” name=”channels”
+                                                    id=”ig-<%= bot._id %>” value=”instagram:<%= bot._id %>”>
+                                                  <label class=”form-check-label” for=”ig-<%= bot._id %>”>
+                                                    <span class=”channel-name”>
+                                                      <%= bot.name || bot.username %>
+                                                    </span>
+                                                  </label>
+                                                </div>
+                                                <% }) %>
+                                            </div>
+                                          <% } %>
+                                          <% if (whatsappBots && whatsappBots.length) { %>
+                                            <div class=”channel-header mt-3”><i class=”fab fa-whatsapp text-success”></i>
+                                              WhatsApp Bots</div>
+                                            <div class=”channel-list”>
+                                              <% whatsappBots.forEach(bot=> { %>
+                                                <div class=”form-check”>
+                                                  <input class=”form-check-input” type=”checkbox” name=”channels”
+                                                    id=”wa-<%= bot._id %>” value=”whatsapp:<%= bot._id %>”>
+                                                  <label class=”form-check-label” for=”wa-<%= bot._id %>”>
+                                                    <span class=”channel-name”>
+                                                      <%= bot.name %>
+                                                    </span>
+                                                    <% if (bot.phoneNumber) { %><span class=”text-muted small”>(<%= bot.phoneNumber %>)</span><% } %>
+                                                  </label>
+                                                </div>
+                                                <% }) %>
+                                            </div>
+                                          <% } %>
                                           <% } else { %>
-                                            <div class="app-empty">
-                                              <div class="app-empty__icon"><i class="fas fa-robot"></i></div>
-                                              <div class="app-empty__title">ยังไม่มีบอทที่เพิ่มไว้</div>
-                                              <div class="app-empty__desc">ไปที่หน้า “ตั้งค่า” เพื่อเพิ่ม LINE/Facebook
+                                            <div class=”app-empty”>
+                                              <div class=”app-empty__icon”><i class=”fas fa-robot”></i></div>
+                                              <div class=”app-empty__title”>ยังไม่มีบอทที่เพิ่มไว้</div>
+                                              <div class=”app-empty__desc”>ไปที่หน้า “ตั้งค่า” เพื่อเพิ่ม LINE/Facebook
                                                 Bot ก่อน</div>
                                               <a href="/admin/settings2" class="btn btn-primary btn-sm">
                                                 <i class="fas fa-plus me-1"></i> เพิ่มบอทใหม่
@@ -267,16 +318,44 @@
 
     <!-- Progress Modal -->
     <div class="modal fade" id="progressModal" data-bs-backdrop="static" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-          <div class="modal-body text-center p-4">
-            <h5 class="mb-3">กำลังส่งข้อความ...</h5>
-            <div class="progress mb-3" style="height: 20px;">
-              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title">
+              <i class="fas fa-paper-plane text-primary me-2"></i>กำลังส่งบรอดแคสต์
+            </h5>
+          </div>
+          <div class="modal-body pt-2">
+            <!-- Overall Progress -->
+            <div class="broadcast-progress-overall mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="broadcast-time-info">
+                  <span class="broadcast-time-badge" id="elapsedTimeBadge">
+                    <i class="fas fa-stopwatch me-1"></i><span id="elapsedTime">00:00</span>
+                  </span>
+                  <span class="broadcast-time-badge broadcast-time-badge--remaining" id="remainingTimeBadge">
+                    <i class="fas fa-hourglass-half me-1"></i>เหลือ <span id="remainingTime">--</span>
+                  </span>
+                </div>
+                <div class="text-muted small fw-semibold">
+                  <span id="sentCount">0</span> / <span id="totalCount">0</span> คน
+                </div>
+              </div>
+              <div class="progress mb-1" style="height: 22px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+              </div>
+              <div class="d-flex justify-content-between small text-muted mt-1">
+                <span><i class="fas fa-check-circle text-success me-1"></i>สำเร็จ <span id="successCount">0</span></span>
+                <span><i class="fas fa-times-circle text-danger me-1"></i>ล้มเหลว <span id="failedCount">0</span></span>
               </div>
             </div>
-            <p class="mb-3">ส่งแล้ว <span id="sentCount">0</span> จาก <span id="totalCount">0</span> คน</p>
-            <button type="button" class="btn btn-outline-danger btn-sm" id="cancelBroadcastBtn">ยกเลิกการส่ง</button>
+            <!-- Per-Channel Cards -->
+            <div id="channelProgressList" class="broadcast-channel-list"></div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-outline-danger btn-sm" id="cancelBroadcastBtn">
+              <i class="fas fa-stop-circle me-1"></i>ยกเลิกการส่ง
+            </button>
           </div>
         </div>
       </div>

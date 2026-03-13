@@ -1,0 +1,243 @@
+<!-- Add/Edit WhatsApp Bot Modal -->
+<div class="modal fade" id="addWhatsAppBotModal" tabindex="-1" aria-labelledby="addWhatsAppBotModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addWhatsAppBotModalLabel">
+                    <i class="fab fa-whatsapp me-2"></i>เพิ่ม WhatsApp Bot ใหม่
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="whatsappBotForm">
+                    <input type="hidden" id="whatsappBotId" name="id">
+
+                    <div class="mb-3">
+                        <label for="whatsappBotName" class="form-label">ชื่อ WhatsApp Bot <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="whatsappBotName" name="name"
+                            placeholder="เช่น: ทีมขาย WhatsApp" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="whatsappBotDescription" class="form-label">คำอธิบาย</label>
+                        <textarea class="form-control" id="whatsappBotDescription" name="description" rows="2"
+                            placeholder="อธิบายหน้าที่หรือวัตถุประสงค์ของ WhatsApp Bot นี้"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="whatsappPhoneNumberId" class="form-label">Phone Number ID <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="whatsappPhoneNumberId"
+                                    name="phoneNumberId" placeholder="123456789012345" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="whatsappPhoneNumber" class="form-label">Display Phone Number</label>
+                                <input type="text" class="form-control" id="whatsappPhoneNumber" name="phoneNumber"
+                                    placeholder="+66xxxxxxxxx">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="whatsappBusinessAccountId" class="form-label">Business Account ID</label>
+                                <input type="text" class="form-control" id="whatsappBusinessAccountId"
+                                    name="businessAccountId" placeholder="10xxxxxxxxxxxx">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="whatsappBotStatus" class="form-label">สถานะการตอบแชท</label>
+                                <select class="form-select" id="whatsappBotStatus" name="status">
+                                    <option value="active">เปิดใช้งาน</option>
+                                    <option value="inactive">ปิดใช้งาน</option>
+                                    <option value="maintenance">บำรุงรักษา</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="whatsappAccessToken" class="form-label">Access Token <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="whatsappAccessToken" name="accessToken"
+                            placeholder="EAAB..." required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="whatsappWebhookUrl" class="form-label">Webhook URL</label>
+                                <input type="text" class="form-control" id="whatsappWebhookUrl" name="webhookUrl"
+                                    placeholder="https://yourdomain.com/webhook/whatsapp/xxxx" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="whatsappVerifyToken" class="form-label">Verify Token</label>
+                                <input type="text" class="form-control" id="whatsappVerifyToken" name="verifyToken"
+                                    placeholder="your_verify_token">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="whatsappBotApiKeyId" class="form-label">AI Provider Key</label>
+                        <select class="form-select" id="whatsappBotApiKeyId" name="openaiApiKeyId">
+                            <option value="">ใช้ Key หลัก (Default)</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <label for="whatsappBotAiModel" class="form-label mb-0">AI Model <span
+                                            class="text-danger">*</span></label>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm ms-2"
+                                        data-bs-toggle="collapse" data-bs-target="#whatsappBotAiParams"
+                                        aria-expanded="false" aria-controls="whatsappBotAiParams">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </div>
+                                <input type="text" class="form-control mt-1" id="whatsappBotAiModel" name="aiModel"
+                                    list="whatsappBotAiModelPresets" placeholder="เช่น gpt-5 หรือ openai/gpt-4.1" required>
+                                <datalist id="whatsappBotAiModelPresets">
+                                    <option value="gpt-5.2"></option>
+                                    <option value="gpt-5.1"></option>
+                                    <option value="gpt-5"></option>
+                                    <option value="gpt-5-mini"></option>
+                                    <option value="gpt-5-nano"></option>
+                                    <option value="gpt-5-pro"></option>
+                                    <option value="gpt-4.1"></option>
+                                    <option value="gpt-4.1-mini"></option>
+                                    <option value="gpt-4.1-nano"></option>
+                                    <option value="gpt-4o"></option>
+                                    <option value="gpt-4o-mini"></option>
+                                </datalist>
+                                <div class="collapse mt-2" id="whatsappBotAiParams">
+                                    <div class="p-3 border rounded bg-light">
+                                        <div class="mb-3">
+                                            <label for="whatsappBotApiMode" class="form-label mb-1">API Mode</label>
+                                            <select class="form-select form-select-sm" id="whatsappBotApiMode"
+                                                name="apiMode">
+                                                <option value="responses">Responses API</option>
+                                                <option value="chat">Chat Completions API</option>
+                                            </select>
+                                        </div>
+                                        <div id="whatsappBotResponsesParams">
+                                            <div class="row g-2">
+                                                <div class="col-md-6" id="whatsappBotReasoningGroup">
+                                                    <label class="form-label mb-1"
+                                                        for="whatsappBotReasoningEffort">reasoning_effort</label>
+                                                    <select class="form-select form-select-sm"
+                                                        id="whatsappBotReasoningEffort">
+                                                        <option value="">ตามค่า default ของโมเดล</option>
+                                                        <option value="none">none</option>
+                                                        <option value="minimal">minimal</option>
+                                                        <option value="low">low</option>
+                                                        <option value="medium">medium</option>
+                                                        <option value="high">high</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6 d-none" id="whatsappBotReasoningNote">
+                                                    <div class="alert alert-info py-2 px-3 small mb-0">
+                                                        โมเดลนี้ไม่รองรับ reasoning_effort
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="whatsappBotChatParams" class="d-none">
+                                            <div class="row g-2" id="whatsappBotChatControls">
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1"
+                                                        for="whatsappBotTemperature">temperature</label>
+                                                    <input type="range" step="0.1" min="0" max="2"
+                                                        class="form-range form-range-primary" id="whatsappBotTemperature">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">0</small>
+                                                        <small id="whatsappBotTemperatureValue"
+                                                            class="fw-semibold">—</small>
+                                                        <small class="text-muted">2</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1" for="whatsappBotTopP">top_p</label>
+                                                    <input type="range" step="0.05" min="0" max="1"
+                                                        class="form-range form-range-primary" id="whatsappBotTopP">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">0</small>
+                                                        <small id="whatsappBotTopPValue" class="fw-semibold">—</small>
+                                                        <small class="text-muted">1</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1"
+                                                        for="whatsappBotPresencePenalty">presence_penalty</label>
+                                                    <input type="range" step="0.1" min="-2" max="2"
+                                                        class="form-range form-range-primary"
+                                                        id="whatsappBotPresencePenalty">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">-2</small>
+                                                        <small id="whatsappBotPresencePenaltyValue"
+                                                            class="fw-semibold">—</small>
+                                                        <small class="text-muted">2</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label mb-1"
+                                                        for="whatsappBotFrequencyPenalty">frequency_penalty</label>
+                                                    <input type="range" step="0.1" min="-2" max="2"
+                                                        class="form-range form-range-primary"
+                                                        id="whatsappBotFrequencyPenalty">
+                                                    <div class="d-flex justify-content-between">
+                                                        <small class="text-muted">-2</small>
+                                                        <small id="whatsappBotFrequencyPenaltyValue"
+                                                            class="fw-semibold">—</small>
+                                                        <small class="text-muted">2</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="alert alert-info mt-2 mb-0 py-2 px-3 small d-none"
+                                                id="whatsappBotChatNote">
+                                                โมเดล reasoning ไม่รองรับ temperature/top_p/penalties
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="whatsappBotDefault"
+                                        name="isDefault">
+                                    <label class="form-check-label" for="whatsappBotDefault">
+                                        ตั้งเป็น WhatsApp Bot หลัก (Default)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" id="deleteWhatsAppBotBtn"
+                    style="display: none;">
+                    <i class="fas fa-trash me-2"></i>ลบ
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-primary" id="saveWhatsAppBotBtn">
+                    <i class="fas fa-save me-2"></i>บันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

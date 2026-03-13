@@ -357,13 +357,12 @@ function buildOrderSummaryOrderLines(order, index, options = {}) {
     typeof publicBaseUrl === "string" ? publicBaseUrl.replace(/\/$/, "") : "";
 
   const orderId = normalizeIdString(order?._id);
-  const orderCode = order?.orderCode || null;
-  const orderLabel = orderCode || (orderId ? `ID: ${orderId.slice(-6)}` : "-");
+  const shortId = orderId ? orderId.slice(-6) : "-";
   const orderData = order?.orderData || {};
   const userId = normalizeIdString(order?.userId);
   const platform = normalizeIdString(order?.platform) || "line";
 
-  const lines = [`🛒 ออเดอร์ #${index + 1} (${orderLabel})`];
+  const lines = [`🛒 ออเดอร์ #${index + 1} (ID: ${shortId})`];
 
   // 1. ชื่อ Facebook (ถ้ามี)
   const facebookName = normalizeIdString(
@@ -731,8 +730,7 @@ function formatNewOrderMessage(order, settings, publicBaseUrl, options = {}) {
       ? shippingCostRaw
       : 0;
 
-  const orderCode = order?.orderCode || null;
-  const lines = ["🛒 ออเดอร์ใหม่!", `📦 ${orderCode || `ID: ${orderId || "-"}`}`];
+  const lines = ["🛒 ออเดอร์ใหม่!", `📦 ID: ${orderId || "-"}`];
 
   // 1. ชื่อ Facebook (ถ้ามี)
   if (includeFacebookName && facebookName && platform === "facebook") {

@@ -723,6 +723,39 @@
   border-radius: 50%;
 }
 
+/* ============ Item Row Reorder UI ============ */
+.followup-item-row {
+  background: #f9fafc;
+  border: 1px solid var(--border-color, #E1E5EF);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+}
+
+.followup-item-handle {
+  flex-shrink: 0;
+}
+
+.followup-item-icon {
+  flex-shrink: 0;
+  width: 1.1rem;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.followup-round-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.btn-xs {
+  --bs-btn-padding-x: 0.3rem;
+  --bs-btn-padding-y: 0.1rem;
+  --bs-btn-font-size: 0.7rem;
+  line-height: 1.2;
+  border-radius: 4px;
+}
+
 /* ============ Responsive ============ */
 @media (max-width: 991.98px) {
   .followup-layout {

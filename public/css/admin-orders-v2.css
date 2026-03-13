@@ -108,6 +108,41 @@
   line-height: 1.1;
 }
 
+.orders-summary-value-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.orders-summary-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.orders-summary-value-row strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.orders-summary-inline-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.orders-summary-value-row.is-draft {
+  color: #DFA94B;
+}
+
+.orders-summary-value-row.is-confirmed {
+  color: #2D8F6F;
+}
+
 /* ============ Sidebar Filters ============ */
 .orders-filter-section {
   background: var(--card-bg, #fff);
@@ -277,6 +312,124 @@
   cursor: pointer;
 }
 
+/* Custom Page Dropdown */
+.orders-page-dropdown {
+  position: relative;
+  width: 100%;
+  min-width: 180px;
+}
+
+.orders-page-btn-toggle {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-color, #E1E5EF);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text-dark);
+  background: var(--card-bg, #fff);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.orders-page-btn-toggle:hover {
+  border-color: var(--primary, #4A6FA5);
+}
+
+.orders-page-btn-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.orders-page-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 250px;
+  margin-top: 4px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #E1E5EF);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  flex-direction: column;
+}
+
+.orders-page-menu.show {
+  display: flex;
+}
+
+.orders-page-menu-search {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border-color, #E1E5EF);
+}
+
+.orders-page-menu-search input {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-color, #E1E5EF);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.orders-page-list-wrap {
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+}
+
+.orders-page-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-dark);
+  margin: 0;
+  transition: background 0.15s;
+}
+
+.orders-page-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.orders-page-item.select-all {
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-color, #E1E5EF);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.orders-page-item input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.orders-page-menu-footer {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--border-color, #E1E5EF);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.01);
+  border-radius: 0 0 8px 8px;
+}
+
+.orders-page-menu-footer span {
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+
+.orders-page-menu-footer button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+}
+
 /* Search Input */
 .orders-search-input {
   width: 100%;
@@ -354,6 +507,10 @@
   display: flex;
   gap: 0.5rem;
   margin-left: auto;
+}
+
+.orders-export-format-select {
+  min-width: 130px;
 }
 
 /* Table Card */
@@ -480,6 +637,13 @@
   color: var(--text-light);
 }
 
+.orders-order-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  color: var(--text-light);
+  margin-bottom: 0.15rem;
+}
+
 /* Items Cell */
 .orders-items-preview {
   max-width: 200px;
@@ -580,7 +744,127 @@
   color: #3D7FC1;
 }
 
-/* ============ Quick Tracking Popover ============ */
+.orders-action-btn.btn-delete:hover {
+  color: #D2555A;
+  background: rgba(210, 85, 90, 0.12);
+}
+
+.orders-tracking-indicator {
+  margin-left: 0.35rem;
+  font-size: 0.7rem;
+  color: #2D8F6F;
+}
+
+.orders-tracking-current {
+  background: #f0fdf4;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.orders-tracking-current-label {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.orders-tracking-current-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #166534;
+  letter-spacing: 0.5px;
+}
+
+.orders-tracking-current-carrier {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.orders-tracking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.orders-tracking-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.orders-tracking-select,
+.orders-tracking-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.orders-tracking-select {
+  flex: 0 0 auto;
+  min-width: 140px;
+}
+
+.orders-tracking-input-muted {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.orders-tracking-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.5px;
+}
+
+.orders-tracking-notify {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #555;
+  cursor: pointer;
+}
+
+.orders-add-carrier-form {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.orders-add-carrier-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #475569;
+}
+
+.orders-add-carrier-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.orders-add-carrier-hint {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.orders-add-carrier-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.orders-btn-inline {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
 .quick-tracking-popover {
   position: fixed;
   width: 280px;
@@ -792,6 +1076,15 @@
 .orders-bulk-btn.btn-export {
   background: var(--primary);
   color: #fff;
+}
+
+.orders-bulk-btn.btn-delete {
+  background: #D2555A;
+  color: #fff;
+}
+
+.orders-bulk-btn.btn-delete:hover {
+  background: #b84b4f;
 }
 
 .orders-bulk-btn.btn-cancel {
@@ -1100,6 +1393,15 @@
 .orders-btn-outline:hover {
   border-color: var(--primary);
   color: var(--primary);
+}
+
+.orders-btn-danger {
+  background: #D2555A;
+  color: #fff;
+}
+
+.orders-btn-danger:hover {
+  background: #b84b4f;
 }
 
 .orders-btn-icon {

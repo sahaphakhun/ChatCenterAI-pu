@@ -14,6 +14,7 @@ class ChatManager {
         this.templateStorageKey = 'chatTemplates';
         this.currentEditingTemplateId = null;
         this.emojiPicker = null;
+        this.pendingFiles = [];
 
         // Filter state
         this.currentFilters = {
@@ -287,8 +288,6 @@ class ChatManager {
             });
         }
 
-        // File attachment
-        this.pendingFiles = [];
         const btnAttachFile = document.getElementById('btnAttachFile');
         const chatFileInput = document.getElementById('chatFileInput');
         if (btnAttachFile && chatFileInput) {
@@ -301,7 +300,6 @@ class ChatManager {
             });
         }
 
-        // Drag and drop file support
         const inputArea = document.getElementById('messageInputArea');
         if (inputArea) {
             ['dragenter', 'dragover'].forEach(evt => {
@@ -603,121 +601,121 @@ class ChatManager {
         const addTagBtn = document.getElementById('addTagBtn');
         const newTagInput = document.getElementById('newTagInput');
 
-        if (addTagBtn && newTagInput) {
-            addTagBtn.addEventListener('click', () => {
-                this.addTag(newTagInput.value.trim());
-            });
+		        if (addTagBtn && newTagInput) {
+		            addTagBtn.addEventListener('click', () => {
+		                this.addTag(newTagInput.value.trim());
+		            });
 
             newTagInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     this.addTag(newTagInput.value.trim());
                 }
-            });
-        }
+	            });
+		        }
 
-        // User list selection (delegation)
-        const userList = document.getElementById('userList');
-        if (userList) {
-            userList.addEventListener('click', (e) => {
-                const item = e.target.closest('.user-item[data-user-id]');
-                if (!item || !userList.contains(item)) return;
-                const userId = item.dataset.userId;
-                if (!userId) return;
-                this.selectUser(userId);
-            });
+	        // User list selection (delegation)
+	        const userList = document.getElementById('userList');
+	        if (userList) {
+	            userList.addEventListener('click', (e) => {
+	                const item = e.target.closest('.user-item[data-user-id]');
+	                if (!item || !userList.contains(item)) return;
+	                const userId = item.dataset.userId;
+	                if (!userId) return;
+	                this.selectUser(userId);
+	            });
 
-            userList.addEventListener('keydown', (e) => {
-                if (e.key !== 'Enter' && e.key !== ' ') return;
-                const item = e.target.closest('.user-item[data-user-id]');
-                if (!item || !userList.contains(item)) return;
-                e.preventDefault();
-                const userId = item.dataset.userId;
-                if (!userId) return;
-                this.selectUser(userId);
-            });
-        }
+	            userList.addEventListener('keydown', (e) => {
+	                if (e.key !== 'Enter' && e.key !== ' ') return;
+	                const item = e.target.closest('.user-item[data-user-id]');
+	                if (!item || !userList.contains(item)) return;
+	                e.preventDefault();
+	                const userId = item.dataset.userId;
+	                if (!userId) return;
+	                this.selectUser(userId);
+	            });
+	        }
 
-        // Tag filter buttons (delegation)
-        const tagFilters = document.getElementById('tagFilters');
-        if (tagFilters) {
-            tagFilters.addEventListener('click', (e) => {
-                const btn = e.target.closest('.tag-filter-btn[data-tag]');
-                if (!btn || !tagFilters.contains(btn)) return;
-                const tag = btn.dataset.tag;
-                if (!tag) return;
-                this.toggleTagFilter(tag);
-            });
-        }
+	        // Tag filter buttons (delegation)
+	        const tagFilters = document.getElementById('tagFilters');
+	        if (tagFilters) {
+	            tagFilters.addEventListener('click', (e) => {
+	                const btn = e.target.closest('.tag-filter-btn[data-tag]');
+	                if (!btn || !tagFilters.contains(btn)) return;
+	                const tag = btn.dataset.tag;
+	                if (!tag) return;
+	                this.toggleTagFilter(tag);
+	            });
+	        }
 
-        // Tag modal actions (delegation)
-        const currentTags = document.getElementById('currentTags');
-        if (currentTags) {
-            currentTags.addEventListener('click', (e) => {
-                const btn = e.target.closest('button[data-action="remove-tag"][data-tag]');
-                if (!btn || !currentTags.contains(btn)) return;
-                const tag = btn.dataset.tag;
-                if (!tag) return;
-                this.removeTag(tag);
-            });
-        }
+	        // Tag modal actions (delegation)
+	        const currentTags = document.getElementById('currentTags');
+	        if (currentTags) {
+	            currentTags.addEventListener('click', (e) => {
+	                const btn = e.target.closest('button[data-action="remove-tag"][data-tag]');
+	                if (!btn || !currentTags.contains(btn)) return;
+	                const tag = btn.dataset.tag;
+	                if (!tag) return;
+	                this.removeTag(tag);
+	            });
+	        }
 
-        const popularTags = document.getElementById('popularTags');
-        if (popularTags) {
-            popularTags.addEventListener('click', (e) => {
-                const tagEl = e.target.closest('[data-action="add-tag"][data-tag]');
-                if (!tagEl || !popularTags.contains(tagEl)) return;
-                const tag = tagEl.dataset.tag;
-                if (!tag) return;
-                this.addTag(tag);
-            });
+	        const popularTags = document.getElementById('popularTags');
+	        if (popularTags) {
+	            popularTags.addEventListener('click', (e) => {
+	                const tagEl = e.target.closest('[data-action="add-tag"][data-tag]');
+	                if (!tagEl || !popularTags.contains(tagEl)) return;
+	                const tag = tagEl.dataset.tag;
+	                if (!tag) return;
+	                this.addTag(tag);
+	            });
 
-            popularTags.addEventListener('keydown', (e) => {
-                if (e.key !== 'Enter' && e.key !== ' ') return;
-                const tagEl = e.target.closest('[data-action="add-tag"][data-tag]');
-                if (!tagEl || !popularTags.contains(tagEl)) return;
-                e.preventDefault();
-                const tag = tagEl.dataset.tag;
-                if (!tag) return;
-                this.addTag(tag);
-            });
-        }
+	            popularTags.addEventListener('keydown', (e) => {
+	                if (e.key !== 'Enter' && e.key !== ' ') return;
+	                const tagEl = e.target.closest('[data-action="add-tag"][data-tag]');
+	                if (!tagEl || !popularTags.contains(tagEl)) return;
+	                e.preventDefault();
+	                const tag = tagEl.dataset.tag;
+	                if (!tag) return;
+	                this.addTag(tag);
+	            });
+	        }
 
-        // Message image click (delegation)
-        const messagesContainer = document.getElementById('messagesContainer');
-        if (messagesContainer) {
-            messagesContainer.addEventListener('click', (e) => {
-                const imageWrap = e.target.closest('.message-image');
-                if (!imageWrap || !messagesContainer.contains(imageWrap)) return;
-                const src = imageWrap.dataset.imageSrc || '';
-                if (!src) return;
-                this.showImageModal(src);
-            });
+		        // Message image click (delegation)
+		        const messagesContainer = document.getElementById('messagesContainer');
+		        if (messagesContainer) {
+		            messagesContainer.addEventListener('click', (e) => {
+	                const imageWrap = e.target.closest('.message-image');
+	                if (!imageWrap || !messagesContainer.contains(imageWrap)) return;
+	                const src = imageWrap.dataset.imageSrc || '';
+	                if (!src) return;
+	                this.showImageModal(src);
+	            });
 
-            messagesContainer.addEventListener('keydown', (e) => {
-                if (e.key !== 'Enter' && e.key !== ' ') return;
-                const imageWrap = e.target.closest('.message-image');
-                if (!imageWrap || !messagesContainer.contains(imageWrap)) return;
-                e.preventDefault();
-                const src = imageWrap.dataset.imageSrc || '';
-                if (!src) return;
-                this.showImageModal(src);
-            });
-        }
+	            messagesContainer.addEventListener('keydown', (e) => {
+	                if (e.key !== 'Enter' && e.key !== ' ') return;
+	                const imageWrap = e.target.closest('.message-image');
+	                if (!imageWrap || !messagesContainer.contains(imageWrap)) return;
+	                e.preventDefault();
+	                const src = imageWrap.dataset.imageSrc || '';
+	                if (!src) return;
+	                this.showImageModal(src);
+	            });
+	        }
 
-        // Order actions (delegation)
-        const orderContent = document.getElementById('orderContent');
+	        // Order actions (delegation)
+	        const orderContent = document.getElementById('orderContent');
         if (orderContent) {
             orderContent.addEventListener('click', (e) => {
                 const btn = e.target.closest('button[data-action]');
                 if (!btn || !orderContent.contains(btn)) return;
                 const action = btn.dataset.action;
-                const orderId = btn.dataset.orderId;
-                if (!orderId) return;
-                if (action === 'edit-order') {
-                    this.editOrder(orderId);
-                } else if (action === 'delete-order') {
-                    this.deleteOrder(orderId);
+	                const orderId = btn.dataset.orderId;
+	                if (!orderId) return;
+	                if (action === 'edit-order') {
+	                    this.editOrder(orderId);
+	                } else if (action === 'delete-order') {
+	                    this.deleteOrder(orderId);
                 }
             });
         }
@@ -1036,7 +1034,7 @@ class ChatManager {
             ).join('')
             : '';
 
-        return `
+		        return `
 		            <div class="user-item ${isActive ? 'active' : ''} ${hasUnread ? 'unread' : ''}" role="button" tabindex="0"
 		                 data-user-id="${this.escapeHtml(user.userId || '')}">
 		                <div class="user-avatar">
@@ -1238,6 +1236,8 @@ class ChatManager {
             const platform = typeof message.platform === 'string' ? message.platform.trim().toLowerCase() : '';
             if (platform === 'facebook') return 'Facebook';
             if (platform === 'line') return 'LINE';
+            if (platform === 'instagram') return 'Instagram';
+            if (platform === 'whatsapp') return 'WhatsApp';
             return '';
         })();
 
@@ -1293,29 +1293,28 @@ class ChatManager {
             `;
         }
 
-        // File attachment rendering
         let attachmentHtml = '';
-        const att = message.attachment;
-        if (att) {
-            const attUrl = att.url || att.localPreview || '';
-            if (att.type === 'image') {
-                const imgSrc = att.localPreview || att.url || '';
+        const attachment = message.attachment;
+        if (attachment) {
+            const attachmentUrl = attachment.url || attachment.localPreview || '';
+            if (attachment.type === 'image') {
+                const imgSrc = attachment.localPreview || attachment.url || '';
                 attachmentHtml = `
                     <div class="msg-attachment msg-attachment-image${isSending ? ' msg-file-sending' : ''}">
                         <div class="message-image" role="button" tabindex="0" aria-label="ดูรูปภาพ" data-image-src="${this.escapeHtml(imgSrc)}">
-                            <img src="${this.escapeHtml(imgSrc)}" alt="${this.escapeHtml(att.filename || 'รูปภาพ')}" loading="lazy">
+                            <img src="${this.escapeHtml(imgSrc)}" alt="${this.escapeHtml(attachment.filename || 'รูปภาพ')}" loading="lazy">
                         </div>
                     </div>
                 `;
             } else {
-                const fileIcon = this.getFileIcon ? this.getFileIcon(att.mimetype) : 'fa-file';
-                const fileSize = this.formatFileSize ? this.formatFileSize(att.size || 0) : '';
+                const fileIcon = this.getFileIcon(attachment.mimetype);
+                const fileSize = this.formatFileSize(attachment.size || 0);
                 attachmentHtml = `
                     <div class="msg-attachment${isSending ? ' msg-file-sending' : ''}">
-                        <a href="${this.escapeHtml(attUrl)}" target="_blank" rel="noopener" class="msg-attachment-file" download="${this.escapeHtml(att.filename || '')}">
+                        <a href="${this.escapeHtml(attachmentUrl)}" target="_blank" rel="noopener" class="msg-attachment-file" download="${this.escapeHtml(attachment.filename || '')}">
                             <i class="fas ${fileIcon} att-icon"></i>
                             <div class="att-info">
-                                <div class="att-name">${this.escapeHtml(att.filename || 'ไฟล์')}</div>
+                                <div class="att-name">${this.escapeHtml(attachment.filename || 'ไฟล์')}</div>
                                 <div class="att-size">${fileSize}</div>
                             </div>
                             <i class="fas fa-download att-download"></i>
@@ -1567,6 +1566,14 @@ class ChatManager {
                 }
                 this.renderMessages();
                 this.loadUsers();
+            } else if (data.success && data.skipEcho) {
+                const history = this.chatHistory[this.currentUserId] || [];
+                const idx = history.indexOf(tempMessage);
+                if (idx >= 0) {
+                    history.splice(idx, 1);
+                    this.renderMessages();
+                }
+                this.loadUsers();
             } else {
                 throw new Error(data.error || 'ไม่สามารถส่งข้อความได้');
             }
@@ -1590,7 +1597,7 @@ class ChatManager {
     handleFileSelection(fileList) {
         if (!fileList || fileList.length === 0) return;
 
-        const maxSize = 25 * 1024 * 1024; // 25MB
+        const maxSize = 25 * 1024 * 1024;
         const maxFiles = 5;
 
         for (const file of fileList) {
@@ -1631,14 +1638,16 @@ class ChatManager {
                 const img = document.createElement('img');
                 img.alt = file.name;
                 const reader = new FileReader();
-                reader.onload = (e) => { img.src = e.target.result; };
+                reader.onload = (e) => {
+                    img.src = e.target.result;
+                };
                 reader.readAsDataURL(file);
                 item.appendChild(img);
             } else {
                 item.innerHTML = `
                     <i class="fas ${this.getFileIcon(file.type)} file-icon"></i>
                     <div class="file-details">
-                        <div class="file-name" title="${file.name}">${file.name}</div>
+                        <div class="file-name" title="${this.escapeHtml(file.name)}">${this.escapeHtml(file.name)}</div>
                         <div class="file-size">${this.formatFileSize(file.size)}</div>
                     </div>
                 `;
@@ -1667,7 +1676,6 @@ class ChatManager {
         this.pendingFiles = [];
         this.renderFilePreview();
 
-        // Also send text message if present
         const messageInput = document.getElementById('messageInput');
         const textMessage = messageInput ? messageInput.value.trim() : '';
         if (textMessage && messageInput) {
@@ -1678,19 +1686,17 @@ class ChatManager {
             const charCountEl = document.getElementById('charCount');
             if (charCountEl) charCountEl.textContent = '0';
 
-            // Send text message first
             try {
                 await fetch('/admin/chat/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: this.currentUserId, message: textMessage })
                 });
-            } catch (e) {
-                console.error('Error sending text with files:', e);
+            } catch (error) {
+                console.error('Error sending text with files:', error);
             }
         }
 
-        // Send files one by one
         for (const file of files) {
             const isImage = file.type.startsWith('image/');
             const tempMessage = {
@@ -1731,7 +1737,6 @@ class ChatManager {
                     if (idx >= 0) {
                         history[idx] = data.message;
                     }
-                    // Revoke object URL
                     if (tempMessage.attachment?.localPreview) {
                         URL.revokeObjectURL(tempMessage.attachment.localPreview);
                     }
@@ -1759,9 +1764,9 @@ class ChatManager {
     }
 
     formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     }
 
     getFileIcon(mimetype) {
@@ -2006,12 +2011,12 @@ class ChatManager {
             return;
         }
 
-        tagFilters.innerHTML = this.availableTags.slice(0, 10).map(tag => `
+	        tagFilters.innerHTML = this.availableTags.slice(0, 10).map(tag => `
 	            <button type="button" class="tag-filter-btn ${this.currentFilters.tags.includes(tag) ? 'active' : ''}" data-tag="${this.escapeHtml(tag)}">
 	                ${this.escapeHtml(tag)}
 	            </button>
 	        `).join('');
-    }
+	    }
 
     toggleTagFilter(tag) {
         const index = this.currentFilters.tags.indexOf(tag);
@@ -2021,9 +2026,9 @@ class ChatManager {
             this.currentFilters.tags.push(tag);
         }
 
-        this.applyFilters();
-        this.renderTagFilters();
-    }
+	        this.applyFilters();
+	        this.renderTagFilters();
+	    }
 
     openTagModal() {
         if (!this.currentUserId) return;
@@ -2041,9 +2046,9 @@ class ChatManager {
             tagModalUserName.textContent = user.displayName || user.userId;
         }
 
-        if (currentTags) {
-            if (user.tags && user.tags.length > 0) {
-                currentTags.innerHTML = user.tags.map(tag => `
+		        if (currentTags) {
+		            if (user.tags && user.tags.length > 0) {
+		                currentTags.innerHTML = user.tags.map(tag => `
 		                    <span class="tag-item">
 		                        ${this.escapeHtml(tag)}
 		                        <button type="button" class="btn-remove-tag" data-action="remove-tag" data-tag="${this.escapeHtml(tag)}">
@@ -2051,22 +2056,22 @@ class ChatManager {
 		                        </button>
 		                    </span>
 		                `).join('');
-            } else {
-                currentTags.innerHTML = '<span class="text-muted">ไม่มีแท็ก</span>';
-            }
-        }
+		            } else {
+		                currentTags.innerHTML = '<span class="text-muted">ไม่มีแท็ก</span>';
+	            }
+	        }
 
-        if (popularTags) {
-            if (this.availableTags.length > 0) {
-                popularTags.innerHTML = this.availableTags.slice(0, 10).map(tag => `
+		        if (popularTags) {
+		            if (this.availableTags.length > 0) {
+		                popularTags.innerHTML = this.availableTags.slice(0, 10).map(tag => `
 		                    <span class="tag-item tag-item--selectable" style="cursor: pointer;" role="button" tabindex="0" data-action="add-tag" data-tag="${this.escapeHtml(tag)}">
 		                        ${this.escapeHtml(tag)}
 		                    </span>
 		                `).join('');
-            } else {
-                popularTags.innerHTML = '<span class="text-muted">ไม่มีแท็ก</span>';
-            }
-        }
+		            } else {
+		                popularTags.innerHTML = '<span class="text-muted">ไม่มีแท็ก</span>';
+	            }
+	        }
 
         if (newTagInput) {
             newTagInput.value = '';
@@ -3165,10 +3170,10 @@ class ChatManager {
             metaHtml += '</div>';
         }
 
-        return `
+	        return `
 	            <div class="order-card" data-order-id="${this.escapeHtml(order._id)}">
 	                <div class="order-card-header">
-	                    <span class="order-status-badge ${order.status}">${order.orderCode ? this.escapeHtml(order.orderCode) + ' · ' : ''}${statusLabel}</span>
+	                    <span class="order-status-badge ${order.status}">${statusLabel}</span>
 	                    <span class="order-date">${extractedDate}</span>
 	                </div>
                 

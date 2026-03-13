@@ -1,0 +1,397 @@
+:root {
+  --forge-bg-base: #f0f4f8;
+  --forge-bg-surface: #ffffff;
+  --forge-bg-surface-glass: rgba(255, 255, 255, 0.75);
+  --forge-border: rgba(0, 0, 0, 0.08);
+  --forge-border-glow: rgba(59, 130, 246, 0.15);
+  --forge-text-main: #0f172a;
+  --forge-text-muted: #64748b;
+  --forge-primary: #3b82f6;
+  --forge-primary-hover: #2563eb;
+  --forge-primary-glow: rgba(59, 130, 246, 0.3);
+  --forge-success: #10b981;
+  --forge-success-bg: rgba(16, 185, 129, 0.1);
+  --forge-danger: #ef4444;
+  --forge-danger-bg: rgba(239, 68, 68, 0.1);
+  --forge-glass-blur: blur(12px);
+  --forge-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  --forge-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Dark Mode Extensions (Assuming the system can toggle a .dark class on body) */
+body.dark {
+  --forge-bg-base: #0b0f19;
+  --forge-bg-surface: #1e293b;
+  --forge-bg-surface-glass: rgba(30, 41, 59, 0.7);
+  --forge-border: rgba(255, 255, 255, 0.1);
+  --forge-text-main: #f8fafc;
+  --forge-text-muted: #94a3b8;
+  --forge-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Base resets & layout */
+.forge-container {
+  font-family: 'Inter', 'Outfit', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--forge-text-main);
+  background: var(--forge-bg-base);
+  min-height: 100vh;
+  padding-bottom: 3rem;
+  transition: all 0.3s ease;
+}
+
+/* Header & Title Area */
+.forge-header-glass {
+  background: var(--forge-bg-surface-glass);
+  backdrop-filter: var(--forge-glass-blur);
+  -webkit-backdrop-filter: var(--forge-glass-blur);
+  border-bottom: 1px solid var(--forge-border);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 1.5rem 0;
+  margin-bottom: 2rem;
+  box-shadow: var(--forge-shadow-sm);
+}
+
+.forge-title {
+  font-weight: 700;
+  font-size: 1.75rem;
+  background: linear-gradient(135deg, var(--forge-primary), #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.forge-title i {
+  -webkit-text-fill-color: var(--forge-primary);
+  font-size: 1.5rem;
+}
+
+/* Health Cards - Glassmorphism */
+.health-card {
+  background: var(--forge-bg-surface);
+  border: 1px solid var(--forge-border);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--forge-shadow-sm);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.health-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--forge-primary);
+  border-radius: 4px 0 0 4px;
+}
+
+.health-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--forge-shadow);
+  border-color: var(--forge-border-glow);
+}
+
+.health-card .title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--forge-text-main);
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.health-card .meta {
+  color: var(--forge-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* Mode Badges */
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mode-badge.human-only {
+  background: var(--forge-danger-bg);
+  color: var(--forge-danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.mode-badge.ai-live-reply {
+  background: var(--forge-success-bg);
+  color: var(--forge-success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Glass Panels (Forms and Tables) */
+.forge-glass-panel {
+  background: var(--forge-bg-surface);
+  border: 1px solid var(--forge-border);
+  border-radius: 16px;
+  box-shadow: var(--forge-shadow);
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.forge-glass-panel-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--forge-border);
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* Form Controls Styling */
+.forge-glass-panel .form-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--forge-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.forge-glass-panel .form-control,
+.forge-glass-panel .form-select {
+  background: var(--forge-bg-base);
+  border: 1px solid var(--forge-border);
+  color: var(--forge-text-main);
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  transition: all 0.2s;
+}
+
+.forge-glass-panel .form-control:focus,
+.forge-glass-panel .form-select:focus {
+  background: var(--forge-bg-surface);
+  border-color: var(--forge-primary);
+  box-shadow: 0 0 0 3px var(--forge-primary-glow);
+  outline: none;
+}
+
+/* Managed Pages Grid */
+.managed-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--forge-border);
+  border-radius: 12px;
+  background: var(--forge-bg-base);
+}
+
+/* Scrollbar strictly for modern touch */
+.managed-pages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.managed-pages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.managed-pages::-webkit-scrollbar-thumb {
+  background: var(--forge-border);
+  border-radius: 4px;
+}
+
+.managed-page-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--forge-border);
+  border-radius: 10px;
+  background: var(--forge-bg-surface);
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.managed-page-item:hover {
+  border-color: var(--forge-primary);
+  background: var(--forge-primary-glow);
+  transform: translateY(-2px);
+}
+
+/* Table Enhancements */
+.table-forge {
+  margin-bottom: 0;
+  color: var(--forge-text-main);
+}
+
+.table-forge th {
+  background: rgba(0, 0, 0, 0.02);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--forge-text-muted);
+  letter-spacing: 0.5px;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--forge-border);
+}
+
+.table-forge td {
+  padding: 1rem 1.5rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--forge-border);
+  font-size: 0.95rem;
+}
+
+.table-forge tbody tr {
+  transition: background 0.2s;
+}
+
+.table-forge tbody tr:hover {
+  background: rgba(59, 130, 246, 0.02);
+}
+
+#agentsTable td,
+#agentsTable th {
+  white-space: nowrap;
+}
+
+#agentsTable {
+  table-layout: fixed;
+  width: 100%;
+}
+
+#agentsTable td:nth-child(1),
+#agentsTable th:nth-child(1),
+#agentsTable td:nth-child(5),
+#agentsTable th:nth-child(5) {
+  white-space: normal;
+}
+
+#agentsTable td:nth-child(1),
+#agentsTable td:nth-child(5) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#agentsTable th:nth-child(5),
+#agentsTable td:nth-child(5) {
+  width: 17rem;
+  max-width: 17rem;
+}
+
+.managed-pages-cell {
+  line-height: 1.35;
+}
+
+/* Buttons */
+.btn-forge-primary {
+  background: linear-gradient(135deg, var(--forge-primary), #2563eb);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px var(--forge-primary-glow);
+  transition: all 0.2s ease;
+}
+
+.btn-forge-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--forge-primary-glow);
+  color: white;
+}
+
+.btn-forge-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  transition: all 0.2s ease;
+}
+
+.btn-forge-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  color: white;
+}
+
+.btn-forge-outline {
+  background: transparent;
+  color: var(--forge-text-main);
+  border: 1px solid var(--forge-border);
+  border-radius: 10px;
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-forge-outline:hover {
+  background: var(--forge-bg-base);
+  border-color: var(--forge-text-muted);
+}
+
+.agent-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.agent-actions .btn {
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* Animations */
+@keyframes fadeInSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-enter {
+  animation: fadeInSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Layout Utilities */
+.stagger-1 {
+  animation-delay: 0.1s;
+  opacity: 0;
+}
+
+.stagger-2 {
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+
+.stagger-3 {
+  animation-delay: 0.3s;
+  opacity: 0;
+}

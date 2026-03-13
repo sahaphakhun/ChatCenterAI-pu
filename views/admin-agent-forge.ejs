@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบโรงหลอมเอเจนต์ - Agent Forge</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="/css/style.css" rel="stylesheet" />
+  <link href="/css/agent-forge.css" rel="stylesheet" />
+</head>
+
+<body class="app-shell forge-container">
+  <%- include('partials/admin-navbar', { activePage: 'agent-forge' }) %>
+
+    <!-- Header Glass Area -->
+    <div class="forge-header-glass">
+      <div class="container-fluid px-4 px-md-5">
+        <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+          <div>
+            <h1 class="forge-title mb-2">
+              <i class="fas fa-microchip"></i>
+              ระบบโรงหลอมเอเจนต์ (Agent Forge)
+            </h1>
+            <p class="text-muted mb-0" style="font-size: 0.95rem; max-width: 600px;">
+              ปรับแต่ง Instruction อัตโนมัติ, ทดสอบอย่างน้อย 5 เคส, และวิเคราะห์แบบเจาะลึก 360° ด้วย AI Self-Healing
+            </p>
+          </div>
+          <button class="btn btn-forge-primary" id="refreshAgentsBtn">
+            <i class="fas fa-sync-alt fa-spin-hover me-2"></i> รีเฟรชข้อมูลล่าสุด
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="container-fluid px-4 px-md-5">
+
+      <!-- Health Cards Overview -->
+      <div class="row g-4 mb-5 animate-enter stagger-1" id="healthCards">
+        <!-- JS mounts health cards here -->
+      </div>
+
+      <!-- Main Two Column Grid -->
+      <div class="row g-4">
+
+        <!-- Left Column: Create Agent -->
+        <div class="col-xl-4 col-lg-5 animate-enter stagger-2">
+          <div class="forge-glass-panel h-100">
+            <div class="forge-glass-panel-header">
+              <span><i class="fas fa-plus-circle text-primary me-2"></i>สร้าง Agent ใหม่</span>
+            </div>
+            <div class="card-body p-4">
+              <form id="createAgentForm" class="row g-4">
+                <div class="col-12">
+                  <label class="form-label">ชื่อ Agent</label>
+                  <input type="text" class="form-control" id="newAgentName" required
+                    placeholder="เช่น Forge - เพจน้ำมันทิพยมนต์" />
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label">ประเภทงาน</label>
+                  <select id="newOptimizationMode" class="form-select">
+                    <option value="improve">ปรับปรุง (Improve)</option>
+                    <option value="create-new">สร้างใหม่ (Create-new)</option>
+                  </select>
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label">โหมด Runtime</label>
+                  <select id="newAgentMode" class="form-select">
+                    <option value="human-only">Human-only</option>
+                    <option value="ai-live-reply">AI-live-reply</option>
+                  </select>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Instruction Base (Mongo _id)</label>
+                  <select id="newInstructionId" class="form-select"></select>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Customer Model Default</label>
+                  <select id="newCustomerModel" class="form-select"></select>
+                </div>
+
+                <div class="col-12">
+                  <div class="d-flex justify-content-between">
+                    <label class="form-label">ตั้งค่าเพจที่ดูแล <span class="text-danger">*</span></label>
+                    <small class="text-primary" style="font-size: 0.75rem;"><i class="fas fa-info-circle"></i>
+                      เลือกล่วงหน้า</small>
+                  </div>
+                  <div class="managed-pages custom-scrollbar" id="managedPageSelector">
+                    <!-- JS Checkboxes insert here -->
+                  </div>
+                  <div class="form-text mt-2" id="pageSelectionHint" style="font-size: 0.8rem;">
+                    โหมดปรับปรุง: ระบบจะติ๊กเพจที่ใช้ instruction นี้ให้อัตโนมัติ
+                  </div>
+                </div>
+
+                <div class="col-12 d-flex gap-3 pt-2">
+                  <button class="btn btn-forge-success flex-grow-1 py-2" type="submit">
+                    <i class="fas fa-rocket me-2"></i> สร้าง Agent ทันที
+                  </button>
+                  <button class="btn btn-forge-outline py-2" type="button" id="clearCreateFormBtn">
+                    เคลียร์ฟอร์ม
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Agent List -->
+        <div class="col-xl-8 col-lg-7 animate-enter stagger-3">
+          <div class="forge-glass-panel h-100 d-flex flex-column">
+            <div class="forge-glass-panel-header">
+              <span><i class="fas fa-server text-indigo me-2"></i>พอร์โฟลิโอ Agent ทั้งหมด</span>
+              <span class="badge bg-primary rounded-pill px-3" id="agentCountLabel" style="font-weight: 500;">0
+                Active</span>
+            </div>
+            <div class="table-responsive p-0 m-0 flex-grow-1" style="max-height: 800px;">
+              <table class="table table-forge table-hover mb-0" id="agentsTable">
+                <thead class="sticky-top bg-light" style="z-index: 10;">
+                  <tr>
+                    <th style="width: 25%">Agent Name</th>
+                    <th>Type</th>
+                    <th>Runtime Mode</th>
+                    <th>Instruction Base</th>
+                    <th>Managed Pages</th>
+                    <th>Model</th>
+                    <th>Last Active</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="agentsTableBody" style="background: var(--forge-bg-surface);">
+                  <tr>
+                    <td colspan="8" class="text-center text-muted py-5">
+                      <div class="spinner-border text-primary mb-3" role="status"></div>
+                      <div>กำลัง Sync ประเมินสถานะ Agent...</div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- End Row -->
+    </div>
+
+    <!-- Inject Bootstrap Data -->
+    <script>
+      window.__AGENT_FORGE_BOOTSTRAP__ = {
+        agents: <%- JSON.stringify(agents || []).replace(/</g, '\\u003c') %>,
+        managedPages: <%- JSON.stringify(managedPages || []).replace(/</g, '\\u003c') %>,
+        instructions: <%- JSON.stringify(instructions || []).replace(/</g, '\\u003c') %>,
+        instructionUsageMap: <%- JSON.stringify(instructionUsageMap || {}).replace(/</g, '\\u003c') %>,
+        customerModelOptions: <%- JSON.stringify(customerModelOptions || []).replace(/</g, '\\u003c') %>
+      };
+    </script>
+    <script src="/js/agent-forge.js"></script>
+</body>
+
+</html>

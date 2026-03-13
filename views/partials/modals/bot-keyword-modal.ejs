@@ -1,0 +1,103 @@
+<div class="modal fade" id="botKeywordModal" tabindex="-1" aria-labelledby="botKeywordModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="botKeywordModalLabel">
+          <i class="fas fa-key me-2"></i>ตั้งค่าคีย์เวิร์ดควบคุม AI
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="botKeywordForm">
+          <input type="hidden" id="botKeywordType" value="">
+          <input type="hidden" id="botKeywordBotId" value="">
+
+          <div class="alert alert-info py-2 mb-3">
+            <small>
+              <i class="fas fa-info-circle me-1"></i>
+              คีย์เวิร์ดนี้ใช้กับข้อความที่แอดมินพิมพ์ในแชทเพื่อสั่งระบบทันที
+              (รองรับหลายคำด้วยการคั่นด้วยเครื่องหมาย <code>,</code> หรือขึ้นบรรทัดใหม่)
+            </small>
+          </div>
+
+          <div class="card mb-3">
+            <div class="card-header bg-success-subtle">
+              <i class="fas fa-check-circle text-success me-2"></i><strong>คีย์เวิร์ดเปิด AI</strong>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="botKeywordEnableAI" class="form-label">คีย์เวิร์ด</label>
+                <input type="text" class="form-control" id="botKeywordEnableAI" placeholder="เช่น: เปิด ai, [เปิด]">
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="botKeywordEnableAISendResponse">
+                <label class="form-check-label" for="botKeywordEnableAISendResponse">ส่งข้อความยืนยันในแชท</label>
+              </div>
+              <div class="mb-0">
+                <label for="botKeywordEnableAIResponse" class="form-label">ข้อความตอบกลับ (ถ้ามี)</label>
+                <textarea class="form-control" id="botKeywordEnableAIResponse" rows="2" placeholder="เช่น: ✅ เปิดระบบ AI แล้วค่ะ"></textarea>
+                <div class="form-text">ถ้าเปิดสวิตช์แต่ไม่กรอกข้อความ ระบบจะใช้ข้อความยืนยันมาตรฐานให้อัตโนมัติ</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-3">
+            <div class="card-header bg-warning-subtle">
+              <i class="fas fa-pause-circle text-warning me-2"></i><strong>คีย์เวิร์ดปิด AI</strong>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="botKeywordDisableAI" class="form-label">คีย์เวิร์ด</label>
+                <input type="text" class="form-control" id="botKeywordDisableAI" placeholder="เช่น: ปิด ai, [ปิด]">
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="botKeywordDisableAISendResponse">
+                <label class="form-check-label" for="botKeywordDisableAISendResponse">ส่งข้อความยืนยันในแชท</label>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="botKeywordDisableAIAlsoDisableFollowUp" checked>
+                <label class="form-check-label" for="botKeywordDisableAIAlsoDisableFollowUp">
+                  ปิดระบบติดตาม (Follow-up) ด้วย
+                  <span class="badge bg-secondary ms-1" style="font-size:0.7rem;">แนะนำ</span>
+                </label>
+                <div class="form-text">เมื่อปิด AI ด้วยคีย์เวิร์ดนี้ จะยกเลิกการนัดส่งข้อความติดตามของลูกค้ารายนั้นโดยอัตโนมัติด้วย</div>
+              </div>
+              <div class="mb-0">
+                <label for="botKeywordDisableAIResponse" class="form-label">ข้อความตอบกลับ (ถ้ามี)</label>
+                <textarea class="form-control" id="botKeywordDisableAIResponse" rows="2" placeholder="เช่น: ⏸️ ปิดระบบ AI แล้วค่ะ"></textarea>
+                <div class="form-text">ถ้าเปิดสวิตช์แต่ไม่กรอกข้อความ ระบบจะใช้ข้อความยืนยันมาตรฐานให้อัตโนมัติ</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-0">
+            <div class="card-header bg-danger-subtle">
+              <i class="fas fa-bell-slash text-danger me-2"></i><strong>คีย์เวิร์ดปิดระบบติดตาม</strong>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="botKeywordDisableFollowUp" class="form-label">คีย์เวิร์ด</label>
+                <input type="text" class="form-control" id="botKeywordDisableFollowUp" placeholder="เช่น: #รับออเดอร์">
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="botKeywordDisableFollowUpSendResponse">
+                <label class="form-check-label" for="botKeywordDisableFollowUpSendResponse">ส่งข้อความยืนยันในแชท</label>
+              </div>
+              <div class="mb-0">
+                <label for="botKeywordDisableFollowUpResponse" class="form-label">ข้อความตอบกลับ (ถ้ามี)</label>
+                <textarea class="form-control" id="botKeywordDisableFollowUpResponse" rows="2" placeholder="เช่น: 🔕 ปิดระบบติดตามแล้วค่ะ"></textarea>
+                <div class="form-text">ถ้าเปิดสวิตช์แต่ไม่กรอกข้อความ ระบบจะใช้ข้อความยืนยันมาตรฐานให้อัตโนมัติ</div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-primary" id="saveBotKeywordBtn">
+          <i class="fas fa-save me-1"></i>บันทึกคีย์เวิร์ด
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

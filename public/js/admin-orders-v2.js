@@ -11,11 +11,18 @@
     filteredOrders: [],
     selectedIds: new Set(),
     pagination: { page: 1, limit: 50, total: 0, pages: 1 },
-    summary: { totalOrders: 0, totalAmount: 0, totalShipping: 0 },
+    summary: {
+      totalOrders: 0,
+      totalAmount: 0,
+      totalAmountConfirmed: 0,
+      totalShipping: 0,
+      confirmedOrders: 0
+    },
     statusCounts: {},
     filters: {
       status: 'all',
       search: '',
+      pageKeys: [],
       pageKey: '',
       startDate: '',
       endDate: '',
@@ -56,7 +63,14 @@
     els.pagination = document.getElementById('ordersPagination');
     els.paginationInfo = document.getElementById('ordersPaginationInfo');
     els.searchInput = document.getElementById('ordersSearchInput');
-    els.pageSelect = document.getElementById('ordersPageSelect');
+    els.pageDropdownBtn = document.getElementById('ordersPageBtnToggle');
+    els.pageBtnText = document.getElementById('ordersPageBtnText');
+    els.pageMenu = document.getElementById('ordersPageMenu');
+    els.pageList = document.getElementById('ordersPageList');
+    els.pageSearch = document.getElementById('ordersPageSearch');
+    els.pageSelectAll = document.getElementById('ordersPageSelectAll');
+    els.pageApplyBtn = document.getElementById('ordersPageApplyBtn');
+    els.pageSelectedCount = document.getElementById('ordersPageSelectedCount');
     els.startDate = document.getElementById('ordersStartDate');
     els.endDate = document.getElementById('ordersEndDate');
     els.bulkBar = document.getElementById('ordersBulkBar');
@@ -65,6 +79,7 @@
     els.detailOverlay = document.getElementById('ordersDetailOverlay');
     els.detailPanel = document.getElementById('ordersDetailPanel');
     els.exportBtn = document.getElementById('ordersExportBtn');
+    els.exportFormat = document.getElementById('ordersExportFormat');
     els.detailPrint = document.getElementById('ordersDetailPrint');
   }
 
@@ -79,9 +94,61 @@
       els.searchInput.addEventListener('input', debounce(handleSearch, 300));
     }
 
-    // Page Select
-    if (els.pageSelect) {
-      els.pageSelect.addEventListener('change', handlePageSelect);
+    // Page Dropdown
+    if (els.pageDropdownBtn) {
+      els.pageDropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        els.pageMenu.classList.toggle('show');
+      });
+      document.addEventListener('click', (e) => {
+        if (els.pageMenu && els.pageMenu.classList.contains('show') && !e.target.closest('#ordersPageDropdown')) {
+          els.pageMenu.classList.remove('show');
+          renderPageDropdownText(); // Revert if closed
+        }
+      });
+    }
+
+    if (els.pageSearch) {
+      els.pageSearch.addEventListener('input', debounce((e) => {
+        const text = e.target.value.toLowerCase();
+        document.querySelectorAll('.orders-page-item').forEach(el => {
+          if (el.classList.contains('select-all')) return;
+          const name = el.innerText.toLowerCase();
+          el.style.display = name.includes(text) ? 'flex' : 'none';
+        });
+      }, 200));
+    }
+
+    if (els.pageSelectAll) {
+      els.pageSelectAll.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        document.querySelectorAll('#ordersPageList input[type="checkbox"]').forEach(cb => {
+          if (cb.closest('.orders-page-item').style.display !== 'none') {
+            cb.checked = checked;
+          }
+        });
+        updatePageSelectedCount();
+      });
+    }
+
+    if (els.pageApplyBtn) {
+      els.pageApplyBtn.addEventListener('click', () => {
+        const selected = Array.from(document.querySelectorAll('#ordersPageList input[type="checkbox"]:checked')).map(cb => cb.value);
+        state.filters.pageKeys = selected;
+        state.filters.pageKey = selected.length > 0 ? selected.join(',') : '';
+        els.pageMenu.classList.remove('show');
+        state.pagination.page = 1;
+        saveFilters();
+        loadOrders();
+        renderPageDropdownText();
+      });
+    }
+
+    // Delegate checkbox clicks
+    if (els.pageList) {
+      els.pageList.addEventListener('change', (e) => {
+        if (e.target.type === 'checkbox') updatePageSelectedCount();
+      });
     }
 
     // Date Range
@@ -101,6 +168,7 @@
     // Bulk Actions
     document.getElementById('ordersBulkCancel')?.addEventListener('click', clearSelection);
     document.getElementById('ordersBulkExport')?.addEventListener('click', handleBulkExport);
+    document.getElementById('ordersBulkDelete')?.addEventListener('click', handleBulkDelete);
 
     // Detail Panel Close
     els.detailOverlay?.addEventListener('click', (e) => {
@@ -184,7 +252,9 @@
     if (state.filters.search) {
       params.set('search', state.filters.search);
     }
-    if (state.filters.pageKey) {
+    if (state.filters.pageKeys && state.filters.pageKeys.length > 0) {
+      params.set('pageKey', state.filters.pageKeys.join(','));
+    } else if (state.filters.pageKey) {
       params.set('pageKey', state.filters.pageKey);
     }
     if (state.filters.startDate) {
@@ -201,10 +271,18 @@
   function renderSummary() {
     if (!els.summaryCards) return;
 
-    const { totalOrders, totalAmount, totalShipping } = state.summary;
+    const {
+      totalOrders,
+      totalAmount,
+      totalAmountConfirmed,
+      totalShipping,
+      confirmedOrders
+    } = state.summary;
     const avgOrder = totalOrders > 0 ? Math.round(totalAmount / totalOrders) : 0;
-    const completedCount = state.statusCounts.completed || 0;
-    const completionRate = totalOrders > 0 ? Math.round((completedCount / totalOrders) * 100) : 0;
+    const confirmedCount = Number.isFinite(Number(confirmedOrders))
+      ? Number(confirmedOrders)
+      : (state.statusCounts.confirmed || 0);
+    const confirmedRate = totalOrders > 0 ? Math.round((confirmedCount / totalOrders) * 100) : 0;
 
     els.summaryCards.innerHTML = `
       <div class="orders-summary-card">
@@ -218,7 +296,16 @@
         <div class="orders-summary-icon icon-success"><i class="fas fa-coins"></i></div>
         <div class="orders-summary-content">
           <div class="orders-summary-label">ยอดรวม</div>
-          <div class="orders-summary-value">฿${totalAmount.toLocaleString()}</div>
+          <div class="orders-summary-value-group">
+            <div class="orders-summary-value-row is-draft">
+              <span class="orders-summary-inline-label">ร่าง</span>
+              <strong>฿${(totalAmount || 0).toLocaleString()}</strong>
+            </div>
+            <div class="orders-summary-value-row is-confirmed">
+              <span class="orders-summary-inline-label">ยืนยันแล้ว</span>
+              <strong>฿${(totalAmountConfirmed || 0).toLocaleString()}</strong>
+            </div>
+          </div>
         </div>
       </div>
       <div class="orders-summary-card">
@@ -238,8 +325,8 @@
       <div class="orders-summary-card">
         <div class="orders-summary-icon icon-success"><i class="fas fa-percentage"></i></div>
         <div class="orders-summary-content">
-          <div class="orders-summary-label">สำเร็จแล้ว</div>
-          <div class="orders-summary-value">${completionRate}%</div>
+          <div class="orders-summary-label">ยืนยันแล้ว</div>
+          <div class="orders-summary-value">${confirmedRate}%</div>
         </div>
       </div>
     `;
@@ -305,7 +392,7 @@
                    onchange="window.OrdersV2.toggleSelect('${order.id}')">
           </td>
           <td>
-            ${order.orderCode ? `<div class="orders-order-code" style="font-family:monospace;font-size:0.75rem;color:#666;margin-bottom:2px">${escapeHtml(order.orderCode)}</div>` : ''}
+            ${order.orderCode ? `<div class="orders-order-code">${escapeHtml(order.orderCode)}</div>` : ''}
             ${date}
           </td>
 	          <td>
@@ -325,7 +412,7 @@
           </td>
           <td>
             <span class="orders-status-badge status-${order.status}">${statusConfig.label}</span>
-            ${order.trackingNumber ? `<span title="${escapeHtml(order.trackingNumber)}" style="margin-left:4px;font-size:0.7rem;color:#2D8F6F;"><i class="fas fa-truck"></i></span>` : ''}
+            ${order.trackingNumber ? `<span title="${escapeHtml(order.trackingNumber)}" class="orders-tracking-indicator"><i class="fas fa-truck"></i></span>` : ''}
           </td>
           <td>
             <div class="orders-actions">
@@ -340,6 +427,9 @@
               </button>
               <button class="orders-action-btn btn-chat" title="ไปยังแชท" onclick="window.OrdersV2.goToChat('${order.userId}')">
                 <i class="fas fa-comment"></i>
+              </button>
+              <button class="orders-action-btn btn-delete" title="ลบออเดอร์" onclick="window.OrdersV2.deleteOrder('${order.id}')">
+                <i class="fas fa-trash-alt"></i>
               </button>
             </div>
           </td>
@@ -406,17 +496,60 @@
   }
 
   function renderPageSelect() {
-    if (!els.pageSelect) return;
+    if (!els.pageList) return;
 
-    let options = '<option value="">ทุกเพจ/บอท</option>';
+    let html = '';
     state.pages.forEach(page => {
       const label = page.name || page.pageKey || 'Unknown';
-      options += `<option value="${page.pageKey}">${escapeHtml(label)}</option>`;
+      html += `
+        <label class="orders-page-item">
+          <input type="checkbox" value="${page.pageKey}">
+          <span>${escapeHtml(label)}</span>
+        </label>
+      `;
     });
 
-    els.pageSelect.innerHTML = options;
-    if (state.filters.pageKey) {
-      els.pageSelect.value = state.filters.pageKey;
+    els.pageList.innerHTML = html;
+
+    if (state.filters.pageKey && (!state.filters.pageKeys || state.filters.pageKeys.length === 0)) {
+      state.filters.pageKeys = state.filters.pageKey.split(',').filter(Boolean);
+    }
+
+    renderPageDropdownText();
+  }
+
+  function updatePageSelectedCount() {
+    if (!els.pageSelectedCount) return;
+    const count = document.querySelectorAll('#ordersPageList input[type="checkbox"]:checked').length;
+    els.pageSelectedCount.textContent = count > 0 ? `เลือก ${count} เพจ` : 'ทุกเพจ/บอท';
+
+    // Update select all state
+    const allVisible = Array.from(document.querySelectorAll('#ordersPageList input[type="checkbox"]'))
+      .filter(cb => cb.closest('.orders-page-item').style.display !== 'none');
+    const checkedVisible = allVisible.filter(cb => cb.checked);
+    if (els.pageSelectAll) {
+      els.pageSelectAll.checked = checkedVisible.length === allVisible.length && allVisible.length > 0;
+      els.pageSelectAll.indeterminate = checkedVisible.length > 0 && checkedVisible.length < allVisible.length;
+    }
+  }
+
+  function renderPageDropdownText() {
+    if (!els.pageBtnText) return;
+    const selected = state.filters.pageKeys || [];
+    if (selected.length === 0) {
+      els.pageBtnText.textContent = 'ทุกเพจ/บอท';
+    } else if (selected.length === 1) {
+      const page = state.pages.find(p => p.pageKey === selected[0]);
+      els.pageBtnText.textContent = page ? (page.name || page.pageKey) : '1 เพจ';
+    } else {
+      els.pageBtnText.textContent = `${selected.length} เพจ`;
+    }
+
+    if (els.pageList) {
+      document.querySelectorAll('#ordersPageList input[type="checkbox"]').forEach(cb => {
+        cb.checked = selected.includes(cb.value);
+      });
+      updatePageSelectedCount();
     }
   }
 
@@ -428,12 +561,7 @@
     loadOrders();
   }
 
-  function handlePageSelect(e) {
-    state.filters.pageKey = e.target.value;
-    state.pagination.page = 1;
-    saveFilters();
-    loadOrders();
-  }
+  // Removed handlePageSelect
 
   function handleDateChange() {
     state.filters.startDate = els.startDate?.value || '';
@@ -498,7 +626,38 @@
     // Backend expects selectedIds as comma-separated string
     const params = new URLSearchParams();
     params.set('selectedIds', ids.join(','));
-    window.location.href = `/admin/orders/export?${params.toString()}`;
+    window.location.href = buildExportUrl(params);
+  }
+
+  async function handleBulkDelete() {
+    const ids = Array.from(state.selectedIds);
+    if (ids.length === 0) return;
+
+    const confirmDelete = window.confirm(`ต้องการลบออเดอร์ที่เลือก ${ids.length} รายการถาวรหรือไม่? การลบไม่สามารถกู้คืนได้`);
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch('/admin/orders/bulk/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds: ids })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        if (state.detailOrderId && ids.includes(state.detailOrderId)) {
+          closeDetail();
+        }
+        clearSelection();
+        showToast(`ลบออเดอร์ ${data.deletedCount || 0} รายการเรียบร้อย`, 'success');
+        loadOrders();
+      } else {
+        showToast(data.error || 'ไม่สามารถลบออเดอร์ได้', 'error');
+      }
+    } catch (error) {
+      console.error('[Orders] Bulk delete error:', error);
+      showToast('เกิดข้อผิดพลาดในการลบออเดอร์', 'error');
+    }
   }
 
   function handleExport() {
@@ -508,12 +667,23 @@
       // Backend expects selectedIds as comma-separated string
       const params = new URLSearchParams();
       params.set('selectedIds', ids.join(','));
-      window.location.href = `/admin/orders/export?${params.toString()}`;
+      window.location.href = buildExportUrl(params);
     } else {
       // Export all orders matching current filters
       const params = buildQueryParams();
-      window.location.href = `/admin/orders/export?${params.toString()}`;
+      window.location.href = buildExportUrl(params);
     }
+  }
+
+  function getExportFormat() {
+    const value = String(els.exportFormat?.value || '').trim().toLowerCase();
+    return value === 'kex' ? 'kex' : 'myorder';
+  }
+
+  function buildExportUrl(params = new URLSearchParams()) {
+    const nextParams = new URLSearchParams(params);
+    nextParams.set('exportFormat', getExportFormat());
+    return `/admin/orders/export?${nextParams.toString()}`;
   }
 
   function handleSortClick(column) {
@@ -771,44 +941,44 @@
       <div class="orders-detail-section" id="trackingSection">
         <div class="orders-detail-section-title"><i class="fas fa-shipping-fast"></i> เลขพัสดุ / Tracking</div>
         ${order.trackingNumber ? `
-          <div class="orders-detail-row" style="background:#f0fdf4;border-radius:8px;padding:0.75rem;margin-bottom:0.75rem;">
+          <div class="orders-detail-row orders-tracking-current">
             <div style="flex:1;">
-              <div style="font-size:0.8rem;color:#666;margin-bottom:4px;">เลขพัสดุปัจจุบัน</div>
-              <div style="font-family:monospace;font-size:1rem;font-weight:600;color:#166534;letter-spacing:0.5px;">${escapeHtml(order.trackingNumber)}</div>
-              ${order.trackingCarrier ? `<div style="font-size:0.8rem;color:#666;margin-top:4px;">🚚 ${escapeHtml(order.trackingCarrier)}</div>` : ''}
+              <div class="orders-tracking-current-label">เลขพัสดุปัจจุบัน</div>
+              <div class="orders-tracking-current-number">${escapeHtml(order.trackingNumber)}</div>
+              ${order.trackingCarrier ? `<div class="orders-tracking-current-carrier">🚚 ${escapeHtml(order.trackingCarrier)}</div>` : ''}
             </div>
           </div>
         ` : ''}
-        <div style="display:flex;flex-direction:column;gap:0.5rem;">
-          <div style="display:flex;gap:0.5rem;align-items:center;">
-            <select id="trackingCarrierSelect" style="flex:0 0 auto;min-width:140px;padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;background:#fff;">
+        <div class="orders-tracking-form">
+          <div class="orders-tracking-row">
+            <select id="trackingCarrierSelect" class="orders-tracking-select">
               <option value="">-- เลือกขนส่ง --</option>
             </select>
-            <button class="orders-btn orders-btn-outline" style="padding:0.4rem 0.6rem;font-size:0.8rem;white-space:nowrap;" onclick="window.OrdersV2.toggleAddCarrier()" title="เพิ่มขนส่งใหม่">
+            <button class="orders-btn orders-btn-outline orders-btn-inline" onclick="window.OrdersV2.toggleAddCarrier()" title="เพิ่มขนส่งใหม่">
               <i class="fas fa-plus"></i>
             </button>
           </div>
-          <div id="addCarrierForm" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:0.75rem;margin-bottom:0.25rem;">
-            <div style="font-size:0.8rem;font-weight:600;margin-bottom:0.5rem;color:#475569;">เพิ่มขนส่งใหม่</div>
-            <div style="display:flex;flex-direction:column;gap:0.4rem;">
-              <input type="text" id="newCarrierName" placeholder="ชื่อขนส่ง เช่น Kerry Express" style="padding:0.4rem 0.6rem;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;">
-              <input type="text" id="newCarrierUrl" placeholder="URL ตรวจสอบ เช่น https://track.Kerry.co.th/?tracking={tracking}" style="padding:0.4rem 0.6rem;border:1px solid #ddd;border-radius:6px;font-size:0.8rem;color:#666;">
-              <div style="font-size:0.7rem;color:#94a3b8;">ใช้ {tracking} แทนตำแหน่งเลขพัสดุใน URL</div>
-              <div style="display:flex;gap:0.4rem;">
-                <button class="orders-btn orders-btn-primary" style="padding:0.35rem 0.75rem;font-size:0.8rem;" onclick="window.OrdersV2.addCarrier()">
+          <div id="addCarrierForm" class="orders-add-carrier-form" style="display:none;">
+            <div class="orders-add-carrier-title">เพิ่มขนส่งใหม่</div>
+            <div class="orders-add-carrier-fields">
+              <input type="text" id="newCarrierName" placeholder="ชื่อขนส่ง เช่น Kerry Express" class="orders-tracking-input">
+              <input type="text" id="newCarrierUrl" placeholder="URL ตรวจสอบ เช่น https://track.example.com/{tracking}" class="orders-tracking-input orders-tracking-input-muted">
+              <div class="orders-add-carrier-hint">ใช้ {tracking} แทนตำแหน่งเลขพัสดุใน URL</div>
+              <div class="orders-add-carrier-actions">
+                <button class="orders-btn orders-btn-primary orders-btn-inline" onclick="window.OrdersV2.addCarrier()">
                   <i class="fas fa-check"></i> เพิ่ม
                 </button>
-                <button class="orders-btn orders-btn-outline" style="padding:0.35rem 0.75rem;font-size:0.8rem;" onclick="window.OrdersV2.toggleAddCarrier()">
+                <button class="orders-btn orders-btn-outline orders-btn-inline" onclick="window.OrdersV2.toggleAddCarrier()">
                   ยกเลิก
                 </button>
               </div>
             </div>
           </div>
-          <input type="text" id="trackingNumberInput" placeholder="กรอกเลขพัสดุ..." value="${escapeHtml(order.trackingNumber || '')}" style="padding:0.5rem 0.75rem;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;font-family:monospace;letter-spacing:0.5px;">
-          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;color:#555;cursor:pointer;">
+          <input type="text" id="trackingNumberInput" placeholder="กรอกเลขพัสดุ..." value="${escapeHtml(order.trackingNumber || '')}" class="orders-tracking-input orders-tracking-code">
+          <label class="orders-tracking-notify">
             <input type="checkbox" id="trackingNotifyCustomer" checked> แจ้งลูกค้าทันที
           </label>
-          <button class="orders-btn orders-btn-primary" style="align-self:flex-start;" onclick="window.OrdersV2.submitTracking('${order.id}')">
+          <button class="orders-btn orders-btn-primary" id="trackingSubmitBtn" onclick="window.OrdersV2.submitTracking('${order.id}')">
             <i class="fas fa-paper-plane"></i> ${order.trackingNumber ? 'อัปเดตเลขพัสดุ' : 'บันทึกและแจ้งลูกค้า'}
           </button>
         </div>
@@ -836,6 +1006,13 @@
             `;
     }).join('')}
         </div>
+      </div>
+
+      <div class="orders-detail-section">
+        <div class="orders-detail-section-title"><i class="fas fa-trash-alt"></i> ลบออเดอร์</div>
+        <button class="orders-btn orders-btn-danger" onclick="window.OrdersV2.deleteOrder('${order.id}')">
+          <i class="fas fa-trash-alt"></i> ลบออเดอร์นี้
+        </button>
       </div>
     `;
 
@@ -872,7 +1049,6 @@
     }
   }
 
-  // ============ Tracking ============
   async function loadCarriersForDropdown(selectedCarrier) {
     const select = document.getElementById('trackingCarrierSelect');
     if (!select) return;
@@ -883,15 +1059,17 @@
       if (!data.success) return;
 
       select.innerHTML = '<option value="">-- เลือกขนส่ง --</option>';
-      (data.carriers || []).forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.name;
-        opt.textContent = c.name;
-        if (selectedCarrier && c.name === selectedCarrier) opt.selected = true;
-        select.appendChild(opt);
+      (data.carriers || []).forEach((carrier) => {
+        const option = document.createElement('option');
+        option.value = carrier.name;
+        option.textContent = carrier.name;
+        if (selectedCarrier && carrier.name === selectedCarrier) {
+          option.selected = true;
+        }
+        select.appendChild(option);
       });
-    } catch (err) {
-      console.error('[Orders] Load carriers error:', err);
+    } catch (error) {
+      console.error('[Orders] Load carriers error:', error);
     }
   }
 
@@ -905,6 +1083,7 @@
     const nameInput = document.getElementById('newCarrierName');
     const urlInput = document.getElementById('newCarrierUrl');
     const name = nameInput?.value?.trim();
+
     if (!name) {
       showToast('กรุณาระบุชื่อขนส่ง', 'error');
       return;
@@ -916,20 +1095,20 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, trackingUrl: urlInput?.value || '' })
       });
+
       const data = await response.json();
-      if (data.success) {
-        showToast(`เพิ่มขนส่ง "${name}" เรียบร้อย`, 'success');
-        if (nameInput) nameInput.value = '';
-        if (urlInput) urlInput.value = '';
-        toggleAddCarrier();
-        // Reload dropdown and select the new carrier
-        await loadCarriersForDropdown(name);
-      } else {
-        showToast(data.error || 'เพิ่มขนส่งไม่สำเร็จ', 'error');
+      if (!data.success) {
+        throw new Error(data.error || 'เพิ่มขนส่งไม่สำเร็จ');
       }
-    } catch (err) {
-      console.error('[Orders] Add carrier error:', err);
-      showToast('เพิ่มขนส่งไม่สำเร็จ', 'error');
+
+      showToast(`เพิ่มขนส่ง "${name}" เรียบร้อย`, 'success');
+      if (nameInput) nameInput.value = '';
+      if (urlInput) urlInput.value = '';
+      toggleAddCarrier();
+      await loadCarriersForDropdown(name);
+    } catch (error) {
+      console.error('[Orders] Add carrier error:', error);
+      showToast(error.message || 'เพิ่มขนส่งไม่สำเร็จ', 'error');
     }
   }
 
@@ -946,9 +1125,9 @@
 
     const carrier = carrierSelect?.value || '';
     const notifyCustomer = notifyCheckbox?.checked !== false;
+    const submitBtn = document.getElementById('trackingSubmitBtn');
 
     try {
-      const submitBtn = document.querySelector('#trackingSection .orders-btn-primary:last-of-type');
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
@@ -961,33 +1140,30 @@
       });
 
       const data = await response.json();
-      if (data.success) {
-        const notifyText = data.notificationSent ? ' + แจ้งลูกค้าแล้ว' : '';
-        showToast(`บันทึกเลขพัสดุเรียบร้อย${notifyText}`, 'success');
-        // Reload orders to reflect changes
-        await loadOrders();
-        // Reopen detail with refreshed data
-        const refreshedOrder = state.orders.find(o => o.id === orderId);
-        if (refreshedOrder) {
-          renderDetailPanel(refreshedOrder);
-          loadCarriersForDropdown(refreshedOrder.trackingCarrier);
-        }
-      } else {
-        showToast(data.error || 'บันทึกเลขพัสดุไม่สำเร็จ', 'error');
+      if (!data.success) {
+        throw new Error(data.error || 'บันทึกเลขพัสดุไม่สำเร็จ');
       }
 
+      const notifyText = data.notificationSent ? ' + แจ้งลูกค้าแล้ว' : '';
+      showToast(`บันทึกเลขพัสดุเรียบร้อย${notifyText}`, 'success');
+      await loadOrders();
+
+      const refreshedOrder = state.orders.find((order) => order.id === orderId);
+      if (refreshedOrder) {
+        renderDetailPanel(refreshedOrder);
+        loadCarriersForDropdown(refreshedOrder.trackingCarrier);
+      }
+    } catch (error) {
+      console.error('[Orders] Submit tracking error:', error);
+      showToast(error.message || 'บันทึกเลขพัสดุไม่สำเร็จ', 'error');
+    } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> บันทึกและแจ้งลูกค้า';
       }
-    } catch (err) {
-      console.error('[Orders] Submit tracking error:', err);
-      showToast('บันทึกเลขพัสดุไม่สำเร็จ', 'error');
     }
   }
 
-  // ============ Actions ============
-  // ============ Quick Tracking Popover ============
   let activeQuickTrackingPopover = null;
 
   function closeQuickTracking() {
@@ -995,16 +1171,15 @@
       activeQuickTrackingPopover.remove();
       activeQuickTrackingPopover = null;
     }
+    document.removeEventListener('click', handleQuickTrackingOutsideClick);
   }
 
   async function openQuickTracking(orderId, anchorEl) {
-    // Close existing
     closeQuickTracking();
 
-    const order = state.orders.find(o => o.id === orderId);
-    if (!order) return;
+    const order = state.orders.find((entry) => entry.id === orderId);
+    if (!order || !anchorEl) return;
 
-    // Create popover
     const popover = document.createElement('div');
     popover.className = 'quick-tracking-popover';
     popover.innerHTML = `
@@ -1025,7 +1200,7 @@
         </div>
         <div class="qt-field qt-checkbox-field">
           <input type="checkbox" id="qtNotifyCustomer" checked>
-          <label for="qtNotifyCustomer">แจ้งลูกค้าทาง LINE/FB</label>
+          <label for="qtNotifyCustomer">แจ้งลูกค้าทาง LINE/FB/IG/WA</label>
         </div>
         <button class="qt-submit" id="qtSubmitBtn" onclick="window.OrdersV2.submitQuickTracking('${orderId}')">
           <i class="fas fa-paper-plane"></i> บันทึกเลขพัสดุ
@@ -1036,13 +1211,11 @@
     document.body.appendChild(popover);
     activeQuickTrackingPopover = popover;
 
-    // Position popover near the anchor button
     const rect = anchorEl.getBoundingClientRect();
     const popoverWidth = 280;
     let left = rect.right - popoverWidth;
     let top = rect.bottom + 6;
 
-    // Adjust if goes off-screen
     if (left < 8) left = 8;
     if (top + 300 > window.innerHeight) {
       top = rect.top - 6;
@@ -1052,40 +1225,38 @@
     popover.style.left = `${left}px`;
     popover.style.top = `${top}px`;
 
-    // Load carriers
     try {
       const response = await fetch('/admin/shipping-carriers');
       const data = await response.json();
       if (data.success) {
         const select = popover.querySelector('#qtCarrierSelect');
-        (data.carriers || []).forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.name;
-          opt.textContent = c.name;
-          if (order.trackingCarrier && c.name === order.trackingCarrier) opt.selected = true;
-          select.appendChild(opt);
+        (data.carriers || []).forEach((carrier) => {
+          const option = document.createElement('option');
+          option.value = carrier.name;
+          option.textContent = carrier.name;
+          if (order.trackingCarrier && carrier.name === order.trackingCarrier) {
+            option.selected = true;
+          }
+          select.appendChild(option);
         });
       }
-    } catch (err) {
-      console.error('[Orders] Load carriers for quick tracking:', err);
+    } catch (error) {
+      console.error('[Orders] Load carriers for quick tracking:', error);
     }
 
-    // Focus input
     setTimeout(() => {
-      const input = popover.querySelector('#qtTrackingInput');
-      if (input) input.focus();
-    }, 100);
-
-    // Close on outside click
-    setTimeout(() => {
+      popover.querySelector('#qtTrackingInput')?.focus();
       document.addEventListener('click', handleQuickTrackingOutsideClick);
     }, 10);
   }
 
-  function handleQuickTrackingOutsideClick(e) {
-    if (activeQuickTrackingPopover && !activeQuickTrackingPopover.contains(e.target) && !e.target.closest('.btn-shipping')) {
+  function handleQuickTrackingOutsideClick(event) {
+    if (
+      activeQuickTrackingPopover &&
+      !activeQuickTrackingPopover.contains(event.target) &&
+      !event.target.closest('.btn-shipping')
+    ) {
       closeQuickTracking();
-      document.removeEventListener('click', handleQuickTrackingOutsideClick);
     }
   }
 
@@ -1105,9 +1276,6 @@
       return;
     }
 
-    const carrier = carrierSelect?.value || '';
-    const notifyCustomer = notifyCheckbox?.checked !== false;
-
     try {
       if (submitBtn) {
         submitBtn.disabled = true;
@@ -1117,27 +1285,25 @@
       const response = await fetch(`/admin/orders/${orderId}/tracking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trackingNumber, carrier, notifyCustomer })
+        body: JSON.stringify({
+          trackingNumber,
+          carrier: carrierSelect?.value || '',
+          notifyCustomer: notifyCheckbox?.checked !== false,
+        })
       });
 
       const data = await response.json();
-      if (data.success) {
-        const notifyText = data.notificationSent ? ' + แจ้งลูกค้าแล้ว' : '';
-        showToast(`บันทึกเลขพัสดุเรียบร้อย${notifyText}`, 'success');
-        closeQuickTracking();
-        document.removeEventListener('click', handleQuickTrackingOutsideClick);
-        // Reload orders to reflect changes
-        await loadOrders();
-      } else {
-        showToast(data.error || 'บันทึกเลขพัสดุไม่สำเร็จ', 'error');
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> บันทึกเลขพัสดุ';
-        }
+      if (!data.success) {
+        throw new Error(data.error || 'บันทึกเลขพัสดุไม่สำเร็จ');
       }
-    } catch (err) {
-      console.error('[Orders] Quick tracking error:', err);
-      showToast('บันทึกเลขพัสดุไม่สำเร็จ', 'error');
+
+      const notifyText = data.notificationSent ? ' + แจ้งลูกค้าแล้ว' : '';
+      showToast(`บันทึกเลขพัสดุเรียบร้อย${notifyText}`, 'success');
+      closeQuickTracking();
+      await loadOrders();
+    } catch (error) {
+      console.error('[Orders] Quick tracking error:', error);
+      showToast(error.message || 'บันทึกเลขพัสดุไม่สำเร็จ', 'error');
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> บันทึกเลขพัสดุ';
@@ -1145,6 +1311,7 @@
     }
   }
 
+  // ============ Actions ============
   function printLabel(orderId) {
     window.open(`/admin/orders/${orderId}/print-label`, '_blank', 'width=450,height=600');
   }
@@ -1161,6 +1328,33 @@
     loadOrders();
   }
 
+  async function deleteOrder(orderId) {
+    if (!orderId) return;
+    const confirmDelete = window.confirm('ต้องการลบออเดอร์นี้ถาวรหรือไม่? การลบไม่สามารถกู้คืนได้');
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(`/admin/orders/${orderId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        state.selectedIds.delete(orderId);
+        if (state.detailOrderId === orderId) {
+          closeDetail();
+        }
+        showToast('ลบออเดอร์เรียบร้อย', 'success');
+        loadOrders();
+      } else {
+        showToast(data.error || 'ไม่สามารถลบออเดอร์ได้', 'error');
+      }
+    } catch (error) {
+      console.error('[Orders] Delete order error:', error);
+      showToast('เกิดข้อผิดพลาดในการลบออเดอร์', 'error');
+    }
+  }
+
   // ============ Filters Persistence ============
   function saveFilters() {
     try {
@@ -1171,19 +1365,25 @@
   function restoreFilters() {
     try {
       const saved = localStorage.getItem('ordersV2Filters');
-      if (saved) {
-        const filters = JSON.parse(saved);
-        state.filters = { ...state.filters, ...filters };
+      let filters = saved ? JSON.parse(saved) : {};
 
-        // Apply to inputs
-        if (els.searchInput) els.searchInput.value = state.filters.search || '';
-        if (els.startDate) els.startDate.value = state.filters.startDate || '';
-        if (els.endDate) els.endDate.value = state.filters.endDate || '';
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlPageKey = urlParams.get('pageKey');
+      if (urlPageKey) {
+        filters.pageKey = urlPageKey;
+        filters.pageKeys = urlPageKey.split(',').filter(Boolean);
+      }
 
-        // Quick date active
-        if (state.filters.quickDate) {
-          document.querySelector(`.orders-quick-date-btn[data-range="${state.filters.quickDate}"]`)?.classList.add('active');
-        }
+      state.filters = { ...state.filters, ...filters };
+
+      // Apply to inputs
+      if (els.searchInput) els.searchInput.value = state.filters.search || '';
+      if (els.startDate) els.startDate.value = state.filters.startDate || '';
+      if (els.endDate) els.endDate.value = state.filters.endDate || '';
+
+      // Quick date active
+      if (state.filters.quickDate) {
+        document.querySelector(`.orders-quick-date-btn[data-range="${state.filters.quickDate}"]`)?.classList.add('active');
       }
     } catch (e) { }
   }
@@ -1287,16 +1487,18 @@
     toggleSelect,
     openDetail,
     closeDetail,
-    printLabel,
-    goToChat,
-    goToPage,
-    saveNotes,
-    submitTracking,
+    loadCarriersForDropdown,
     toggleAddCarrier,
     addCarrier,
+    submitTracking,
     openQuickTracking,
     closeQuickTracking,
     submitQuickTracking,
+    printLabel,
+    goToChat,
+    goToPage,
+    deleteOrder,
+    saveNotes,
     showToast,
     showError
   };

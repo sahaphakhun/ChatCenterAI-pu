@@ -25,7 +25,7 @@
         <ul class="navbar-nav ms-auto align-items-lg-center">
           <!-- 1. จัดการ AI/ระบบ (Dropdown) -->
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle<%= (current === 'dashboard' || current === 'categories' || current === 'settings' || current === 'settings2') ? ' active' : '' %>"
+            <a class="nav-link dropdown-toggle<%= (current === 'dashboard' || current === 'categories' || current === 'settings' || current === 'settings2' || current === 'instruction-ai' || current === 'instruction-conversations' || current === 'agent-forge') ? ' active' : '' %>"
               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="fas fa-robot"></i> จัดการ AI/ระบบ
             </a>
@@ -44,6 +44,21 @@
                 <a class="dropdown-item<%= (current === 'settings' || current === 'settings2') ? ' active' : '' %>"
                   href="/admin/settings2">
                   <i class="fas fa-cogs"></i> ตั้งค่า
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item<%= current === 'instruction-ai' ? ' active' : '' %>" href="/admin/instruction-ai">
+                  <i class="fas fa-terminal"></i> InstructionAI
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item<%= current === 'instruction-conversations' ? ' active' : '' %>" href="/admin/instruction-conversations">
+                  <i class="fas fa-comments"></i> Conversation History
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item<%= current === 'agent-forge' ? ' active' : '' %>" href="/admin/agent-forge">
+                  <i class="fas fa-industry"></i> ระบบโรงหลอมเอเจนต์
                 </a>
               </li>
               <li>
@@ -187,3 +202,4 @@
       });
     })();
   </script>
+  <%- include('announcement-modal') %>

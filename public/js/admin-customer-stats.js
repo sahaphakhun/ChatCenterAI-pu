@@ -38,6 +38,8 @@
     els.endDate = document.getElementById('statsEndDate');
     els.refreshBtn = document.getElementById('statsRefreshBtn');
     els.hourlyChart = document.getElementById('statsHourlyChart');
+    els.closingRateChart = document.getElementById('statsClosingRateChart');
+    els.closingRateMeta = document.getElementById('statsClosingRateMeta');
     els.salesSection = document.getElementById('statsSalesSection');
     els.conversionSection = document.getElementById('statsConversionSection');
     els.followUpSection = document.getElementById('statsFollowUpSection');
@@ -168,6 +170,7 @@
   function renderAll() {
     renderSummaryCards();
     renderHourlyChart();
+    renderClosingRateChart();
     renderSalesStats();
     renderConversionStats();
     renderFollowUpStats();
@@ -223,7 +226,16 @@
           <i class="fas fa-baht-sign"></i>
         </div>
         <div class="stats-summary-content">
-          <div class="stats-summary-value">฿${formatNumber(sales?.totalSales || 0)}</div>
+          <div class="stats-summary-value-group">
+            <div class="stats-summary-value-row is-draft">
+              <span class="stats-summary-inline-label">ร่าง</span>
+              <strong>฿${formatNumber(sales?.totalSales || 0)}</strong>
+            </div>
+            <div class="stats-summary-value-row is-confirmed">
+              <span class="stats-summary-inline-label">ยืนยันแล้ว</span>
+              <strong>฿${formatNumber(sales?.totalSalesConfirmed || 0)}</strong>
+            </div>
+          </div>
           <div class="stats-summary-label">ยอดขายรวม</div>
         </div>
       </div>
@@ -274,6 +286,71 @@
       `;
     }
     els.hourlyChart.innerHTML = html;
+  }
+
+  function renderClosingRateChart() {
+    if (!els.closingRateChart || !state.stats) return;
+
+    const trend = state.stats.closingRateTrend || {};
+    const mode = trend.mode === 'daily' ? 'daily' : 'hourly';
+    const points = Array.isArray(trend.points) ? trend.points : [];
+    const totalUsers = Number(trend.totalUsers) || 0;
+    const buyerUsers = Number(trend.buyerUsers) || 0;
+    const overallRate = Number.isFinite(Number(trend.overallRate))
+      ? Number(trend.overallRate)
+      : 0;
+
+    if (els.closingRateMeta) {
+      const modeLabel = mode === 'daily' ? 'โหมดรายวัน (หลายวัน)' : 'โหมดรายชั่วโมง (วันเดียว)';
+      els.closingRateMeta.textContent =
+        `${modeLabel} • รวม ${formatNumber(buyerUsers)}/${formatNumber(totalUsers)} คน (${overallRate.toFixed(1)}%)`;
+    }
+
+    if (points.length === 0) {
+      els.closingRateChart.innerHTML = `
+        <div class="stats-empty">
+          <i class="fas fa-chart-line"></i>
+          <p>ไม่มีข้อมูลอัตราปิดการขาย</p>
+        </div>
+      `;
+      return;
+    }
+
+    const maxRate = Math.max(...points.map(p => Number(p?.closeRate) || 0), 0);
+    const minWidth = mode === 'daily'
+      ? Math.max(points.length * 56, 760)
+      : Math.max(points.length * 32, 760);
+
+    const barsHtml = points.map((point) => {
+      const label = escapeHtml(point?.label || '-');
+      const total = Number(point?.totalUsers) || 0;
+      const buyers = Number(point?.buyerUsers) || 0;
+      const rate = Number(point?.closeRate) || 0;
+      const normalizedRate = Math.max(0, Math.min(100, rate));
+      const height = total > 0 ? Math.max(normalizedRate, 3) : 2;
+      const isPeak = maxRate > 0 && rate === maxRate;
+
+      return `
+        <div class="stats-close-bar-wrapper">
+          <div class="stats-close-bar">
+            <div class="stats-close-bar-fill${isPeak ? ' is-peak' : ''}" style="height: ${height}%;">
+              <div class="stats-close-bar-tooltip">
+                ${label} • ${formatNumber(buyers)}/${formatNumber(total)} คน (${normalizedRate.toFixed(1)}%)
+              </div>
+            </div>
+          </div>
+          <div class="stats-close-bar-label">${label}</div>
+        </div>
+      `;
+    }).join('');
+
+    els.closingRateChart.innerHTML = `
+      <div class="stats-closing-rate-scroll">
+        <div class="stats-closing-rate-inner" style="min-width: ${minWidth}px;">
+          ${barsHtml}
+        </div>
+      </div>
+    `;
   }
 
   function renderSalesStats() {
@@ -560,6 +637,12 @@
     sections.forEach(el => {
       if (el) el.innerHTML = '<div class="stats-loading"><div class="stats-spinner"></div></div>';
     });
+    if (els.closingRateChart) {
+      els.closingRateChart.innerHTML = '<div class="stats-loading"><div class="stats-spinner"></div></div>';
+    }
+    if (els.closingRateMeta) {
+      els.closingRateMeta.textContent = 'กำลังโหลด...';
+    }
   }
 
   function showError(message) {
@@ -568,6 +651,12 @@
     sections.forEach(el => {
       if (el) el.innerHTML = `<div class="stats-empty"><i class="fas fa-exclamation-triangle"></i><p>${escapeHtml(message)}</p></div>`;
     });
+    if (els.closingRateChart) {
+      els.closingRateChart.innerHTML = `<div class="stats-empty"><i class="fas fa-exclamation-triangle"></i><p>${escapeHtml(message)}</p></div>`;
+    }
+    if (els.closingRateMeta) {
+      els.closingRateMeta.textContent = '-';
+    }
   }
 
   // ============ Utilities ============

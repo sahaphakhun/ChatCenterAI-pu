@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstructionAI | ChatCenter AI</title>
+    <meta name="description" content="แก้ไข Instruction ผ่านการแชทกับ AI Agent — ChatGPT-style interface">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/instruction-chat.css?v=<%= assetVersion %>" rel="stylesheet">
+</head>
+
+<body>
+    <div class="ic-app" id="icApp">
+
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="ic-sidebar-overlay" id="icSidebarOverlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="ic-sidebar" id="icSidebar">
+            <div class="ic-sidebar-top">
+                <div class="ic-sidebar-brand">
+                    <div class="ic-brand-icon"><i class="fas fa-terminal"></i></div>
+                    <span class="ic-brand-text">InstructionAI</span>
+                </div>
+                <button class="ic-sidebar-close" id="icSidebarClose" title="ปิดเมนู">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Instruction Selector -->
+            <div class="ic-sidebar-section">
+                <div class="ic-sidebar-section-label">
+                    <i class="fas fa-book-open"></i> Instructions
+                </div>
+                <div class="ic-search">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <input type="text" id="icInstructionSearch" placeholder="ค้นหา...">
+                </div>
+            </div>
+
+            <div class="ic-sidebar-list" id="icInstructionList">
+                <div class="ic-sidebar-loading">
+                    <div class="ic-spinner"></div>
+                    <span>กำลังโหลด...</span>
+                </div>
+            </div>
+
+            <!-- Session History -->
+            <div class="ic-sidebar-section ic-session-section" id="icSessionSection" style="display:none;">
+                <div class="ic-sidebar-section-label">
+                    <i class="fas fa-clock-rotate-left"></i> ประวัติแชท
+                </div>
+                <div class="ic-session-list" id="icSessionList"></div>
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="ic-sidebar-footer">
+                <a href="/admin/settings2" class="ic-sidebar-footer-link">
+                    <i class="fas fa-gear"></i> Settings
+                </a>
+            </div>
+        </aside>
+
+        <!-- Chat Area -->
+        <div class="ic-chat" id="icChat">
+
+            <!-- Top Bar -->
+            <div class="ic-topbar">
+                <div class="ic-topbar-left">
+                    <button class="ic-topbar-btn" id="icToggleSidebar" title="เปิดเมนู">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="ic-topbar-title" id="icTopbarTitle">
+                        <span class="ic-topbar-title-text" id="icActiveName">InstructionAI</span>
+                    </div>
+                </div>
+                <div class="ic-topbar-right">
+                    <!-- Model Selector in topbar -->
+                    <div class="ic-model-selector" id="icModelSelector">
+                        <button class="ic-model-pill" id="icModelBtn" title="เลือกโมเดล">
+                            <span class="ic-model-dot"></span>
+                            <span id="icModelLabel">GPT-5.2</span>
+                            <i class="fas fa-chevron-down ic-model-chevron"></i>
+                        </button>
+                        <div class="ic-model-dropdown" id="icModelDropdown">
+                            <div class="ic-dropdown-header">Model</div>
+                            <div class="ic-model-option active" data-model="gpt-5.2">
+                                <div class="ic-model-option-left">
+                                    <div class="ic-model-option-icon star"><i class="fas fa-star"></i></div>
+                                    <div>
+                                        <div class="ic-model-option-name">GPT-5.2</div>
+                                        <div class="ic-model-option-desc">ดีที่สุด — สมดุลระหว่างความเร็วและความแม่นยำ
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="ic-badge-recommended">แนะนำ</span>
+                            </div>
+                            <div class="ic-model-option" data-model="gpt-5.2-codex">
+                                <div class="ic-model-option-left">
+                                    <div class="ic-model-option-icon codex"><i class="fas fa-code"></i></div>
+                                    <div>
+                                        <div class="ic-model-option-name">GPT-5.2 Codex</div>
+                                        <div class="ic-model-option-desc">เหมาะกับ structured data</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ic-model-option" data-model="gpt-5.1">
+                                <div class="ic-model-option-left">
+                                    <div class="ic-model-option-icon fast"><i class="fas fa-bolt"></i></div>
+                                    <div>
+                                        <div class="ic-model-option-name">GPT-5.1</div>
+                                        <div class="ic-model-option-desc">เร็วกว่า ประหยัดกว่า</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ic-model-option" data-model="gpt-5">
+                                <div class="ic-model-option-left">
+                                    <div class="ic-model-option-icon router"><i class="fas fa-shuffle"></i></div>
+                                    <div>
+                                        <div class="ic-model-option-name">GPT-5 Router</div>
+                                        <div class="ic-model-option-desc">เลือก sub-model อัตโนมัติ</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ic-dropdown-divider"></div>
+                            <div class="ic-dropdown-header">Thinking Level</div>
+                            <div class="ic-thinking-bar" id="icThinkingLevels">
+                                <button class="ic-think-btn" data-level="off">Off</button>
+                                <button class="ic-think-btn" data-level="low">Low</button>
+                                <button class="ic-think-btn" data-level="medium">Med</button>
+                                <button class="ic-think-btn" data-level="high">High</button>
+                                <button class="ic-think-btn active" data-level="max">Max</button>
+                            </div>
+                            <div class="ic-thinking-note" id="icThinkingNote"></div>
+                        </div>
+                    </div>
+                    <!-- Version Management -->
+                    <div class="ic-version-controls" id="icVersionControls" style="display:none;">
+                        <button class="ic-version-btn" id="icVersionBtn" title="จัดการเวอร์ชัน">
+                            <i class="fas fa-code-branch"></i>
+                            <span id="icVersionLabel">—</span>
+                        </button>
+                        <button class="ic-save-version-btn" id="icSaveVersionBtn" title="บันทึกเวอร์ชันใหม่">
+                            <i class="fas fa-floppy-disk"></i>
+                        </button>
+                    </div>
+                    <button class="ic-new-chat-btn" id="icNewChat" title="เริ่มแชทใหม่">
+                        <i class="fas fa-pen-to-square"></i>
+                        <span>New Chat</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div class="ic-messages" id="icMessages">
+                <!-- Empty / Welcome State -->
+                <div class="ic-welcome" id="icEmpty">
+                    <div class="ic-welcome-glow"></div>
+                    <div class="ic-welcome-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path
+                                d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <h2 class="ic-welcome-title">InstructionAI</h2>
+                    <p class="ic-welcome-desc">เลือก Instruction จากเมนูด้านซ้าย แล้วเริ่มแชทกับ AI เพื่อตรวจสอบ, สอบถาม
+                        หรือแก้ไขข้อมูล</p>
+                </div>
+            </div>
+
+            <!-- Quick Suggest Button (shown per instruction when no history) -->
+            <div class="ic-quick-suggest-wrap" id="icQuickSuggestWrap" style="display:none;">
+                <button class="ic-quick-suggest-btn" id="icQuickSuggest">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    <span>ช่วยแนะนำการปรับปรุง instruction นี้หน่อย</span>
+                </button>
+            </div>
+
+            <!-- Input Area (always visible at bottom) -->
+            <div class="ic-input-area" id="icInputArea">
+                <div class="ic-input-container">
+                    <div class="ic-input-wrapper" id="icInputWrapper">
+                        <div class="ic-image-preview" id="icImagePreview" style="display:none;"></div>
+                        <div class="ic-input-row">
+                            <button class="ic-btn-attach" id="icAttach" title="แนบรูปภาพ" disabled>
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <input type="file" id="icFileInput" accept="image/jpeg,image/png,image/webp" multiple
+                                style="display:none;">
+                            <textarea id="icInput" placeholder="พิมพ์ข้อความ..." rows="1" disabled></textarea>
+                            <div class="ic-input-actions">
+                                <button class="ic-btn-send" id="icSend" disabled title="ส่ง (Enter)">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ic-input-footer">
+                        <div class="ic-input-info">
+                            <span id="icStatusInfo" style="display:none;">
+                                <span class="ic-dot-live"></span>
+                                <span id="icStatusModel">GPT-5.2</span> ·
+                                Thinking: <span id="icStatusThinking">Max</span> ·
+                                <span id="icStatusTokens">0</span> tokens ·
+                                <span id="icStatusChanges">0</span> edits
+                            </span>
+                        </div>
+                        <div class="ic-input-hint">
+                            <kbd>Enter</kbd> ส่ง · <kbd>Shift+Enter</kbd> ขึ้นบรรทัดใหม่
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('partials/announcement-modal') %>
+
+        <!-- Version Modal -->
+        <div class="ic-version-modal-overlay" id="icVersionModal" style="display:none;">
+            <div class="ic-version-modal">
+                <div class="ic-version-modal-header">
+                    <h3><i class="fas fa-code-branch"></i> เวอร์ชัน</h3>
+                    <button class="ic-version-modal-close" id="icVersionModalClose"><i
+                            class="fas fa-xmark"></i></button>
+                </div>
+                <div class="ic-version-modal-body" id="icVersionList">
+                    <div class="ic-version-empty">กำลังโหลด...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Version Modal -->
+        <div class="ic-version-modal-overlay" id="icSaveVersionModal" style="display:none;">
+            <div class="ic-version-modal ic-version-modal-sm">
+                <div class="ic-version-modal-header">
+                    <h3><i class="fas fa-floppy-disk"></i> บันทึกเวอร์ชันใหม่</h3>
+                    <button class="ic-version-modal-close" id="icSaveVersionModalClose"><i
+                            class="fas fa-xmark"></i></button>
+                </div>
+                <div class="ic-version-modal-body">
+                    <label class="ic-version-note-label">หมายเหตุ (ไม่บังคับ)</label>
+                    <input type="text" id="icVersionNote" class="ic-version-note-input"
+                        placeholder="เช่น เพิ่มโปรโมชันเดือน ก.พ." maxlength="200">
+                    <button class="ic-version-save-confirm" id="icVersionSaveConfirm">
+                        <i class="fas fa-check"></i> บันทึกเวอร์ชัน
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script src="/js/instruction-chat.js?v=<%= assetVersion %>"></script>
+</body>
+
+</html>

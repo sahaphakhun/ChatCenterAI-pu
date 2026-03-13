@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation History — InstructionAI</title>
+    <meta name="description" content="ดูประวัติการสนทนาลูกค้าที่ใช้ Instruction แต่ละตัว พร้อมระบบกรองขั้นสูง">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="/css/instruction-conversations.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar: Instruction Selector + Analytics -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-comments"></i> ประวัติสนทนา</h2>
+                <a href="/admin/instruction-ai" class="back-link" title="กลับ InstructionAI"><i
+                        class="fas fa-arrow-left"></i></a>
+            </div>
+
+            <div class="instruction-selector">
+                <label>เลือก Instruction</label>
+                <select id="instructionSelect">
+                    <option value="">-- เลือก Instruction --</option>
+                    <% instructions.forEach(inst=> { %>
+                        <option value="<%= inst.instructionId %>" data-name="<%= inst.name %>">
+                            <%= inst.name %>
+                        </option>
+                        <% }) %>
+                </select>
+            </div>
+
+            <!-- Analytics Panel -->
+            <div class="analytics-panel" id="analyticsPanel" style="display:none;">
+                <h3><i class="fas fa-chart-bar"></i> สถิติ</h3>
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">Conversion Rate</span>
+                        <span class="stat-value" id="statConversion">—</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">เฉลี่ยข้อความ/คน</span>
+                        <span class="stat-value" id="statAvgMessages">—</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">สนทนาทั้งหมด</span>
+                        <span class="stat-value" id="statTotalThreads">—</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">มีออเดอร์</span>
+                        <span class="stat-value" id="statWithOrders">—</span>
+                    </div>
+                </div>
+
+                <div class="top-products" id="topProducts"></div>
+
+                <div class="platform-breakdown" id="platformBreakdown"></div>
+            </div>
+
+            <!-- Rebuild Button -->
+            <div class="sidebar-actions" id="sidebarActions" style="display:none;">
+                <button class="btn-rebuild" id="btnRebuild" title="สร้าง Thread Index ใหม่จากข้อมูลที่มี">
+                    <i class="fas fa-sync-alt"></i> Rebuild Threads
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Filters Bar -->
+            <div class="filters-bar" id="filtersBar" style="display:none;">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>ผลลัพธ์</label>
+                        <div class="chip-group" id="outcomeChips">
+                            <button class="chip active" data-value="all"><i class="fas fa-globe"></i> ทั้งหมด</button>
+                            <button class="chip" data-value="purchased"><i class="fas fa-shopping-cart"></i>
+                                ซื้อ</button>
+                            <button class="chip" data-value="not_purchased"><i class="fas fa-times-circle"></i>
+                                ไม่ซื้อ</button>
+                            <button class="chip" data-value="pending"><i class="fas fa-clock"></i> รอ</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>ข้อความลูกค้า</label>
+                        <div class="range-inputs">
+                            <input type="number" id="minMessages" placeholder="Min" min="0">
+                            <span>~</span>
+                            <input type="number" id="maxMessages" placeholder="Max" min="0">
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Platform</label>
+                        <select id="platformFilter">
+                            <option value="">ทั้งหมด</option>
+                            <option value="line">LINE</option>
+                            <option value="facebook">Facebook</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>เรียงตาม</label>
+                        <select id="sortBy">
+                            <option value="newest">ล่าสุด</option>
+                            <option value="oldest">เก่าสุด</option>
+                            <option value="most_messages">ข้อความมากสุด</option>
+                            <option value="highest_order">ยอดสั่งซื้อสูงสุด</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filter-row">
+                    <div class="filter-group filter-products">
+                        <label>สินค้า</label>
+                        <div class="product-tags" id="productTags"></div>
+                    </div>
+
+                    <div class="filter-group filter-search">
+                        <label>ค้นหา</label>
+                        <div class="search-input-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="ค้นหาข้อความ...">
+                        </div>
+                    </div>
+
+                    <button class="btn-apply" id="btnApplyFilters"><i class="fas fa-filter"></i> กรอง</button>
+                </div>
+            </div>
+
+            <!-- Thread List -->
+            <div class="thread-list-container" id="threadListContainer">
+                <div class="empty-state" id="emptyState">
+                    <i class="fas fa-comments"></i>
+                    <h3>เลือก Instruction เพื่อดูประวัติสนทนา</h3>
+                    <p>ระบบจะแสดงรายการสนทนาทั้งหมดของลูกค้าที่ใช้ Instruction นั้น</p>
+                </div>
+
+                <div class="thread-list" id="threadList" style="display:none;"></div>
+
+                <div class="pagination" id="pagination" style="display:none;">
+                    <button id="btnPrevPage" disabled><i class="fas fa-chevron-left"></i></button>
+                    <span id="pageInfo">1 / 1</span>
+                    <button id="btnNextPage" disabled><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Thread Detail (overlay, shown when clicking a thread) -->
+            <div class="thread-detail-overlay" id="threadDetailOverlay" style="display:none;">
+                <div class="thread-detail">
+                    <div class="thread-detail-header">
+                        <button class="btn-back" id="btnBackToList"><i class="fas fa-arrow-left"></i> กลับ</button>
+                        <div class="thread-meta" id="threadMeta"></div>
+                    </div>
+                    <div class="thread-messages" id="threadMessages"></div>
+                    <div class="thread-order-summary" id="threadOrderSummary" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+                <div class="spinner"></div>
+                <span>กำลังโหลด...</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- Mobile sidebar toggle -->
+    <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+
+    <script src="/js/instruction-conversations.js"></script>
+</body>
+
+</html>

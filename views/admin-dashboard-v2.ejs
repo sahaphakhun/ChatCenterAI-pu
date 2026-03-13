@@ -106,17 +106,24 @@
 	                                                <option value="">— เลือก Instruction —</option>
 	                                                <% instructions.forEach(instruction=> { %>
 	                                                    <% const updatedAt=instruction.updatedAt || instruction.createdAt;
+	                                                        const starterCfg = instruction.conversationStarter || {};
+	                                                        const starterEnabled = !!starterCfg.enabled;
+	                                                        const starterCount = Array.isArray(starterCfg.messages) ? starterCfg.messages.length : 0;
 	                                                        %>
 	                                                        <option value="<%= instruction._id %>"
 	                                                            data-instruction-code="<%= instruction.instructionId || '' %>"
+	                                                            data-name="<%= instruction.name || 'ไม่มีชื่อ' %>"
+	                                                            data-starter-enabled="<%= starterEnabled ? '1' : '0' %>"
+	                                                            data-starter-count="<%= starterCount %>"
 	                                                            data-updated="<%= updatedAt ? new Date(updatedAt).toISOString() : '' %>">
 	                                                            <%= instruction.instructionId ? '[' +
 	                                                                instruction.instructionId + '] ' : '' %>
 	                                                                <%= instruction.name || 'ไม่มีชื่อ' %>
-                                                                    <% if (updatedAt) { %>
-                                                                        — <%= new
-                                                                            Date(updatedAt).toLocaleString('th-TH', {
-                                                                            year: 'numeric' , month: 'short' ,
+	                                                                    • <%= starterEnabled ? `Starter ON (${starterCount})` : 'Starter OFF' %>
+	                                                                    <% if (updatedAt) { %>
+	                                                                        — <%= new
+	                                                                            Date(updatedAt).toLocaleString('th-TH', {
+	                                                                            year: 'numeric' , month: 'short' ,
                                                                             day: 'numeric' , hour: '2-digit' ,
                                                                             minute: '2-digit' }) %>
                                                                             <% } %>
@@ -124,19 +131,30 @@
                                                         <% }) %>
                                             </select>
                                         </div>
-                                        <div class="col-md-4 col-lg-4">
-                                            <label class="form-label">สถานะ</label>
-                                            <div id="instructionEditorStatus" class="instruction-editor-status">
-                                                ยังไม่ได้เลือก Instruction</div>
-                                        </div>
-                                        <div
-                                            class="col-md-3 col-lg-4 col-xl-3 d-flex align-items-end justify-content-md-end">
-                                            <button class="btn btn-success w-100 w-md-auto"
-                                                id="saveInstructionChangesBtn" disabled>
-                                                <i class="fas fa-save me-1"></i> บันทึกการแก้ไข
-                                            </button>
-                                        </div>
-                                    </div>
+	                                        <div class="col-md-4 col-lg-4">
+	                                            <label class="form-label">สถานะ</label>
+	                                            <div class="instruction-editor-status-stack">
+	                                                <div id="instructionEditorStatus" class="instruction-editor-status">
+	                                                    ยังไม่ได้เลือก Instruction
+	                                                </div>
+	                                                <div id="instructionStarterQuickStatus"
+	                                                    class="instruction-starter-status-chip is-off">
+	                                                    <i class="fas fa-rocket"></i>
+	                                                    <span id="instructionStarterQuickStatusText">Starter: ยังไม่ได้เลือก
+	                                                        Instruction</span>
+	                                                </div>
+	                                            </div>
+	                                        </div>
+	                                        <div
+	                                            class="col-md-3 col-lg-4 col-xl-3 d-flex align-items-end justify-content-md-end">
+	                                            <div class="instruction-editor-actions">
+	                                                <button class="btn btn-success" id="saveInstructionChangesBtn"
+	                                                    disabled>
+	                                                    <i class="fas fa-save me-1"></i> บันทึกการแก้ไข
+	                                                </button>
+	                                            </div>
+	                                        </div>
+	                                    </div>
                                     <div id="instructionEditorEmptyState" class="alert alert-info mt-2 mb-0">
                                         <i class="fas fa-info-circle me-2"></i> เลือก Instruction
                                         เพื่อโหลดข้อมูลและแก้ไขรายละเอียด
@@ -199,21 +217,42 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div id="instructionCardsWrapper" class="instruction-grid d-none">
-                                        <% instructions.forEach(instruction=> { %>
-                                            <div class="instruction-card" data-id="<%= instruction._id %>">
-                                                <div class="instruction-header">
-                                                    <div class="flex-grow-1">
-                                                        <h5 class="instruction-title">
-                                                            <%= instruction.name || 'ไม่มีชื่อ' %>
-                                                        </h5>
-                                                        <% if (instruction.description) { %>
-                                                            <p class="instruction-desc">
-                                                                <%= instruction.description %>
-                                                            </p>
-                                                            <% } %>
-                                                    </div>
-	                                                    <div class="instruction-actions">
+	                                    <div id="instructionCardsWrapper" class="instruction-grid d-none">
+	                                        <% instructions.forEach(instruction=> { %>
+	                                            <% const starterCfg = instruction.conversationStarter || {};
+	                                                const starterEnabled = !!starterCfg.enabled;
+	                                                const starterCount = Array.isArray(starterCfg.messages) ? starterCfg.messages.length : 0; %>
+	                                            <div class="instruction-card" data-id="<%= instruction._id %>">
+	                                                <div class="instruction-header">
+	                                                    <div class="flex-grow-1">
+	                                                        <h5 class="instruction-title">
+	                                                            <%= instruction.name || 'ไม่มีชื่อ' %>
+	                                                        </h5>
+	                                                        <% if (instruction.description) { %>
+	                                                            <p class="instruction-desc">
+	                                                                <%= instruction.description %>
+	                                                            </p>
+	                                                            <% } %>
+	                                                                <div class="instruction-meta-badges">
+	                                                                    <span class="starter-status-badge <%= starterEnabled ? 'is-on' : 'is-off' %>"
+	                                                                        data-starter-badge
+	                                                                        data-instruction-id="<%= instruction._id %>"
+	                                                                        data-starter-enabled="<%= starterEnabled ? '1' : '0' %>"
+	                                                                        data-starter-count="<%= starterCount %>">
+	                                                                        <i class="fas fa-rocket"></i>
+	                                                                        <span data-starter-badge-text>
+	                                                                            <%= starterEnabled ? `Starter ON (${starterCount})` : 'Starter OFF' %>
+	                                                                        </span>
+	                                                                    </span>
+	                                                                </div>
+	                                                    </div>
+		                                                    <div class="instruction-actions">
+	                                                        <button class="btn btn-sm btn-outline-primary open-starter-modal"
+	                                                            data-id="<%= instruction._id %>"
+	                                                            aria-label="ตั้งค่าข้อความเริ่มต้น"
+	                                                            title="ตั้งค่าข้อความเริ่มต้น">
+	                                                            <i class="fas fa-comments"></i>
+	                                                        </button>
 	                                                        <button class="btn btn-sm btn-outline-primary edit-instruction"
 	                                                            data-id="<%= instruction._id %>"
 	                                                            aria-label="แก้ไข Instruction">
@@ -412,8 +451,8 @@
                     </div>
                 </div>
 
-                <!-- Modal: Select Data Item Type -->
-                <div class="modal fade" id="selectDataTypeModal" tabindex="-1">
+	                <!-- Modal: Select Data Item Type -->
+	                <div class="modal fade" id="selectDataTypeModal" tabindex="-1">
                     <div class="modal-dialog modal-dialog-centered modal-sm">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -443,9 +482,65 @@
                             </div>
                         </div>
                     </div>
-                </div>
+	                </div>
 
-                <%- include('partials/modals/import-export-sheets-modal') %>
+	                <!-- Modal: Conversation Starter -->
+	                <div class="modal fade" id="conversationStarterModal" tabindex="-1">
+	                    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+	                        <div class="modal-content conversation-starter-modal">
+	                            <div class="modal-header">
+	                                <div>
+	                                    <h5 class="modal-title">
+	                                        <i class="fas fa-rocket text-primary me-2"></i>ข้อความเริ่มต้นการสนทนา
+	                                    </h5>
+	                                    <div class="small text-muted" id="starterModalInstructionName">-</div>
+	                                </div>
+	                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+	                            </div>
+	                            <div class="modal-body">
+	                                <div class="starter-modal-switch-row">
+	                                    <div class="form-check form-switch mb-0">
+	                                        <input class="form-check-input" type="checkbox" role="switch"
+	                                            id="starterEnabledToggle" style="width: 3em; height: 1.5em;">
+	                                        <label class="form-check-label fw-semibold ms-2"
+	                                            for="starterEnabledToggle">
+	                                            เปิดใช้งานข้อความเริ่มต้นแทนคำตอบ AI ครั้งแรก
+	                                        </label>
+	                                    </div>
+	                                    <span class="starter-modal-counter" id="starterMessageCounter">0 รายการ</span>
+	                                </div>
+                                <div class="starter-modal-help">
+                                    ระบบจะส่งข้อความ/รูปภาพ/วิดีโอตามลำดับที่ตั้งไว้เมื่อเป็นข้อความแรกของลูกค้าในบทสนทนา
+                                </div>
+                                <div class="starter-modal-toolbar">
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                        id="starterAddTextBtn">
+                                        <i class="fas fa-comment-alt me-1"></i> เพิ่มข้อความ
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success btn-sm"
+                                        id="starterAddImageBtn">
+                                        <i class="fas fa-image me-1"></i> เพิ่มรูปภาพ
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning btn-sm"
+                                        id="starterAddVideoBtn">
+                                        <i class="fas fa-video me-1"></i> เพิ่มวิดีโอ
+                                    </button>
+                                    <input type="file" id="starterImageUploadInput" class="d-none" accept="image/*"
+                                        multiple>
+                                </div>
+	                                <div id="starterMessagesList" class="starter-message-list"></div>
+	                            </div>
+	                            <div class="modal-footer">
+	                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">ปิด</button>
+	                                <button type="button" class="btn btn-primary" id="saveStarterConfigBtn">
+	                                    <i class="fas fa-save me-1"></i>บันทึกข้อความเริ่มต้น
+	                                </button>
+	                            </div>
+	                        </div>
+	                    </div>
+	                </div>
+
+	                <%- include('partials/modals/import-export-sheets-modal') %>
 
                     <div id="dashboardToastContainer" class="app-toast-container"></div>
 

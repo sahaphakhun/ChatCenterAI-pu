@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Forge Run</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <link href="/css/style.css" rel="stylesheet" />
+  <link href="/css/agent-forge-run.css" rel="stylesheet" />
+</head>
+
+<body class="app-shell">
+  <%- include('partials/admin-navbar', { activePage: 'agent-forge' }) %>
+
+    <div class="app-content">
+      <div class="container-fluid py-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+          <div>
+            <h1 class="h4 mb-1"><i class="fas fa-stream me-2 text-primary"></i>Run Trace</h1>
+            <p class="text-muted mb-0">runId: <code><%= run._id %></code></p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" href="/admin/agent-forge"><i class="fas fa-arrow-left me-2"></i>กลับ</a>
+            <button class="btn btn-outline-danger" id="stopRunBtn"><i class="fas fa-stop me-2"></i>Stop</button>
+            <button class="btn btn-primary" id="replaySelfTestsBtn"><i class="fas fa-redo me-2"></i>Replay Self-tests</button>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-3">
+            <div class="stat-card">
+              <div class="label">Status</div>
+              <div class="value" id="runStatusLabel"><%= run.status %></div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card">
+              <div class="label">Iterations</div>
+              <div class="value" id="runIterationsLabel"><%= run.iterations || 0 %></div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card">
+              <div class="label">Self-test Cases</div>
+              <div class="value" id="runSelfTestCountLabel"><%= run.selfTestCount || 0 %></div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card">
+              <div class="label">Mode</div>
+              <div class="value"><%= run.dryRun ? 'Dry-run' : 'Live-run' %></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-body p-0">
+            <ul class="nav nav-tabs px-3 pt-3" id="runTabs" role="tablist">
+              <li class="nav-item"><button class="nav-link active" data-target="#tabTimeline">Run Timeline</button></li>
+              <li class="nav-item"><button class="nav-link" data-target="#tabSaw">Agent Saw</button></li>
+              <li class="nav-item"><button class="nav-link" data-target="#tabThought">Agent Thought</button></li>
+              <li class="nav-item"><button class="nav-link" data-target="#tabTools">Tools</button></li>
+              <li class="nav-item"><button class="nav-link" data-target="#tabPayload">OpenAI Payload</button></li>
+              <li class="nav-item"><button class="nav-link" data-target="#tabCompaction">Compaction</button></li>
+              <li class="nav-item"><button class="nav-link" data-target="#tabSelfTest">Self-Test</button></li>
+              <li class="nav-item"><button class="nav-link" data-target="#tabDiff">Instruction Diff</button></li>
+            </ul>
+
+            <div class="tab-panels p-3">
+              <section class="tab-panel active" id="tabTimeline">
+                <div class="timeline" id="timelineEvents"></div>
+              </section>
+              <section class="tab-panel" id="tabSaw">
+                <pre id="agentSawPanel" class="panel-pre"></pre>
+              </section>
+              <section class="tab-panel" id="tabThought">
+                <pre id="agentThoughtPanel" class="panel-pre"></pre>
+              </section>
+              <section class="tab-panel" id="tabTools">
+                <pre id="agentToolsPanel" class="panel-pre"></pre>
+              </section>
+              <section class="tab-panel" id="tabPayload">
+                <div class="mb-3">
+                  <button class="btn btn-sm btn-outline-primary" id="refreshSnapshotsBtn">โหลด Snapshot</button>
+                </div>
+                <div id="snapshotList" class="snapshot-list"></div>
+                <pre id="snapshotViewer" class="panel-pre mt-2"></pre>
+              </section>
+              <section class="tab-panel" id="tabCompaction">
+                <pre id="compactionPanel" class="panel-pre"></pre>
+              </section>
+              <section class="tab-panel" id="tabSelfTest">
+                <div id="selfTestSummary"></div>
+                <div id="selfTestCases"></div>
+              </section>
+              <section class="tab-panel" id="tabDiff">
+                <pre id="instructionDiffPanel" class="panel-pre"></pre>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__AGENT_FORGE_RUN_BOOTSTRAP__ = {
+        run: <%- JSON.stringify(run || {}).replace(/</g, '\\u003c') %>
+      };
+    </script>
+    <script src="/js/agent-forge-run.js"></script>
+</body>
+
+</html>

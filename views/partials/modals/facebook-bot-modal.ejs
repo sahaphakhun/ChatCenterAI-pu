@@ -116,7 +116,7 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="mb-3">
-                                <label for="facebookBotApiKeyId" class="form-label">OpenAI API Key</label>
+                                <label for="facebookBotApiKeyId" class="form-label">AI Provider Key</label>
                                 <select class="form-select" id="facebookBotApiKeyId" name="openaiApiKeyId">
                                     <option value="">ใช้ Key หลัก (Default)</option>
                                     <!-- Options will be populated by JavaScript -->
@@ -140,19 +140,21 @@
                                         <i class="fas fa-cog"></i>
                                     </button>
                                 </div>
-                                <select class="form-select mt-1" id="facebookBotAiModel" name="aiModel" required>
-                                    <option value="gpt-5.2">GPT-5.2</option>
-                                    <option value="gpt-5.1">GPT-5.1</option>
-                                    <option value="gpt-5">GPT-5</option>
-                                    <option value="gpt-5-mini">GPT-5 mini</option>
-                                    <option value="gpt-5-nano">GPT-5 nano</option>
-                                    <option value="gpt-5-pro">GPT-5 pro</option>
-                                    <option value="gpt-4.1">GPT-4.1</option>
-                                    <option value="gpt-4.1-mini">GPT-4.1 mini</option>
-                                    <option value="gpt-4.1-nano">GPT-4.1 nano</option>
-                                    <option value="gpt-4o">GPT-4o</option>
-                                    <option value="gpt-4o-mini">GPT-4o mini</option>
-                                </select>
+                                <input type="text" class="form-control mt-1" id="facebookBotAiModel" name="aiModel"
+                                    list="facebookBotAiModelPresets" placeholder="เช่น gpt-5 หรือ openai/gpt-4.1" required>
+                                <datalist id="facebookBotAiModelPresets">
+                                    <option value="gpt-5.2"></option>
+                                    <option value="gpt-5.1"></option>
+                                    <option value="gpt-5"></option>
+                                    <option value="gpt-5-mini"></option>
+                                    <option value="gpt-5-nano"></option>
+                                    <option value="gpt-5-pro"></option>
+                                    <option value="gpt-4.1"></option>
+                                    <option value="gpt-4.1-mini"></option>
+                                    <option value="gpt-4.1-nano"></option>
+                                    <option value="gpt-4o"></option>
+                                    <option value="gpt-4o-mini"></option>
+                                </datalist>
                                 <div class="form-text">เลือก AI Model ที่จะใช้สำหรับ Facebook Bot นี้ — ถ้าเลือก Chat
                                     API (ใช้ tools ไม่ได้) ระบบจะไม่ส่ง tool จัดการข้อมูล/AI search ให้</div>
                                 <div class="collapse mt-2" id="facebookBotAiParams">

@@ -5,6 +5,9 @@
         assets: [],
         lineBots: [],
         facebookBots: [],
+        instagramBots: [],
+        whatsappBots: [],
+        activeAssignmentChannel: 'line',
         collectionFilter: '',
         assetFilter: '',
         collectionAssetFilter: '',
@@ -15,7 +18,9 @@
         uploadQueue: [],
         isUploading: false,
         selectedAssetLabels: new Set(),
-        assetEdits: new Map()
+        assetEdits: new Map(),
+        // New: collection IDs selected in the upload queue picker
+        uploadTargetCollectionIds: new Set()
     };
 
     const elements = {
@@ -36,8 +41,11 @@
         startUploadQueueBtn: null,
         uploadQueueSummary: null,
         uploadQueueList: null,
+        assignmentTabs: null,
         lineAssignments: null,
         facebookAssignments: null,
+        instagramAssignments: null,
+        whatsappAssignments: null,
         collectionModal: null,
         collectionForm: null,
         collectionId: null,
@@ -121,7 +129,106 @@
             Array.isArray(bot.selectedImageCollections) &&
             bot.selectedImageCollections.includes(collectionId)
         ).length;
-        return { line: isUsedByLine, facebook: isUsedByFacebook };
+        const isUsedByInstagram = state.instagramBots.filter((bot) =>
+            Array.isArray(bot.selectedImageCollections) &&
+            bot.selectedImageCollections.includes(collectionId)
+        ).length;
+        const isUsedByWhatsApp = state.whatsappBots.filter((bot) =>
+            Array.isArray(bot.selectedImageCollections) &&
+            bot.selectedImageCollections.includes(collectionId)
+        ).length;
+        return {
+            line: isUsedByLine,
+            facebook: isUsedByFacebook,
+            instagram: isUsedByInstagram,
+            whatsapp: isUsedByWhatsApp
+        };
+    };
+
+    const getBotsByType = (type) => {
+        switch (type) {
+        case 'line':
+            return state.lineBots;
+        case 'facebook':
+            return state.facebookBots;
+        case 'instagram':
+            return state.instagramBots;
+        case 'whatsapp':
+            return state.whatsappBots;
+        default:
+            return [];
+        }
+    };
+
+    const getBotPlatformLabel = (type) => {
+        switch (type) {
+        case 'line':
+            return 'LINE Bot';
+        case 'facebook':
+            return 'Facebook Bot';
+        case 'instagram':
+            return 'Instagram Bot';
+        case 'whatsapp':
+            return 'WhatsApp Bot';
+        default:
+            return 'Bot';
+        }
+    };
+
+    const getAssignmentIconHtml = (type) => {
+        switch (type) {
+        case 'line':
+            return '<span class="assignment-icon line me-2"><i class="fab fa-line"></i></span>';
+        case 'facebook':
+            return '<span class="assignment-icon facebook me-2"><i class="fab fa-facebook-f"></i></span>';
+        case 'instagram':
+            return '<span class="assignment-icon instagram me-2"><i class="fab fa-instagram"></i></span>';
+        case 'whatsapp':
+            return '<span class="assignment-icon whatsapp me-2"><i class="fab fa-whatsapp"></i></span>';
+        default:
+            return '<span class="assignment-icon me-2"><i class="fas fa-robot"></i></span>';
+        }
+    };
+
+    const getBotCollectionsApiUrl = (type, botId) => {
+        switch (type) {
+        case 'line':
+            return `/api/line-bots/${botId}/image-collections`;
+        case 'facebook':
+            return `/api/facebook-bots/${botId}/image-collections`;
+        case 'instagram':
+            return `/api/instagram-bots/${botId}/image-collections`;
+        case 'whatsapp':
+            return `/api/whatsapp-bots/${botId}/image-collections`;
+        default:
+            return '';
+        }
+    };
+
+    const setActiveAssignmentChannel = (channel, options = {}) => {
+        const { persist = true } = options;
+        const nextChannel = ['line', 'facebook', 'instagram', 'whatsapp'].includes(channel) ? channel : 'line';
+        state.activeAssignmentChannel = nextChannel;
+
+        const tabButtons = document.querySelectorAll('[data-assignment-channel]');
+        tabButtons.forEach((button) => {
+            const isActive = button.dataset.assignmentChannel === nextChannel;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        const panels = document.querySelectorAll('[data-assignment-channel-panel]');
+        panels.forEach((panel) => {
+            panel.classList.toggle('is-active', panel.dataset.assignmentChannelPanel === nextChannel);
+        });
+
+        if (persist) {
+            try {
+                localStorage.setItem('adminSettingsV2.activeAssignmentChannel', nextChannel);
+            } catch (error) {
+                // Ignore storage errors
+            }
+        }
     };
 
     const cacheElements = () => {
@@ -146,8 +253,11 @@
         elements.assetSelectionToolbar = document.getElementById('assetSelectionToolbar');
         elements.assetSelectionCount = elements.assetSelectionToolbar?.querySelector('.asset-selection-count') || null;
         elements.bulkDeleteAssetsBtn = document.getElementById('bulkDeleteAssetsBtn');
+        elements.assignmentTabs = document.getElementById('assignmentChannelTabs');
         elements.lineAssignments = document.getElementById('lineBotCollectionsList');
         elements.facebookAssignments = document.getElementById('facebookBotCollectionsList');
+        elements.instagramAssignments = document.getElementById('instagramBotCollectionsList');
+        elements.whatsappAssignments = document.getElementById('whatsappBotCollectionsList');
         elements.collectionModal = document.getElementById('imageCollectionModal');
         elements.collectionForm = document.getElementById('imageCollectionForm');
         elements.collectionId = document.getElementById('imageCollectionId');
@@ -165,19 +275,15 @@
         elements.botCollectionsList = document.getElementById('botImageCollectionsList');
         elements.saveBotCollectionsBtn = document.getElementById('saveBotImageCollectionsBtn');
 
-        // New UI Elements for Enhanced Gallery
-        elements.mobileTabs = document.getElementById('galleryMobileTabs');
-        elements.uploadPanel = document.getElementById('uploadPanel');
-        elements.collectionsPanel = document.getElementById('collectionsPanel');
+        // Redesigned UI Elements (3-tab layout)
+        elements.imglibTabs = document.querySelectorAll('.imglib-tab');
+        elements.imglibPanels = document.querySelectorAll('.imglib-panel');
+        elements.queueArea = document.getElementById('imglibQueueArea');
+        elements.uploadCollectionPicker = document.getElementById('imglibUploadCollectionPicker');
         elements.overallProgress = document.getElementById('galleryOverallProgress');
         elements.overallProgressBar = document.getElementById('overallProgressBar');
         elements.overallProgressCount = document.getElementById('overallProgressCount');
         elements.viewToggleGroup = document.getElementById('viewToggleGroup');
-        elements.fab = document.getElementById('galleryFab');
-        elements.fabMainBtn = document.getElementById('fabMainBtn');
-        elements.fabUploadAction = document.getElementById('fabUploadAction');
-        elements.fabCreateCollectionAction = document.getElementById('fabCreateCollectionAction');
-        elements.fabRefreshAction = document.getElementById('fabRefreshAction');
         elements.collectionFilterControl = document.getElementById('collectionFilterControl');
     };
 
@@ -254,6 +360,20 @@
             elements.uploadQueueList.addEventListener('click', handleQueueListClick);
         }
 
+        // Collection picker checkboxes in upload queue
+        if (elements.uploadCollectionPicker) {
+            elements.uploadCollectionPicker.addEventListener('change', (event) => {
+                const cb = event.target.closest('.upload-coll-checkbox');
+                if (!cb) return;
+                const collId = cb.value;
+                if (cb.checked) {
+                    state.uploadTargetCollectionIds.add(collId);
+                } else {
+                    state.uploadTargetCollectionIds.delete(collId);
+                }
+            });
+        }
+
         if (elements.bulkDeleteAssetsBtn) {
             elements.bulkDeleteAssetsBtn.addEventListener('click', bulkDeleteSelectedAssets);
         }
@@ -317,6 +437,14 @@
             elements.facebookAssignments.addEventListener('click', handleAssignmentAction);
         }
 
+        if (elements.instagramAssignments) {
+            elements.instagramAssignments.addEventListener('click', handleAssignmentAction);
+        }
+
+        if (elements.whatsappAssignments) {
+            elements.whatsappAssignments.addEventListener('click', handleAssignmentAction);
+        }
+
         if (elements.botCollectionsSearch) {
             elements.botCollectionsSearch.addEventListener('input', (event) => {
                 state.botCollectionFilter = event.target.value.trim().toLowerCase();
@@ -328,7 +456,51 @@
             elements.saveBotCollectionsBtn.addEventListener('click', saveBotImageCollections);
         }
 
-        // Secret data consistency fix button (triple click on "ขั้นตอนที่ 1")
+        if (elements.assignmentTabs) {
+            elements.assignmentTabs.addEventListener('click', (event) => {
+                const tabButton = event.target.closest('[data-assignment-channel]');
+                if (!tabButton) return;
+                setActiveAssignmentChannel(tabButton.dataset.assignmentChannel);
+            });
+        }
+
+        // 3-Tab navigation
+        if (elements.imglibTabs && elements.imglibTabs.length > 0) {
+            elements.imglibTabs.forEach((tab) => {
+                tab.addEventListener('click', () => {
+                    const targetPanelId = tab.dataset.imglibTab;
+                    if (!targetPanelId) return;
+
+                    // Update tab active state
+                    elements.imglibTabs.forEach((t) => {
+                        t.classList.toggle('active', t === tab);
+                        t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+                    });
+
+                    // Show matching panel
+                    elements.imglibPanels.forEach((panel) => {
+                        const matches = panel.id === `imglibPanel${targetPanelId.charAt(0).toUpperCase() + targetPanelId.slice(1)}`;
+                        panel.classList.toggle('active', matches);
+                    });
+
+                    // Persist tab selection
+                    try {
+                        localStorage.setItem('adminSettingsV2.activeImglibTab', targetPanelId);
+                    } catch (e) { /* ignore */ }
+                });
+            });
+
+            // Restore saved tab
+            try {
+                const savedTab = localStorage.getItem('adminSettingsV2.activeImglibTab');
+                if (savedTab) {
+                    const savedTabEl = document.querySelector(`.imglib-tab[data-imglib-tab="${savedTab}"]`);
+                    if (savedTabEl) savedTabEl.click();
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        // Secret data consistency fix button (triple click on hidden #secretFixBtn)
         const secretFixBtn = document.getElementById('secretFixBtn');
         if (secretFixBtn) {
             let clickCount = 0;
@@ -354,85 +526,6 @@
                     }, 1000);
                 }
             });
-        }
-
-        // Mobile Tabs Navigation
-        if (elements.mobileTabs) {
-            elements.mobileTabs.addEventListener('click', (event) => {
-                const tabBtn = event.target.closest('.tab-btn');
-                if (!tabBtn) return;
-
-                const panel = tabBtn.dataset.panel;
-                if (!panel) return;
-
-                // Update tab buttons
-                elements.mobileTabs.querySelectorAll('.tab-btn').forEach(btn => {
-                    btn.classList.toggle('active', btn === tabBtn);
-                });
-
-                // Show/hide panels
-                if (elements.uploadPanel && elements.collectionsPanel) {
-                    if (panel === 'upload') {
-                        elements.uploadPanel.classList.remove('hidden');
-                        elements.collectionsPanel.classList.add('hidden');
-                    } else {
-                        elements.uploadPanel.classList.add('hidden');
-                        elements.collectionsPanel.classList.remove('hidden');
-                    }
-                }
-            });
-        }
-
-        // Floating Action Button
-        if (elements.fab && elements.fabMainBtn) {
-            elements.fabMainBtn.addEventListener('click', () => {
-                elements.fab.classList.toggle('open');
-            });
-
-            // Close FAB when clicking outside
-            document.addEventListener('click', (event) => {
-                if (!elements.fab.contains(event.target)) {
-                    elements.fab.classList.remove('open');
-                }
-            });
-
-            // FAB Actions
-            if (elements.fabUploadAction) {
-                elements.fabUploadAction.addEventListener('click', () => {
-                    elements.fab.classList.remove('open');
-                    // Switch to upload tab on mobile
-                    if (elements.mobileTabs) {
-                        const uploadTab = elements.mobileTabs.querySelector('[data-panel="upload"]');
-                        if (uploadTab) uploadTab.click();
-                    }
-                    // Trigger file select
-                    setTimeout(() => {
-                        elements.assetFile?.click();
-                    }, 100);
-                });
-            }
-
-            if (elements.fabCreateCollectionAction) {
-                elements.fabCreateCollectionAction.addEventListener('click', () => {
-                    elements.fab.classList.remove('open');
-                    // Switch to collections tab on mobile
-                    if (elements.mobileTabs) {
-                        const collectionsTab = elements.mobileTabs.querySelector('[data-panel="collections"]');
-                        if (collectionsTab) collectionsTab.click();
-                    }
-                    // Open create collection modal
-                    setTimeout(() => {
-                        openCollectionModal();
-                    }, 100);
-                });
-            }
-
-            if (elements.fabRefreshAction) {
-                elements.fabRefreshAction.addEventListener('click', () => {
-                    elements.fab.classList.remove('open');
-                    refreshAll();
-                });
-            }
         }
 
         // View Toggle (List/Grid)
@@ -623,6 +716,18 @@
     const init = () => {
         cacheElements();
         if (!elements.section) return;
+
+        let initialAssignmentChannel = 'line';
+        try {
+            const savedChannel = localStorage.getItem('adminSettingsV2.activeAssignmentChannel');
+            if (['line', 'facebook', 'instagram', 'whatsapp'].includes(savedChannel)) {
+                initialAssignmentChannel = savedChannel;
+            }
+        } catch (error) {
+            // Ignore storage errors
+        }
+        setActiveAssignmentChannel(initialAssignmentChannel, { persist: false });
+
         bindEvents();
         renderUploadQueue();
         refreshAll();
@@ -639,7 +744,7 @@
     const updateAssetsCount = () => {
         if (!elements.assetsCount) return;
         const total = Array.isArray(state.assets) ? state.assets.length : 0;
-        elements.assetsCount.textContent = `${total} รูป`;
+        elements.assetsCount.textContent = `${total}`;
     };
 
     const getLabelsUsedInCollections = () => {
@@ -792,16 +897,42 @@
         }
     };
 
-    const renderUploadQueue = () => {
-        if (!elements.uploadQueueList) return;
-        if (state.uploadQueue.length === 0) {
-            elements.uploadQueueList.innerHTML = `
-                <div class="empty-state small text-muted text-center py-3">
-                    <i class="fas fa-images me-1"></i>เพิ่มรูปภาพเพื่อเตรียมตั้งชื่อและคำอธิบายได้ที่นี่
-                </div>
-            `;
+    const renderUploadCollectionPicker = () => {
+        if (!elements.uploadCollectionPicker) return;
+        const collections = Array.isArray(state.collections) ? state.collections : [];
+        if (collections.length === 0) {
+            elements.uploadCollectionPicker.innerHTML = '<div class="imglib-qcol-empty">ยังไม่มีคลัง</div>';
             return;
         }
+        const html = collections.map((col) => {
+            const id = `upload-col-${col._id}`;
+            const name = escapeHtml(col.name || col._id);
+            const checked = state.uploadTargetCollectionIds.has(col._id) ? 'checked' : '';
+            return `
+                <label class="imglib-qcol-item" for="${id}">
+                    <input type="checkbox" id="${id}" value="${escapeAttribute(col._id)}" ${checked}
+                        class="upload-coll-checkbox">
+                    <span class="imglib-qcol-item-name" title="${name}">${name}</span>
+                </label>
+            `;
+        }).join('');
+        elements.uploadCollectionPicker.innerHTML = html;
+    };
+
+    const renderUploadQueue = () => {
+        if (!elements.uploadQueueList) return;
+
+        // Show/hide the queue area
+        if (elements.queueArea) {
+            elements.queueArea.classList.toggle('visible', state.uploadQueue.length > 0);
+        }
+
+        if (state.uploadQueue.length === 0) {
+            elements.uploadQueueList.innerHTML = '';
+            return;
+        }
+
+        renderUploadCollectionPicker();
 
         const html = state.uploadQueue
             .map((item) => {
@@ -829,10 +960,6 @@
                             <div class="queue-header">
                                 <input type="text" class="form-control form-control-sm queue-label-input" placeholder="ชื่อรูปภาพ" value="${escapedLabel}" data-queue-id="${item.id}" ${disableInputs ? 'disabled' : ''}>
                                 <div class="queue-actions">
-                                    <div class="form-check form-switch form-switch-sm">
-                                        <input class="form-check-input queue-overwrite-checkbox" type="checkbox" data-queue-id="${item.id}" ${item.overwrite ? 'checked' : ''} ${disableInputs ? 'disabled' : ''}>
-                                        <label class="form-check-label small">แทนที่</label>
-                                    </div>
                                     <button type="button" class="btn btn-sm btn-outline-danger queue-remove-btn" data-queue-id="${item.id}" ${state.isUploading ? 'disabled' : ''}>
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -878,9 +1005,6 @@
         if (!queueId) return;
         const item = state.uploadQueue.find((entry) => entry.id === queueId);
         if (!item) return;
-        if (event.target.classList.contains('queue-overwrite-checkbox')) {
-            item.overwrite = !!event.target.checked;
-        }
     };
 
     const handleQueueListClick = (event) => {
@@ -938,8 +1062,15 @@
         }
 
         if (hasSuccess) {
+            // Collect successfully uploaded labels before clearing queue
+            const successLabels = state.uploadQueue
+                .filter((item) => item.status === 'success')
+                .map((item) => item.label?.trim())
+                .filter(Boolean);
+
             await fetchAssets();
             await fetchCollections();
+
             const remaining = [];
             let successCount = 0;
             state.uploadQueue.forEach((item) => {
@@ -955,6 +1086,50 @@
             if (successCount > 0) {
                 showAlert(`อัปโหลดรูปภาพสำเร็จ ${successCount} ไฟล์`, 'success');
             }
+
+            // Add new assets to selected collections
+            if (state.uploadTargetCollectionIds.size > 0 && successLabels.length > 0) {
+                await addAssetsToSelectedCollections(successLabels);
+                state.uploadTargetCollectionIds.clear();
+            }
+        }
+    };
+
+    const addAssetsToSelectedCollections = async (newLabels) => {
+        const targetIds = Array.from(state.uploadTargetCollectionIds);
+        if (targetIds.length === 0 || newLabels.length === 0) return;
+
+        let successCount = 0;
+        for (const collectionId of targetIds) {
+            const collection = getCollectionById(collectionId);
+            if (!collection) continue;
+
+            const existingLabels = new Set(
+                Array.isArray(collection.images)
+                    ? collection.images.map((img) => img?.label).filter(Boolean)
+                    : []
+            );
+            newLabels.forEach((label) => existingLabels.add(label));
+
+            try {
+                const response = await fetch(`/admin/image-collections/${collectionId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: collection.name,
+                        description: collection.description || '',
+                        imageLabels: Array.from(existingLabels)
+                    })
+                });
+                if (response.ok) successCount += 1;
+            } catch (err) {
+                console.error('addAssetsToCollection error:', err);
+            }
+        }
+
+        if (successCount > 0) {
+            await fetchCollections();
+            showAlert(`เพิ่มรูปภาพเข้าคลังเรียบร้อย ${successCount} คลัง`, 'success');
         }
     };
 
@@ -963,7 +1138,8 @@
         form.append('image', item.file, item.file.name);
         form.append('label', item.label?.trim() || '');
         form.append('description', item.description?.trim() || '');
-        form.append('overwrite', item.overwrite ? 'true' : 'false');
+        const globalOverwrite = document.getElementById('globalOverwriteCheckbox')?.checked ?? false;
+        form.append('overwrite', globalOverwrite ? 'true' : 'false');
 
         try {
             const response = await fetch('/admin/instructions/assets', {
@@ -1052,11 +1228,11 @@
 
                     return `
                         <div class="image-asset-item${itemClasses}" data-label="${labelAttr}">
-                            <div class="asset-select form-check">
+                            <div class="image-asset-thumb-col">
                                 <input class="form-check-input asset-select-checkbox" type="checkbox" data-label="${labelAttr}" ${isSelected ? 'checked' : ''} ${saving ? 'disabled' : ''}>
-                            </div>
-                            <div class="image-asset-thumb">
-                                ${thumb ? `<img src="${thumb}" alt="${escapedLabel}">` : '<div class="image-asset-thumb-placeholder"><i class="fas fa-image"></i></div>'}
+                                <div class="image-asset-thumb">
+                                    ${thumb ? `<img src="${thumb}" alt="${escapedLabel}">` : '<div class="image-asset-thumb-placeholder"><i class="fas fa-image"></i></div>'}
+                                </div>
                             </div>
                             <div class="image-asset-info">
                                 <div class="image-asset-edit-form">
@@ -1084,24 +1260,24 @@
 
                 const normalDescription = description || '<span class="text-muted">ไม่มีคำอธิบาย</span>';
                 const actionsHtml = `
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="copy" data-label="${labelAttr}">
-                        <i class="fas fa-copy me-1"></i>โทเคน
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="copy" data-label="${labelAttr}" title="คัดลอกโทเคน">
+                        <i class="fas fa-copy"></i><span class="btn-label">โทเคน</span>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-primary" data-action="edit" data-label="${labelAttr}">
-                        <i class="fas fa-edit me-1"></i>แก้ไข
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-action="edit" data-label="${labelAttr}" title="แก้ไข">
+                        <i class="fas fa-edit"></i><span class="btn-label">แก้ไข</span>
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger asset-delete-btn" data-action="delete" data-label="${labelAttr}">
-                        <i class="fas fa-trash me-1"></i>ลบ
+                    <button type="button" class="btn btn-sm btn-outline-danger asset-delete-btn" data-action="delete" data-label="${labelAttr}" title="ลบ">
+                        <i class="fas fa-trash"></i><span class="btn-label">ลบ</span>
                     </button>
                 `;
 
                 return `
                     <div class="image-asset-item${itemClasses}" data-label="${labelAttr}">
-                        <div class="asset-select form-check">
+                        <div class="image-asset-thumb-col">
                             <input class="form-check-input asset-select-checkbox" type="checkbox" data-label="${labelAttr}" ${isSelected ? 'checked' : ''}>
-                        </div>
-                        <div class="image-asset-thumb">
-                            ${thumb ? `<img src="${thumb}" alt="${escapedLabel}">` : '<div class="image-asset-thumb-placeholder"><i class="fas fa-image"></i></div>'}
+                            <div class="image-asset-thumb">
+                                ${thumb ? `<img src="${thumb}" alt="${escapedLabel}">` : '<div class="image-asset-thumb-placeholder"><i class="fas fa-image"></i></div>'}
+                            </div>
                         </div>
                         <div class="image-asset-info">
                             <div class="image-asset-title">
@@ -1451,24 +1627,34 @@
 
     const fetchBots = async () => {
         try {
-            const [lineRes, fbRes] = await Promise.all([
+            const [lineRes, fbRes, igRes, waRes] = await Promise.all([
                 fetch('/api/line-bots'),
-                fetch('/api/facebook-bots')
+                fetch('/api/facebook-bots'),
+                fetch('/api/instagram-bots'),
+                fetch('/api/whatsapp-bots')
             ]);
             if (!lineRes.ok) throw new Error('ไม่สามารถดึงข้อมูล Line Bot ได้');
             if (!fbRes.ok) throw new Error('ไม่สามารถดึงข้อมูล Facebook Bot ได้');
+            if (!igRes.ok) throw new Error('ไม่สามารถดึงข้อมูล Instagram Bot ได้');
+            if (!waRes.ok) throw new Error('ไม่สามารถดึงข้อมูล WhatsApp Bot ได้');
             state.lineBots = await lineRes.json();
             state.facebookBots = await fbRes.json();
+            state.instagramBots = await igRes.json();
+            state.whatsappBots = await waRes.json();
         } catch (err) {
             console.error('fetchBots error:', err);
             showAlert('โหลดข้อมูลบอทไม่สำเร็จ', 'danger');
+            state.lineBots = [];
+            state.facebookBots = [];
+            state.instagramBots = [];
+            state.whatsappBots = [];
         }
     };
 
     const updateCollectionsCount = () => {
         if (!elements.collectionsCount) return;
         const total = state.collections.length;
-        elements.collectionsCount.textContent = `${total} ชุด`;
+        elements.collectionsCount.textContent = `${total}`;
     };
 
     const handleCollectionAction = (event) => {
@@ -1520,7 +1706,7 @@
 
         const usageFiltered = filtered.filter((collection) => {
             const usage = computeCollectionUsage(collection._id);
-            const totalUsage = usage.line + usage.facebook;
+            const totalUsage = usage.line + usage.facebook + usage.instagram + usage.whatsapp;
             if (state.collectionUsageFilter === 'assigned') {
                 return totalUsage > 0;
             }
@@ -1552,6 +1738,8 @@
                 const usageBadges = `
                     <span class="collection-stat badge bg-light text-dark"><i class="fab fa-line me-1 text-success"></i>${usage.line}</span>
                     <span class="collection-stat badge bg-light text-dark"><i class="fab fa-facebook-f me-1 text-primary"></i>${usage.facebook}</span>
+                    <span class="collection-stat badge bg-light text-dark"><i class="fab fa-instagram me-1 text-danger"></i>${usage.instagram}</span>
+                    <span class="collection-stat badge bg-light text-dark"><i class="fab fa-whatsapp me-1 text-success"></i>${usage.whatsapp}</span>
                 `;
                 const previewImages = Array.isArray(collection.images) ? collection.images.slice(0, 3) : [];
                 const previewHtml = previewImages
@@ -1599,6 +1787,9 @@
             .join('');
 
         elements.collectionsList.innerHTML = html;
+
+        // Keep upload collection picker in sync
+        renderUploadCollectionPicker();
     };
 
     const openCollectionModal = (collectionId = null, options = {}) => {
@@ -1800,15 +1991,18 @@
     const renderAssignments = () => {
         renderBotAssignments('line', elements.lineAssignments, state.lineBots);
         renderBotAssignments('facebook', elements.facebookAssignments, state.facebookBots);
+        renderBotAssignments('instagram', elements.instagramAssignments, state.instagramBots);
+        renderBotAssignments('whatsapp', elements.whatsappAssignments, state.whatsappBots);
     };
 
     const renderBotAssignments = (type, container, bots) => {
         if (!container) return;
+        const platformLabel = getBotPlatformLabel(type);
         if (!Array.isArray(bots) || bots.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-robot mb-2"></i>
-                    <div>ยังไม่มี ${type === 'line' ? 'LINE Bot' : 'Facebook Bot'}</div>
+                    <div>ยังไม่มี ${platformLabel}</div>
                     <small class="text-muted">เพิ่มบอทก่อนเพื่อกำหนดคลังรูปภาพ</small>
                 </div>
             `;
@@ -1853,7 +2047,7 @@
 
     const openBotImageCollectionsModal = (botType, botId) => {
         if (!elements.botModal) return;
-        const list = botType === 'line' ? state.lineBots : state.facebookBots;
+        const list = getBotsByType(botType);
         const bot = list.find((item) => item._id === botId);
         if (!bot) {
             showAlert('ไม่พบบอทที่เลือก', 'warning');
@@ -1866,14 +2060,12 @@
         }
 
         if (elements.botModalLabel) {
-            const platformIcon = botType === 'line'
-                ? '<span class="assignment-icon line me-2"><i class="fab fa-line"></i></span>'
-                : '<span class="assignment-icon facebook me-2"><i class="fab fa-facebook-f"></i></span>';
+            const platformIcon = getAssignmentIconHtml(botType);
             elements.botModalLabel.innerHTML = `${platformIcon}เลือกคลังรูปภาพสำหรับ ${bot.name || 'ไม่ระบุชื่อ'}`;
         }
 
         if (elements.botModalSummary) {
-            const platformText = botType === 'line' ? 'LINE Bot' : 'Facebook Bot';
+            const platformText = getBotPlatformLabel(botType);
             const selected = Array.isArray(bot.selectedImageCollections)
                 ? bot.selectedImageCollections.length
                 : 0;
@@ -1902,7 +2094,7 @@
 
         const currentSelections = new Set();
         if (state.editingBot) {
-            const list = state.editingBot.botType === 'line' ? state.lineBots : state.facebookBots;
+            const list = getBotsByType(state.editingBot.botType);
             const bot = list.find((item) => item._id === state.editingBot.botId);
             if (bot && Array.isArray(bot.selectedImageCollections)) {
                 bot.selectedImageCollections.forEach((id) => currentSelections.add(id));
@@ -1956,10 +2148,11 @@
         ).map((input) => input.value);
 
         const payload = { selectedImageCollections: selected };
-        const url =
-            botType === 'line'
-                ? `/api/line-bots/${botId}/image-collections`
-                : `/api/facebook-bots/${botId}/image-collections`;
+        const url = getBotCollectionsApiUrl(botType, botId);
+        if (!url) {
+            showAlert('ประเภทบอทไม่รองรับ', 'warning');
+            return;
+        }
 
         try {
             elements.saveBotCollectionsBtn.disabled = true;
@@ -1984,11 +2177,8 @@
             await fetchBots();
             renderAssignments();
 
-            if (typeof loadLineBotSettings === 'function') {
-                loadLineBotSettings();
-            }
-            if (typeof loadFacebookBotSettings === 'function') {
-                loadFacebookBotSettings();
+            if (typeof loadBotSettings === 'function') {
+                loadBotSettings();
             }
         } catch (err) {
             console.error('saveBotImageCollections error:', err);
